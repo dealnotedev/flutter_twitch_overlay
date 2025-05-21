@@ -18,10 +18,10 @@ class SpanUtil {
     }
   }
 
-  static List<TextSpan> createSpansAdvanced(String text,
-      List<String> highlighted, TextSpan Function(String highlighted) f) {
+  static List<InlineSpan> createSpansAdvanced(String text,
+      List<String> highlighted, InlineSpan Function(String highlighted) f) {
     final entries = _parseText(text, highlighted);
-    final spans = <TextSpan>[];
+    final spans = <InlineSpan>[];
 
     for (var entry in entries) {
       if (entry.highlighted) {

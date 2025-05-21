@@ -97,8 +97,13 @@ abstract class AppLocalizations {
   /// No description provided for @user_redeemed_reward_title.
   ///
   /// In en, this message translates to:
-  /// **'{user} redeeemed {reward}'**
-  String user_redeemed_reward_title(String user, String reward);
+  /// **'{user} redeemed {reward} for {currency_icon} {cost}'**
+  String user_redeemed_reward_title(
+    String user,
+    String reward,
+    String currency_icon,
+    String cost,
+  );
 }
 
 class _AppLocalizationsDelegate

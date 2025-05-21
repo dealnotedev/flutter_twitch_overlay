@@ -1,5 +1,5 @@
 {
-  "user_redeemed_reward_title": "{user} redeemed {reward}",
+  "user_redeemed_reward_title": "{user} redeemed {reward} for {currency_icon} {cost}",
   "@user_redeemed_reward_title": {
     "placeholders": {
       "user": {
@@ -9,6 +9,14 @@
       "reward": {
         "type": "String",
         "example": "вздріст"
+      },
+      "currency_icon": {
+        "type": "String",
+        "example": "currency_icon"
+      },
+      "cost": {
+        "type": "String",
+        "example": "10,000"
       }
     }
   }

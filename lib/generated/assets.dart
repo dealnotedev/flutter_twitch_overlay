@@ -3,5 +3,6 @@ class Assets {
   Assets._();
 
   static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
-
+  static const String assetsIcTwitchChannelPosints32dp =
+      'assets/ic_twitch_channel_posints_32dp.png';
 }

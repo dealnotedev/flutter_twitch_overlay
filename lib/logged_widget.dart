@@ -4,9 +4,11 @@ import 'dart:convert';
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:intl/intl.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/generated/assets.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/settings.dart';
 import 'package:obssource/span_util.dart';
@@ -185,11 +187,13 @@ class _RewardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final cost = NumberFormat('###,###').format(event.cost);
+    final currencyPlaceholder = '{:currency_icon}';
     return Container(
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       alignment: Alignment.centerLeft,
       child: Container(
-        constraints: BoxConstraints(maxWidth: 480),
+        constraints: BoxConstraints(maxWidth: 512),
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
@@ -201,26 +205,35 @@ class _RewardWidget extends StatelessWidget {
             Avatar(url: event.avatar, size: 48),
             Gap(16),
             Flexible(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  RichText(
-                    text: TextSpan(
-                      style: TextStyle(color: Colors.white, fontSize: 18),
-                      children: SpanUtil.createSpansAdvanced(
-                        context.localizations.user_redeemed_reward_title(
-                          event.user,
-                          event.reward,
-                        ),
-                        [event.user, event.reward],
-                        (t) => TextSpan(
-                          text: t,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                      ),
+              child: RichText(
+                text: TextSpan(
+                  style: TextStyle(color: Colors.white, fontSize: 18),
+                  children: SpanUtil.createSpansAdvanced(
+                    context.localizations.user_redeemed_reward_title(
+                      event.user,
+                      event.reward,
+                      currencyPlaceholder,
+                      cost,
                     ),
+                    [event.user, event.reward, currencyPlaceholder],
+                    (t) {
+                      if (t == currencyPlaceholder) {
+                        return WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Image.asset(
+                            Assets.assetsIcTwitchChannelPosints32dp,
+                            width: 18,
+                            height: 18,
+                          ),
+                        );
+                      }
+                      return TextSpan(
+                        text: t,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      );
+                    },
                   ),
-                ],
+                ),
               ),
             ),
             Gap(8),

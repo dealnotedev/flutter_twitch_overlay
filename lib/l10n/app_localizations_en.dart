@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -9,7 +10,12 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
-  String user_redeemed_reward_title(String user, String reward) {
-    return '$user redeeemed $reward';
+  String user_redeemed_reward_title(
+    String user,
+    String reward,
+    String currency_icon,
+    String cost,
+  ) {
+    return '$user redeemed $reward for $currency_icon $cost';
   }
 }
