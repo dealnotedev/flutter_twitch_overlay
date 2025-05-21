@@ -1,0 +1,15 @@
+{
+  "user_redeemed_reward_title": "{user} redeemed {reward}",
+  "@user_redeemed_reward_title": {
+    "placeholders": {
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      },
+      "reward": {
+        "type": "String",
+        "example": "вздріст"
+      }
+    }
+  }
+}
