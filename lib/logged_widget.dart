@@ -200,7 +200,7 @@ class _RewardWidget extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),
-          color: Color(0x80202020).withValues(alpha: 0.8),
+          color: Color(0xFF3C3C3C).withValues(alpha: 0.8),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
