@@ -82,11 +82,14 @@ class _State extends State<LoggedWidget> {
           top: 16,
           right: 16,
           child: Container(
-            width: 16,
-            height: 16,
+            width: 8,
+            height: 8,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: _state == WsState.connected ? Colors.green : Colors.red,
+              borderRadius: BorderRadius.circular(4),
+              color:
+                  _state == WsState.connected
+                      ? Color(0xFF51FD0B)
+                      : Color(0xFFCD0017),
             ),
           ),
         ),
