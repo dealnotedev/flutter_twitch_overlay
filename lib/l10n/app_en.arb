@@ -1,5 +1,5 @@
 {
-  "user_redeemed_reward_title": "{user} redeemed {reward} for {currency_icon} {cost}",
+  "user_redeemed_reward_title": "{user} redeemed {reward} for {currency_icon}\u00A0{cost}",
   "@user_redeemed_reward_title": {
     "placeholders": {
       "user": {

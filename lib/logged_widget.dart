@@ -193,7 +193,7 @@ class _RewardWidget extends StatelessWidget {
       padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       alignment: Alignment.centerLeft,
       child: Container(
-        constraints: BoxConstraints(maxWidth: 512),
+        constraints: BoxConstraints(maxWidth: 448),
         padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(32),

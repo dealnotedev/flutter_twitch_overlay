@@ -16,6 +16,6 @@ class AppLocalizationsEn extends AppLocalizations {
     String currency_icon,
     String cost,
   ) {
-    return '$user redeemed $reward for $currency_icon $cost';
+    return '$user redeemed $reward for $currency_icon $cost';
   }
 }
