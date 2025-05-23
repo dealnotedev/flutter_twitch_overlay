@@ -104,6 +104,12 @@ abstract class AppLocalizations {
     String currency_icon,
     String cost,
   );
+
+  /// No description provided for @by_user.
+  ///
+  /// In en, this message translates to:
+  /// **'by {user_avatar} {user}'**
+  String by_user(String user_avatar, String user);
 }
 
 class _AppLocalizationsDelegate

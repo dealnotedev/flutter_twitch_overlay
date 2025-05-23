@@ -9,9 +9,11 @@ import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/generated/assets.dart';
+import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/settings.dart';
 import 'package:obssource/span_util.dart';
+import 'package:obssource/srt_off.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/twitch/ws_manager.dart';
@@ -64,63 +66,116 @@ class _State extends State<LoggedWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final offTv = _offTv;
+
     return Stack(
       children: [
-        /*Positioned(
-          bottom: 0,
-          left: 0,
-          right: 0,
-          child: const AnimatedWave(
-            height: 128,
-            speed: 3,
-            color: Colors.orange,
-            alpha: 96,
+        ScreenAttackGameWidget(locator: widget.locator),
+        _createConnectionIndicator(),
+        if (_off) ...[CRTOffAnimation(onEnd: _handleCrtOff)],
+        if (_off && _crtOffFinished) ...[
+          Center(
+            child: Image.asset(Assets.assetsIcDulya, width: 200, height: 200),
           ),
-        ),*/
+          if (offTv != null) ...[_createOffTvByWidget(offTv)],
+        ],
         _createRewardsWidget(context),
-        Positioned(
-          top: 16,
-          right: 16,
-          child: Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(4),
-              color:
-                  _state == WsState.connected
-                      ? Color(0xFF51FD0B)
-                      : Color(0xFFCD0017),
-            ),
-          ),
-        ),
       ],
     );
   }
 
-  Widget _createRewardsWidget(BuildContext context) {
-    return Row(
-      children: [
-        Expanded(
-          child: AnimatedListView(
-            padding: EdgeInsets.symmetric(vertical: 8),
-            items: _rewards,
-            itemBuilder: (context, index) {
-              final reward = _rewards[index];
-              return _RewardWidget(event: reward, key: ValueKey(reward.id));
-            },
-            enterTransition: [SlideInLeft()],
-            exitTransition: [SlideInLeft()],
-            isSameItem: (a, b) => a.id == b.id,
+  Widget _createOffTvByWidget(_UserRedeemedEvent offTv) {
+    final avatarPlaceholder = '{user_avatar}';
+    return Positioned(
+      bottom: 0,
+      right: 0,
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: RichText(
+          text: TextSpan(
+            style: TextStyle(fontSize: 20, color: Colors.white),
+            children: SpanUtil.createSpansAdvanced(
+              context.localizations.by_user(avatarPlaceholder, offTv.user),
+              [avatarPlaceholder, offTv.user],
+              (t) {
+                if (t == avatarPlaceholder) {
+                  return WidgetSpan(
+                    alignment: PlaceholderAlignment.middle,
+                    child: Avatar(size: 24, url: offTv.avatar),
+                  );
+                }
+                return TextSpan(
+                  text: t,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                );
+              },
+            ),
           ),
         ),
-        Expanded(child: SizedBox.shrink()),
-      ],
+      ),
+    );
+  }
+
+  Widget _createConnectionIndicator() {
+    return Positioned(
+      top: 16,
+      right: 16,
+      child: Container(
+        width: 8,
+        height: 8,
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(4),
+          color:
+              _state == WsState.connected
+                  ? Color(0xFF51FD0B)
+                  : Color(0xFFCD0017),
+        ),
+      ),
+    );
+  }
+
+  Widget _createRewardsWidget(BuildContext context) {
+    return AnimatedListView(
+      padding: EdgeInsets.symmetric(vertical: 8),
+      items: _rewards,
+      itemBuilder: (context, index) {
+        final reward = _rewards[index];
+        return _RewardWidget(event: reward, key: ValueKey(reward.id));
+      },
+      enterTransition: [SlideInLeft()],
+      exitTransition: [SlideInLeft()],
+      isSameItem: (a, b) => a.id == b.id,
     );
   }
 
   final _rewards = <_UserRedeemedEvent>[];
 
   final _receivedEventIds = <String>{};
+
+  _UserRedeemedEvent? _offTv;
+
+  static const _offTvDuration = Duration(seconds: 30);
+
+  bool get _off {
+    final off = _offTv;
+    return off != null && off.time.add(_offTvDuration).isAfter(DateTime.now());
+  }
+
+  Future<void> _handleReward(_UserRedeemedEvent reward) async {
+    if ('Дуля (30с)' == reward.reward) {
+      if (!_off) {
+        _crtOffFinished = false;
+      }
+
+      setState(() {
+        _offTv = reward;
+      });
+
+      await Future.delayed(_offTvDuration);
+
+      setState(() {});
+    }
+  }
 
   void _handleWebsocketMessage(dynamic event) async {
     final json = jsonEncode(event);
@@ -166,6 +221,8 @@ class _State extends State<LoggedWidget> {
         cost: cost ?? 0,
       );
 
+      _handleReward(event);
+
       setState(() {
         _rewards.add(event);
       });
@@ -181,6 +238,14 @@ class _State extends State<LoggedWidget> {
   }
 
   final _users = <String, UserDto>{};
+
+  bool _crtOffFinished = false;
+
+  void _handleCrtOff() {
+    setState(() {
+      _crtOffFinished = true;
+    });
+  }
 }
 
 class _RewardWidget extends StatelessWidget {

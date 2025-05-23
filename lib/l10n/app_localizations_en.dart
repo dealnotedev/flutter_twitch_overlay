@@ -18,4 +18,9 @@ class AppLocalizationsEn extends AppLocalizations {
   ) {
     return '$user redeemed $reward for $currency_icon $cost';
   }
+
+  @override
+  String by_user(String user_avatar, String user) {
+    return 'by $user_avatar $user';
+  }
 }
