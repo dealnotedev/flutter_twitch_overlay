@@ -154,9 +154,9 @@ class _State extends State<ScreenAttackGameWidget> {
       final removed = <_Sticker>{};
 
       for (var s in _stickers) {
-        s.y += s.speed;
+        s.cy += s.speed;
 
-        if (s.y > _height) {
+        if (s.cy - (s.image.halfHeight / 2.0) > _height) {
           removed.add(s);
         }
       }
@@ -189,8 +189,8 @@ class _State extends State<ScreenAttackGameWidget> {
 
     final sticker = _Sticker(
       image: image,
-      x: x,
-      y: y,
+      cx: x,
+      cy: y,
       asset: randomSticker,
       speed: speed,
       anim: true,
@@ -251,8 +251,8 @@ class _State extends State<ScreenAttackGameWidget> {
     if (s.anim) {
       final size = 240.0;
       return Positioned(
-        left: s.x - (size / 2.0),
-        top: s.y - (size / 2.0),
+        left: s.cx - (size / 2.0),
+        top: s.cy - (size / 2.0),
         child: LottieBuilder.asset(
           Assets.assetsBoomWhite,
           width: size,
@@ -262,8 +262,8 @@ class _State extends State<ScreenAttackGameWidget> {
       );
     }
 
-    final x = s.x - (s.image.halfWidth / 2.0);
-    final y = s.y - (s.image.halfHeight / 2.0);
+    final x = s.cx - (s.image.halfWidth / 2.0);
+    final y = s.cy - (s.image.halfHeight / 2.0);
     return Positioned(
       top: y,
       left: x,
@@ -310,16 +310,16 @@ class _Sticker {
   final String asset;
   final img.Image image;
   final double speed;
-  final double x;
+  final double cx;
 
-  double y;
+  double cy;
 
   bool anim;
 
   _Sticker({
     required this.image,
-    required this.x,
-    required this.y,
+    required this.cx,
+    required this.cy,
     required this.asset,
     required this.speed,
     required this.anim,
