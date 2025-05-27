@@ -303,11 +303,15 @@ class _State extends State<LoggedWidget> {
   }
 
   void _handleTimerTick(_) {
-    setState(() {
-      _rewards.removeWhere(
-        (e) => DateTime.now().difference(e.time) > Duration(milliseconds: 7500),
-      );
-    });
+    final sizeBefore = _rewards.length;
+
+    _rewards.removeWhere(
+      (e) => DateTime.now().difference(e.time) > Duration(milliseconds: 7500),
+    );
+
+    if (_rewards.length != sizeBefore) {
+      setState(() {});
+    }
   }
 
   final _users = <String, UserDto>{};
