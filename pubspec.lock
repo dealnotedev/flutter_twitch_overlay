@@ -81,6 +81,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
+  cool_background_animation:
+    dependency: "direct main"
+    description:
+      name: cool_background_animation
+      sha256: "87f82f4f1126d88281e2700c665c4e93eb4cb1b0bc100c68c5fa187dd0859611"
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.1.0"
   crypto:
     dependency: transitive
     description:

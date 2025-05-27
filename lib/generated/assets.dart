@@ -20,4 +20,5 @@ class Assets {
   static const String assetsImgSticker7 = 'assets/img_sticker_7.webp';
   static const String assetsImgSticker8 = 'assets/img_sticker_8.webp';
   static const String assetsImgSticker9 = 'assets/img_sticker_9.webp';
+  static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
 }

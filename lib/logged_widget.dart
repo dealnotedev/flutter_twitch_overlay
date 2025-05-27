@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
+import 'package:cool_background_animation/cool_background_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -84,6 +85,11 @@ class _State extends State<LoggedWidget> {
         ],
         _createRewardsWidget(context),
         if (follow != null) ...[
+          LayoutBuilder(
+            builder: (ctx, sizes) {
+              return MultipleBalloons(areaConstraints: sizes);
+            },
+          ),
           Align(
             alignment: Alignment.center,
             child: _FollowWidget(event: follow, key: ValueKey(follow.time)),
@@ -172,6 +178,10 @@ class _State extends State<LoggedWidget> {
 
   Future<void> _handleReward(_UserRedeemedEvent reward) async {
     if ('Дуля (30с)' == reward.reward) {
+      ObsAudio.loadAsset(Assets.assetsTvOffSound).then((id) {
+        ObsAudio.play(id);
+      });
+
       if (!_off) {
         _crtOffFinished = false;
       }
@@ -387,52 +397,71 @@ class _FollowWidget extends StatelessWidget {
     final userName = event.userName;
     final user = event.user;
 
-    return Container(
-      padding: EdgeInsets.all(16),
-      constraints: BoxConstraints(maxWidth: 512),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(64),
-        color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          LottieBuilder.asset(
-            Assets.assetsFollowAnimation,
-            width: 306,
-            height: 189,
-            repeat: false,
-            frameRate: FrameRate.max,
+    return Stack(
+      children: [
+        Positioned(
+          top: 0,
+          bottom: 0,
+          right: 0,
+          left: 0,
+          child: BubbleBackground(
+            bubbleColors: [
+              Color(0xFFFCE9B9),
+              Color(0xFFF58A1F),
+              Color(0xFFFFB000),
+              Color(0xFFFFCC59),
+            ],
+            numberOfBubbles: 16,
           ),
-          Gap(16),
-          RichText(
-            textAlign: TextAlign.center,
-            text: TextSpan(
-              style: TextStyle(fontSize: 40),
-              children: SpanUtil.createSpansAdvanced(
-                context.localizations.user_now_following_title(
-                  _avatarPlaceholder,
-                  userName,
-                ),
-                [_avatarPlaceholder, userName],
-                (t) {
-                  if (t == _avatarPlaceholder) {
-                    return WidgetSpan(
-                      alignment: PlaceholderAlignment.middle,
-                      child: Avatar(size: 40, url: user?.profileImageUrl),
-                    );
-                  }
-                  return TextSpan(
-                    text: t,
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  );
-                },
+        ),
+        Container(
+          padding: EdgeInsets.all(16),
+          constraints: BoxConstraints(maxWidth: 512),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(128),
+            color: Color(0xFF3C3C3C).withValues(alpha: 0.75),
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              LottieBuilder.asset(
+                Assets.assetsFollowAnimation,
+                width: 306,
+                height: 189,
+                repeat: false,
+                frameRate: FrameRate.max,
               ),
-            ),
+              Gap(16),
+              RichText(
+                textAlign: TextAlign.center,
+                text: TextSpan(
+                  style: TextStyle(fontSize: 40),
+                  children: SpanUtil.createSpansAdvanced(
+                    context.localizations.user_now_following_title(
+                      _avatarPlaceholder,
+                      userName,
+                    ),
+                    [_avatarPlaceholder, userName],
+                    (t) {
+                      if (t == _avatarPlaceholder) {
+                        return WidgetSpan(
+                          alignment: PlaceholderAlignment.middle,
+                          child: Avatar(size: 40, url: user?.profileImageUrl),
+                        );
+                      }
+                      return TextSpan(
+                        text: t,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      );
+                    },
+                  ),
+                ),
+              ),
+              Gap(16),
+            ],
           ),
-          Gap(16),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }
