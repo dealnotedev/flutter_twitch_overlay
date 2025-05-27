@@ -4,21 +4,50 @@ import 'package:flutter/services.dart';
 
 class ObsAudio {
   static const _ch = BasicMessageChannel<String>('obs_audio', StringCodec());
-  static int _nextId = 1;
+
+  static final _slots = <String, int>{};
+
+  static int _allocSlot() {
+    for (var id = 0; id < 256; id++) {
+      if (_slots.containsValue(id)) {
+        continue;
+      }
+      return id;
+    }
+    throw StateError('All 256 audio slots are in use!');
+  }
 
   /// Loads an asset, returns a numeric handle.
   static Future<int> loadAsset(String asset) async {
-    final id = _nextId++;
+    final int id = _idFor(asset);
+
     await _ch.send(jsonEncode({'cmd': 'load', 'id': id, 'asset': asset}));
+    return id;
+  }
+
+  static int _idFor(String file) {
+    final previous = _slots[file];
+
+    final int id;
+    if (previous != null) {
+      id = previous;
+    } else {
+      final next = _allocSlot();
+      _slots[file] = next;
+      id = next;
+    }
+
     return id;
   }
 
   /// Loads a file, returns a numeric handle.
   static Future<int> loadFile(String path) async {
-    final id = _nextId++;
+    final int id = _idFor(path);
+
     await _ch.send(
       jsonEncode({'cmd': 'load', 'id': id, 'absolute_path': path}),
     );
+
     return id;
   }
 
