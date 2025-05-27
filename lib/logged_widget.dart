@@ -5,10 +5,12 @@ import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
+import 'package:lottie/lottie.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/generated/assets.dart';
+import 'package:obssource/obs_audio.dart';
 import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/settings.dart';
@@ -68,7 +70,7 @@ class _State extends State<LoggedWidget> {
   @override
   Widget build(BuildContext context) {
     final offTv = _offTv;
-
+    final follow = _followBanner;
     return Stack(
       children: [
         ScreenAttackGameWidget(locator: widget.locator),
@@ -81,6 +83,12 @@ class _State extends State<LoggedWidget> {
           if (offTv != null) ...[_createOffTvByWidget(offTv)],
         ],
         _createRewardsWidget(context),
+        if (follow != null) ...[
+          Align(
+            alignment: Alignment.center,
+            child: _FollowWidget(event: follow, key: ValueKey(follow.time)),
+          ),
+        ],
       ],
     );
   }
@@ -178,48 +186,83 @@ class _State extends State<LoggedWidget> {
     }
   }
 
+  _UserFollowEvent? _followBanner;
+
+  Completer<_UserFollowEvent>? _followCompleter;
+
+  static const _followDuration = Duration(seconds: 10);
+
+  void _handleUserFollow(WsMessageEvent event) async {
+    final user = await _getUser(event.userId);
+    final userName = event.userName;
+
+    if (userName != null) {
+      final follow = _UserFollowEvent(
+        time: DateTime.now(),
+        end: DateTime.now().add(_followDuration),
+        userName: userName,
+        user: user,
+      );
+
+      await _followCompleter?.future;
+
+      ObsAudio.loadAsset(Assets.assetsFollowSound).then((id) {
+        ObsAudio.play(id);
+      });
+
+      final completer = _followCompleter = Completer<_UserFollowEvent>();
+
+      setState(() {
+        _followBanner = follow;
+      });
+
+      await Future.delayed(_followDuration);
+
+      setState(() {
+        _followBanner = null;
+      });
+
+      completer.complete(follow);
+    }
+  }
+
   void _handleWebsocketMessage(dynamic data) async {
     final json = jsonEncode(data);
     print('EVENT $json');
 
-    final event = WsMessage.fromJson(data);
+    final message = WsMessage.fromJson(data);
+    final event = message.payload.event;
 
-    final eventId = event.payload.event?.id;
+    final eventId = event?.id;
     if (eventId != null && !_receivedEventIds.add(eventId)) {
       // Remove duplicates
       return;
     }
 
-    final userId = event.payload.event?.userId;
-    final userName = event.payload.event?.userId;
+    if (event != null &&
+        message.payload.subscription?.type == 'channel.follow') {
+      _handleUserFollow(event);
+      return;
+    }
 
-    final reward = event.payload.event?.reward?.title;
-    final cost = event.payload.event?.reward?.cost;
+    final userId = event?.userId;
+    final userName = event?.userName;
+
+    final reward = event?.reward?.title;
+    final cost = event?.reward?.cost;
 
     if (eventId != null &&
         userId != null &&
         userName != null &&
         reward != null) {
-      final UserDto user;
-
-      final UserDto? cached = _users[userId];
-      if (cached != null) {
-        user = cached;
-      } else {
-        final api = TwitchApi(
-          settings: _settings,
-          clientSecret: twitchClientSecret,
-        );
-        user = await api.getUser(id: userId);
-        _users[userId] = user;
-      }
+      final UserDto? user = await _getUser(userId);
 
       final event = _UserRedeemedEvent(
         eventId,
         time: DateTime.now(),
         user: userName,
         reward: reward,
-        avatar: user.profileImageUrl,
+        avatar: user?.profileImageUrl,
         cost: cost ?? 0,
       );
 
@@ -228,6 +271,24 @@ class _State extends State<LoggedWidget> {
       setState(() {
         _rewards.add(event);
       });
+    }
+  }
+
+  Future<UserDto?> _getUser(String? userId) async {
+    if (userId != null) {
+      final UserDto? cached = _users[userId];
+      if (cached != null) {
+        return cached;
+      }
+      final api = TwitchApi(
+        settings: _settings,
+        clientSecret: twitchClientSecret,
+      );
+      final user = await api.getUser(id: userId);
+      _users[userId] = user;
+      return user;
+    } else {
+      return null;
     }
   }
 
@@ -312,6 +373,82 @@ class _RewardWidget extends StatelessWidget {
       ),
     );
   }
+}
+
+class _FollowWidget extends StatelessWidget {
+  final _UserFollowEvent event;
+
+  const _FollowWidget({super.key, required this.event});
+
+  static const _avatarPlaceholder = '{avatart_placeholder}';
+
+  @override
+  Widget build(BuildContext context) {
+    final userName = event.userName;
+    final user = event.user;
+
+    return Container(
+      padding: EdgeInsets.all(16),
+      constraints: BoxConstraints(maxWidth: 512),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(64),
+        color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          LottieBuilder.asset(
+            Assets.assetsFollowAnimation,
+            width: 306,
+            height: 189,
+            repeat: false,
+            frameRate: FrameRate.max,
+          ),
+          Gap(16),
+          RichText(
+            textAlign: TextAlign.center,
+            text: TextSpan(
+              style: TextStyle(fontSize: 40),
+              children: SpanUtil.createSpansAdvanced(
+                context.localizations.user_now_following_title(
+                  _avatarPlaceholder,
+                  userName,
+                ),
+                [_avatarPlaceholder, userName],
+                (t) {
+                  if (t == _avatarPlaceholder) {
+                    return WidgetSpan(
+                      alignment: PlaceholderAlignment.middle,
+                      child: Avatar(size: 40, url: user?.profileImageUrl),
+                    );
+                  }
+                  return TextSpan(
+                    text: t,
+                    style: TextStyle(fontWeight: FontWeight.bold),
+                  );
+                },
+              ),
+            ),
+          ),
+          Gap(16),
+        ],
+      ),
+    );
+  }
+}
+
+class _UserFollowEvent {
+  final DateTime time;
+  final DateTime end;
+  final String userName;
+  final UserDto? user;
+
+  _UserFollowEvent({
+    required this.userName,
+    required this.user,
+    required this.time,
+    required this.end,
+  });
 }
 
 class _UserRedeemedEvent {

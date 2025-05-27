@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
@@ -7,14 +9,14 @@ import 'package:obssource/settings.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
 
 void main() async {
-  print('APP STARTED');
-
   final settings = Settings();
   await settings.init();
 
   final locator = AppServiceLocator.init(settings);
 
   runApp(MyApp(locator: locator));
+
+  print('APP STARTED ${Platform.resolvedExecutable}');
 }
 
 class MyApp extends StatelessWidget {

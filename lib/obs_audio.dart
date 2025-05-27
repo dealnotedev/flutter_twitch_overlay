@@ -7,9 +7,18 @@ class ObsAudio {
   static int _nextId = 1;
 
   /// Loads an asset, returns a numeric handle.
-  static Future<int> load(String asset) async {
+  static Future<int> loadAsset(String asset) async {
     final id = _nextId++;
     await _ch.send(jsonEncode({'cmd': 'load', 'id': id, 'asset': asset}));
+    return id;
+  }
+
+  /// Loads a file, returns a numeric handle.
+  static Future<int> loadFile(String path) async {
+    final id = _nextId++;
+    await _ch.send(
+      jsonEncode({'cmd': 'load', 'id': id, 'absolute_path': path}),
+    );
     return id;
   }
 

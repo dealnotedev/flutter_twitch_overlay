@@ -110,6 +110,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'by {user_avatar} {user}'**
   String by_user(String user_avatar, String user);
+
+  /// No description provided for @user_now_following_title.
+  ///
+  /// In en, this message translates to:
+  /// **'{user_avatar} {user} just followed!'**
+  String user_now_following_title(String user_avatar, String user);
 }
 
 class _AppLocalizationsDelegate

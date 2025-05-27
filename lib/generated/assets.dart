@@ -3,6 +3,8 @@ class Assets {
   Assets._();
 
   static const String assetsBoomWhite = 'assets/boom_white.json';
+  static const String assetsFollowAnimation = 'assets/follow_animation.json';
+  static const String assetsFollowSound = 'assets/follow_sound.mp3';
   static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
   static const String assetsIcDulya = 'assets/ic_dulya.png';
   static const String assetsIcTwitchChannelPosints32dp =

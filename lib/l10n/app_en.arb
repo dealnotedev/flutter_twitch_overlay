@@ -32,5 +32,18 @@
         "example": "kekotopko"
       }
     }
+  },
+  "user_now_following_title": "{user_avatar} {user} just followed!",
+  "@user_now_following_title": {
+    "placeholders": {
+      "user_avatar": {
+        "type": "String",
+        "example": "url"
+      },
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      }
+    }
   }
 }

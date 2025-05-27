@@ -23,4 +23,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String by_user(String user_avatar, String user) {
     return 'by $user_avatar $user';
   }
+
+  @override
+  String user_now_following_title(String user_avatar, String user) {
+    return '$user_avatar $user just followed!';
+  }
 }
