@@ -10,9 +10,9 @@ class TwitchAuthenticator {
   final String oauthRedirectUrl;
 
   static const _scope =
-      'channel:read:redemptions';
+      'channel:read:redemptions moderator:read:followers';
   static const _scopeEncoded =
-      'channel%3Aread%3Aredemptions';
+      'channel%3Aread%3Aredemptions+moderator%3Aread%3Afollowers';
 
   TwitchAuthenticator(
       {required this.clientId,

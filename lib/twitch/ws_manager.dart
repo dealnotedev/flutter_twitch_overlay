@@ -158,6 +158,11 @@ class WebSocketManager {
         sessionId: sessionId,
       );
 
+      await api.subscribeFollowEvents(
+        broadcasterUserId: _settings.twitchAuth?.broadcasterId,
+        sessionId: sessionId,
+      );
+
       _registeredSessionIds.add(sessionId);
     } on DioException catch (e) {
       print('Api Error ${e.response?.statusCode} with message ${e.message}');

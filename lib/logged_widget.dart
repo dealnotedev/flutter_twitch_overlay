@@ -16,6 +16,7 @@ import 'package:obssource/span_util.dart';
 import 'package:obssource/srt_off.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
+import 'package:obssource/twitch/ws_event.dart';
 import 'package:obssource/twitch/ws_manager.dart';
 
 class LoggedWidget extends StatefulWidget {
@@ -177,22 +178,23 @@ class _State extends State<LoggedWidget> {
     }
   }
 
-  void _handleWebsocketMessage(dynamic event) async {
-    final json = jsonEncode(event);
+  void _handleWebsocketMessage(dynamic data) async {
+    final json = jsonEncode(data);
     print('EVENT $json');
 
-    final eventId = event['payload']?['event']?['id'] as String?;
+    final event = WsMessage.fromJson(data);
 
+    final eventId = event.payload.event?.id;
     if (eventId != null && !_receivedEventIds.add(eventId)) {
       // Remove duplicates
       return;
     }
 
-    final userId = event['payload']?['event']?['user_id'] as String?;
-    final userName = event['payload']?['event']?['user_name'] as String?;
+    final userId = event.payload.event?.userId;
+    final userName = event.payload.event?.userId;
 
-    final reward = event['payload']?['event']?['reward']?['title'] as String?;
-    final cost = event['payload']?['event']?['reward']?['cost'] as int?;
+    final reward = event.payload.event?.reward?.title;
+    final cost = event.payload.event?.reward?.cost;
 
     if (eventId != null &&
         userId != null &&
