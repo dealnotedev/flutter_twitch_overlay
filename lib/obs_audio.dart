@@ -19,36 +19,45 @@ class ObsAudio {
 
   /// Loads an asset, returns a numeric handle.
   static Future<int> loadAsset(String asset) async {
-    final int id = _idFor(asset);
+    final id = _idFor(asset);
 
-    await _ch.send(jsonEncode({'cmd': 'load', 'id': id, 'asset': asset}));
-    return id;
+    if (!id.$2) {
+      await _ch.send(jsonEncode({'cmd': 'load', 'id': id.$1, 'asset': asset}));
+    }
+
+    return id.$1;
   }
 
-  static int _idFor(String file) {
+  static (int, bool) _idFor(String file) {
     final previous = _slots[file];
 
+    final bool reuse;
     final int id;
+
     if (previous != null) {
       id = previous;
+      reuse = true;
     } else {
       final next = _allocSlot();
       _slots[file] = next;
       id = next;
+      reuse = false;
     }
 
-    return id;
+    return (id, reuse);
   }
 
   /// Loads a file, returns a numeric handle.
   static Future<int> loadFile(String path) async {
-    final int id = _idFor(path);
+    final id = _idFor(path);
 
-    await _ch.send(
-      jsonEncode({'cmd': 'load', 'id': id, 'absolute_path': path}),
-    );
+    if (!id.$2) {
+      await _ch.send(
+        jsonEncode({'cmd': 'load', 'id': id, 'absolute_path': path}),
+      );
+    }
 
-    return id;
+    return id.$1;
   }
 
   static Future<void> play(
