@@ -55,88 +55,66 @@ class _CRTOffAnimationState extends State<CRTOffAnimation>
 
 class _CRTOffPainter extends CustomPainter {
   final double progress;
+
   static const double minStripeHeight = 4.0;
   static const double minStripeWidth = 4.0;
 
   _CRTOffPainter(this.progress);
 
+  final paintBlack = Paint()..color = Colors.black;
+
+  final paintWhite = Paint()..color = Colors.white;
+
   @override
   void paint(Canvas canvas, Size size) {
-    final center = Offset(size.width / 2, size.height / 2);
+    final double width = size.width;
+    final double height = size.height;
 
     final double maskTop, maskBottom;
     final double stripeHeight;
-    double stripeWidth;
-    double lineOpacity = 1.0;
+    final double stripeWidth;
+    final double opacity;
 
     if (progress < 0.6) {
-      double maskPhase = progress / 0.6;
-      stripeHeight = lerpDouble(size.height, minStripeHeight, maskPhase)!;
-      maskTop = (size.height - stripeHeight) / 2;
+      final maskPhase = progress / 0.6;
+
+      stripeHeight = lerpDouble(height, minStripeHeight, maskPhase)!;
+      maskTop = (height - stripeHeight) / 2;
       maskBottom = maskTop + stripeHeight;
-      stripeWidth = size.width;
-      lineOpacity = lerpDouble(0.0, 1.0, maskPhase.clamp(0.0, 1.0))!;
-    } else if (progress < 0.85) {
-      stripeHeight = minStripeHeight;
-      maskTop = (size.height - stripeHeight) / 2;
-      maskBottom = maskTop + stripeHeight;
-      stripeWidth = size.width;
-      lineOpacity = 1.0;
+      stripeWidth = width;
+      opacity = maskPhase.clamp(0.0, 1.0);
     } else {
-      double phase = (progress - 0.85) / 0.15;
+      final linePhase = (progress - 0.6) / 0.4;
+
       stripeHeight = minStripeHeight;
-      maskTop = (size.height - stripeHeight) / 2;
+      maskTop = (height - stripeHeight) / 2;
       maskBottom = maskTop + stripeHeight;
       stripeWidth =
-          lerpDouble(size.width, minStripeWidth, phase.clamp(0.0, 1.0))!;
-      lineOpacity = 1.0;
-
-      if (phase >= 1.0) {
-        stripeWidth = minStripeWidth;
-      }
+          lerpDouble(width, minStripeWidth, linePhase.clamp(0.0, 1.0))!;
+      opacity = 1.0;
     }
 
-    if (maskTop > 0) {
-      canvas.drawRect(
-        Rect.fromLTRB(0, 0, size.width, maskTop),
-        Paint()..color = Colors.black,
-      );
+    if (progress >= 0.6) {
+      canvas.drawRect(Rect.fromLTRB(0, 0, width, height), paintBlack);
+    } else {
+      canvas.drawRect(Rect.fromLTRB(0, 0, width, maskTop), paintBlack);
+      canvas.drawRect(Rect.fromLTRB(0, maskBottom, width, height), paintBlack);
     }
 
-    if (maskBottom < size.height) {
-      canvas.drawRect(
-        Rect.fromLTRB(0, maskBottom, size.width, size.height),
-        Paint()..color = Colors.black,
-      );
-    }
+    final stripeLeft = (width - stripeWidth) / 2;
+    final stripeRight = stripeLeft + stripeWidth;
 
-    if (stripeWidth < size.width) {
-      double left = (size.width - stripeWidth) / 2;
-      double right = left + stripeWidth;
-      if (left > 0) {
-        canvas.drawRect(
-          Rect.fromLTRB(0, maskTop, left, maskBottom),
-          Paint()..color = Colors.black,
-        );
-      }
-      if (right < size.width) {
-        canvas.drawRect(
-          Rect.fromLTRB(right, maskTop, size.width, maskBottom),
-          Paint()..color = Colors.black,
-        );
-      }
-    }
+    final whiteRect = Rect.fromLTRB(
+      stripeLeft,
+      maskTop,
+      stripeRight,
+      maskBottom,
+    );
 
-    if (lineOpacity > 0.0) {
-      final rect = Rect.fromCenter(
-        center: center,
-        width: stripeWidth,
-        height: stripeHeight,
-      );
-      final paint =
-          Paint()..color = Colors.white.withValues(alpha: lineOpacity);
-      canvas.drawRect(rect, paint);
-    }
+    canvas.drawRect(
+      whiteRect,
+      paintWhite..color = Colors.white.withValues(alpha: opacity),
+    );
   }
 
   @override
