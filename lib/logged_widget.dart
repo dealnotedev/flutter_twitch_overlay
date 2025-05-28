@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
+import 'package:obssource/animated_horizontal_mover.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
@@ -94,6 +95,13 @@ class _State extends State<LoggedWidget> {
             child: _FollowWidget(event: follow, key: ValueKey(follow.time)),
           ),
         ],
+        ..._roosters.map((r) {
+          return _RoosterWidget(
+            key: ValueKey(r.id),
+            event: r,
+            duration: _roosterDuration,
+          );
+        }),
       ],
     );
   }
@@ -192,11 +200,27 @@ class _State extends State<LoggedWidget> {
       await Future.delayed(_offTvDuration);
 
       setState(() {});
+      return;
+    }
+
+    if ('Пройтись' == reward.reward) {
+      setState(() {
+        _roosters.add(reward);
+      });
+
+      await Future.delayed(_roosterDuration);
+
+      setState(() {
+        _roosters.remove(reward);
+      });
     }
   }
 
-  _UserFollowEvent? _followBanner;
+  static const _roosterDuration = Duration(seconds: 10);
 
+  final _roosters = <_UserRedeemedEvent>{};
+
+  _UserFollowEvent? _followBanner;
   Completer<_UserFollowEvent>? _followCompleter;
 
   static const _followDuration = Duration(seconds: 10);
@@ -379,6 +403,68 @@ class _RewardWidget extends StatelessWidget {
             Gap(8),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class _RoosterWidget extends StatelessWidget {
+  final Duration duration;
+  final _UserRedeemedEvent event;
+
+  const _RoosterWidget({
+    super.key,
+    required this.event,
+    required this.duration,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedHorizontalMover(
+      duration: duration,
+      size: Size(400, 320),
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          LottieBuilder.asset(
+            Assets.assetsRooster,
+            width: 400,
+            height: 320,
+            fit: BoxFit.cover,
+            frameRate: FrameRate(60),
+          ),
+          Positioned(
+            left: 24,
+            top: 96,
+            child: Transform.rotate(
+              angle: -0.5,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(24),
+                ),
+                padding: EdgeInsets.all(8),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Avatar(size: 32, url: event.avatar),
+                    Gap(8),
+                    Text(
+                      event.user,
+                      style: TextStyle(
+                        fontSize: 16,
+                        height: 1,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Gap(8),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

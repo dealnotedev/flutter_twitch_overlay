@@ -3,6 +3,7 @@ class Assets {
   Assets._();
 
   static const String assetsBoomWhite = 'assets/boom_white.json';
+  static const String assetsCat = 'assets/cat.json';
   static const String assetsFollowAnimation = 'assets/follow_animation.json';
   static const String assetsFollowSound = 'assets/follow_sound.mp3';
   static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
@@ -20,5 +21,6 @@ class Assets {
   static const String assetsImgSticker7 = 'assets/img_sticker_7.webp';
   static const String assetsImgSticker8 = 'assets/img_sticker_8.webp';
   static const String assetsImgSticker9 = 'assets/img_sticker_9.webp';
+  static const String assetsRooster = 'assets/rooster.json';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
 }
