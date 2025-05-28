@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:convert';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:cool_background_animation/cool_background_animation.dart';
@@ -33,7 +32,7 @@ class LoggedWidget extends StatefulWidget {
 }
 
 class _State extends State<LoggedWidget> {
-  StreamSubscription<dynamic>? _eventsSubscription;
+  StreamSubscription<WsMessage>? _eventsSubscription;
   StreamSubscription<WsStateEvent>? _stateSubscription;
 
   late WsState _state;
@@ -236,11 +235,7 @@ class _State extends State<LoggedWidget> {
     }
   }
 
-  void _handleWebsocketMessage(dynamic data) async {
-    final json = jsonEncode(data);
-    print('EVENT $json');
-
-    final message = WsMessage.fromJson(data);
+  void _handleWebsocketMessage(WsMessage message) async {
     final event = message.payload.event;
 
     final eventId = event?.id;

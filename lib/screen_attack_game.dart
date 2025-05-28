@@ -8,6 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:lottie/lottie.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/generated/assets.dart';
+import 'package:obssource/twitch/ws_event.dart';
 import 'package:obssource/twitch/ws_manager.dart';
 
 class ScreenAttackGameWidget extends StatefulWidget {
@@ -36,7 +37,7 @@ class _State extends State<ScreenAttackGameWidget> {
 
   Ticker? _ticker;
 
-  StreamSubscription<dynamic>? _eventsSubscription;
+  StreamSubscription<WsMessage>? _eventsSubscription;
 
   late Offset velocity;
 
@@ -277,17 +278,15 @@ class _State extends State<ScreenAttackGameWidget> {
 
   final _receivedEventIds = <String>{};
 
-  void _handleWebsocketMessage(dynamic event) async {
-    final eventId = event['payload']?['event']?['id'] as String?;
+  void _handleWebsocketMessage(WsMessage message) async {
+    final eventId = message.payload.event?.id;
 
     if (eventId != null && !_receivedEventIds.add(eventId)) {
       // Remove duplicates
       return;
     }
 
-    final reward = event['payload']?['event']?['reward']?['title'] as String?;
-
-    switch (reward) {
+    switch (message.payload.event?.reward?.title) {
       case 'Плюнуть в екран':
         await Future.delayed(Duration(milliseconds: 500));
         _addRandomStickerToScreen();
