@@ -124,7 +124,9 @@ class WebSocketManager {
 
   void _destroyCurrentConnection(WsState state) {
     _subscription?.cancel();
+
     _channel?.channel.sink.close(1000);
+    _channel = null;
 
     _changeState(state);
   }
