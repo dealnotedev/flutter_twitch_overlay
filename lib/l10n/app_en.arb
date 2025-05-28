@@ -45,5 +45,6 @@
         "example": "kekotopko"
       }
     }
-  }
+  },
+  "chat_first_message": "First message"
 }

@@ -45,8 +45,14 @@ class WsMessageEvent {
   final WsReward? reward;
   final WsChatMessage? message;
 
+  final String? chatterUserName;
+  final String? chatterUserId;
+
   /*Example: text, power_ups_gigantified_emote, power_ups_message_effect*/
   final String? messageType;
+
+  final String? messageId;
+  final String? color;
 
   WsMessageEvent({
     required this.id,
@@ -55,6 +61,10 @@ class WsMessageEvent {
     required this.reward,
     required this.message,
     required this.messageType,
+    required this.chatterUserId,
+    required this.chatterUserName,
+    required this.messageId,
+    required this.color
   });
 
   static WsMessageEvent fromJson(dynamic json) {
@@ -67,6 +77,10 @@ class WsMessageEvent {
       message: messageJson != null ? WsChatMessage.fromJson(messageJson) : null,
       reward: rewardJson != null ? WsReward.fromJson(rewardJson) : null,
       messageType: json['message_type'] as String?,
+        chatterUserId: json['chatter_user_id'] as String?,
+        chatterUserName: json['chatter_user_name'] as String?,
+        messageId: json['message_id'] as String?,
+        color: json['color'] as String?
     );
   }
 }

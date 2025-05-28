@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cool_background_animation/cool_background_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
@@ -202,23 +203,11 @@ class _State extends State<LoggedWidget> {
       setState(() {});
       return;
     }
-
-    if ('Пройтись' == reward.reward) {
-      setState(() {
-        _roosters.add(reward);
-      });
-
-      await Future.delayed(_roosterDuration);
-
-      setState(() {
-        _roosters.remove(reward);
-      });
-    }
   }
 
   static const _roosterDuration = Duration(seconds: 10);
 
-  final _roosters = <_UserRedeemedEvent>{};
+  final _roosters = <_Rooster>{};
 
   _UserFollowEvent? _followBanner;
   Completer<_UserFollowEvent>? _followCompleter;
@@ -271,6 +260,12 @@ class _State extends State<LoggedWidget> {
     if (event != null &&
         message.payload.subscription?.type == 'channel.follow') {
       _handleUserFollow(event);
+      return;
+    }
+
+    final msg = event?.message;
+    if (msg != null) {
+      _handleChatMessage(message, msg);
       return;
     }
 
@@ -342,6 +337,63 @@ class _State extends State<LoggedWidget> {
       _crtOffFinished = true;
     });
   }
+
+  Future<void> _handleChatMessage(WsMessage event, WsChatMessage msg) async {
+    final user = await _getUser(event.payload.event?.chatterUserId);
+    final name = event.payload.event?.chatterUserName;
+    final id = event.payload.event?.messageId;
+
+    if (name != null && id != null) {
+      final spans = msg.fragments.map<InlineSpan>((f) {
+        switch (f.type) {
+          case WsFragmentType.text:
+          case WsFragmentType.mention:
+          case WsFragmentType.unknown:
+            return TextSpan(text: f.text);
+
+          case WsFragmentType.emote:
+            final format =
+                (f.emote?.format.contains('animated') ?? false)
+                    ? 'animated'
+                    : 'static';
+            final url =
+                'https://static-cdn.jtvnw.net/emoticons/v2/${f.emote?.id}/$format/dark/2.0';
+            return WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: CachedNetworkImage(
+                filterQuality: FilterQuality.high,
+                imageUrl: url,
+                width: 24,
+                height: 24,
+              ),
+            );
+        }
+      });
+
+      final rooster = _Rooster(
+        avatar: user?.profileImageUrl,
+        name: name,
+        id: id,
+        text: [
+          TextSpan(
+            text: '$name: ',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          ...spans,
+        ],
+      );
+
+      setState(() {
+        _roosters.add(rooster);
+      });
+
+      await Future.delayed(_roosterDuration);
+
+      setState(() {
+        _roosters.remove(rooster);
+      });
+    }
+  }
 }
 
 class _RewardWidget extends StatelessWidget {
@@ -408,9 +460,23 @@ class _RewardWidget extends StatelessWidget {
   }
 }
 
+class _Rooster {
+  final String? avatar;
+  final String name;
+  final String id;
+  final List<InlineSpan> text;
+
+  _Rooster({
+    required this.avatar,
+    required this.name,
+    required this.id,
+    required this.text,
+  });
+}
+
 class _RoosterWidget extends StatelessWidget {
   final Duration duration;
-  final _UserRedeemedEvent event;
+  final _Rooster event;
 
   const _RoosterWidget({
     super.key,
@@ -434,33 +500,52 @@ class _RoosterWidget extends StatelessWidget {
             frameRate: FrameRate(60),
           ),
           Positioned(
-            left: 24,
-            top: 96,
+            left: 256,
+            bottom: 200,
             child: Transform.rotate(
-              angle: -0.5,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(24),
-                ),
-                padding: EdgeInsets.all(8),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Avatar(size: 32, url: event.avatar),
-                    Gap(8),
-                    Text(
-                      event.user,
-                      style: TextStyle(
-                        fontSize: 16,
-                        height: 1,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white,
+              angle: -0.25,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Gap(16),
+                      Avatar(size: 24, url: event.avatar),
+                      Gap(8),
+                      Text(
+                        context.localizations.chat_first_message,
+                        style: TextStyle(fontSize: 16, color: Colors.white),
                       ),
+                    ],
+                  ),
+                  Gap(8),
+                  Container(
+                    constraints: BoxConstraints(maxWidth: 448),
+                    decoration: BoxDecoration(
+                      color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
+                      borderRadius: BorderRadius.circular(24),
                     ),
-                    Gap(8),
-                  ],
-                ),
+                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Flexible(
+                          child: RichText(
+                            textWidthBasis: TextWidthBasis.longestLine,
+                            text: TextSpan(
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                              ),
+                              children: event.text,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
           ),
