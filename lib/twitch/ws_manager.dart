@@ -13,24 +13,35 @@ import 'package:rxdart/rxdart.dart';
 import 'package:web_socket_channel/io.dart';
 
 class WebSocketManager {
-  final _subject = StreamController<WsMessage>.broadcast();
-
+  final bool _listenChat;
   final String _url;
   final Settings _settings;
+
+  final _registrations = <_Registration>{};
+
+  final _messagesSubject = StreamController<WsMessage>.broadcast();
   final _stateSubject = StreamController<WsStateEvent>.broadcast();
 
-  WsState currentState = WsState.idle;
-
-  _Channel? _channel;
-  StreamSubscription<dynamic>? _subscription;
-
-  final bool listenChat;
-
-  WebSocketManager(this._url, this._settings, {required this.listenChat}) {
-    _settings.twitchAuthStream.listen(_handleAuth);
-  }
+  WsState _state = WsState.idle;
 
   DateTime? _lastDisconnectTime;
+
+  bool _waitReconnect = false;
+
+  _Channel? _channel;
+
+  StreamSubscription<dynamic>? _subscription;
+
+  Completer<void>? _registrationCompleter;
+
+  WsState get currentState => _state;
+
+  Stream<WsMessage> get messages => _messagesSubject.stream;
+
+  WebSocketManager(this._url, this._settings, {required bool listenChat})
+    : _listenChat = listenChat {
+    _settings.twitchAuthStream.listen(_handleAuth);
+  }
 
   void _changeState(WsState state) {
     debugPrint('Ws state: $state');
@@ -57,8 +68,8 @@ class WebSocketManager {
         break;
     }
 
-    final stateBefore = currentState;
-    currentState = state;
+    final stateBefore = _state;
+    _state = state;
 
     _stateSubject.add(
       WsStateEvent(stateBefore, state, offlineDuration: offlineDuration),
@@ -66,14 +77,14 @@ class WebSocketManager {
   }
 
   Stream<WsStateEvent> get state => Stream.value(
-    WsStateEvent(currentState, currentState),
+    WsStateEvent(_state, _state),
   ).concatWith([_stateSubject.stream]);
 
   Stream<WsState> get stateShanges =>
       _stateSubject.stream.map((event) => event.current);
 
   void _connectInternal() async {
-    switch (currentState) {
+    switch (_state) {
       case WsState.connected:
       case WsState.initialConnecting:
       case WsState.reconnecting:
@@ -116,7 +127,7 @@ class WebSocketManager {
       print('WEBSOCKET $encoded');
 
       final msg = WsMessage.fromJson(json);
-      _subject.add(msg);
+      _messagesSubject.add(msg);
     }, onDone: _onClosed);
   }
 
@@ -132,10 +143,6 @@ class WebSocketManager {
 
     _changeState(state);
   }
-
-  Stream<WsMessage> get messages => _subject.stream;
-
-  bool _waitReconnect = false;
 
   void _onClosed() {
     _destroyCurrentConnection(WsState.disconnected);
@@ -158,7 +165,7 @@ class WebSocketManager {
       return;
     }
 
-    switch (currentState) {
+    switch (_state) {
       case WsState.connected:
         _checkWsRegistration();
         break;
@@ -173,10 +180,6 @@ class WebSocketManager {
         break;
     }
   }
-
-  final _registrations = <_Registration>{};
-
-  Completer<void>? _registrationCompleter;
 
   void _checkWsRegistration() async {
     final sessionId = _channel?.sessionId;
@@ -212,7 +215,7 @@ class WebSocketManager {
         ),
       );
 
-      if (listenChat) {
+      if (_listenChat) {
         await _registerInternal(
           api,
           _Registration(
