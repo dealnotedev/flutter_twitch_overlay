@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -29,5 +30,8 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get chat_first_message => 'First message';
+  String get chat_message_first => 'First message';
+
+  @override
+  String get chat_message_highlighted => 'Highlighted';
 }

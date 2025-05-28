@@ -46,5 +46,6 @@
       }
     }
   },
-  "chat_first_message": "First message"
+  "chat_message_first": "First message",
+  "chat_message_highlighted": "Highlighted"
 }

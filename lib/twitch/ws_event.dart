@@ -48,7 +48,7 @@ class WsMessageEvent {
   final String? chatterUserName;
   final String? chatterUserId;
 
-  /*Example: text, power_ups_gigantified_emote, power_ups_message_effect*/
+  /*Example: text, power_ups_gigantified_emote, power_ups_message_effect, channel_points_highlighted*/
   final String? messageType;
 
   final String? messageId;

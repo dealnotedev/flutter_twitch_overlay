@@ -370,11 +370,30 @@ class _State extends State<LoggedWidget> {
         }
       });
 
+      if (!mounted) return;
+
+      final String title;
+      final Color color;
+
+      if ('channel_points_highlighted' == event.payload.event?.messageType) {
+        title = context.localizations.chat_message_highlighted;
+        color = Color(0xFFFF6905);
+      } else {
+        title = context.localizations.chat_message_first;
+        color = Color(0xFF8829FF);
+      }
+
       final rooster = _Rooster(
-        avatar: user?.profileImageUrl,
-        name: name,
+        color: color,
+        title: title,
         id: id,
         text: [
+          WidgetSpan(
+            alignment: PlaceholderAlignment.middle,
+            child: Avatar(size: 24, url: user?.profileImageUrl),
+          ),
+          TextSpan(text: ' '),
+          TextSpan(text: ' '),
           TextSpan(
             text: '$name: ',
             style: TextStyle(fontWeight: FontWeight.bold),
@@ -461,17 +480,13 @@ class _RewardWidget extends StatelessWidget {
 }
 
 class _Rooster {
-  final String? avatar;
-  final String name;
+  final Color color;
+  final String title;
   final String id;
   final List<InlineSpan> text;
 
-  _Rooster({
-    required this.avatar,
-    required this.name,
-    required this.id,
-    required this.text,
-  });
+  _Rooster(
+      {required this.id, required this.text, required this.title, required this.color});
 }
 
 class _RoosterWidget extends StatelessWidget {
@@ -504,45 +519,47 @@ class _RoosterWidget extends StatelessWidget {
             bottom: 200,
             child: Transform.rotate(
               angle: -0.25,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              child: Stack(
+                clipBehavior: Clip.none,
                 children: [
-                  Row(
-                    children: [
-                      Gap(16),
-                      Avatar(size: 24, url: event.avatar),
-                      Gap(8),
-                      Text(
-                        context.localizations.chat_first_message,
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                      ),
-                    ],
-                  ),
-                  Gap(8),
                   Container(
                     constraints: BoxConstraints(maxWidth: 448),
                     decoration: BoxDecoration(
                       color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
                       borderRadius: BorderRadius.circular(24),
                     ),
-                    padding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Flexible(
-                          child: RichText(
-                            textWidthBasis: TextWidthBasis.longestLine,
-                            text: TextSpan(
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                              ),
-                              children: event.text,
-                            ),
-                          ),
+                    padding: EdgeInsets.only(
+                      left: 16,
+                      right: 16,
+                      bottom: 12,
+                      top: 12,
+                    ),
+                    child: RichText(
+                      textWidthBasis: TextWidthBasis.longestLine,
+                      text: TextSpan(
+                        style: TextStyle(fontSize: 16, color: Colors.white),
+                        children: event.text,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: 24,
+                    top: -16,
+                    child: Container(
+                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: event.color,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Text(
+                        event.title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          height: 1,
+                          fontWeight: FontWeight.w500,
+                          color: Colors.white,
                         ),
-                      ],
+                      ),
                     ),
                   ),
                 ],

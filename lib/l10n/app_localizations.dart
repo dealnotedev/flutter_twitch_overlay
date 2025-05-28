@@ -117,11 +117,17 @@ abstract class AppLocalizations {
   /// **'{user_avatar} {user} just followed!'**
   String user_now_following_title(String user_avatar, String user);
 
-  /// No description provided for @chat_first_message.
+  /// No description provided for @chat_message_first.
   ///
   /// In en, this message translates to:
   /// **'First message'**
-  String get chat_first_message;
+  String get chat_message_first;
+
+  /// No description provided for @chat_message_highlighted.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighted'**
+  String get chat_message_highlighted;
 }
 
 class _AppLocalizationsDelegate
