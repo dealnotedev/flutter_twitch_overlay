@@ -24,7 +24,9 @@ class WebSocketManager {
   _Channel? _channel;
   StreamSubscription<dynamic>? _subscription;
 
-  WebSocketManager(this._url, this._settings) {
+  final bool listenChat;
+
+  WebSocketManager(this._url, this._settings, {required this.listenChat}) {
     _settings.twitchAuthStream.listen(_handleAuth);
   }
 
@@ -209,6 +211,17 @@ class WebSocketManager {
           broadcasterId: broadcasterId,
         ),
       );
+
+      if (listenChat) {
+        await _registerInternal(
+          api,
+          _Registration(
+            _RegistrationType.chat,
+            sessionId: sessionId,
+            broadcasterId: broadcasterId,
+          ),
+        );
+      }
     } on DioException catch (e) {
       print('Api Error ${e.response?.statusCode} with message ${e.message}');
       rethrow;
@@ -224,6 +237,13 @@ class WebSocketManager {
     if (_registrations.contains(registration)) return;
 
     switch (registration.type) {
+      case _RegistrationType.chat:
+        await api.subscribeChat(
+          broadcasterUserId: registration.broadcasterId,
+          sessionId: registration.sessionId,
+        );
+        break;
+
       case _RegistrationType.rewards:
         await api.subscribeCustomRewards(
           broadcasterUserId: registration.broadcasterId,
@@ -251,7 +271,7 @@ class _Channel {
   _Channel({required this.channel});
 }
 
-enum _RegistrationType { rewards, follow }
+enum _RegistrationType { rewards, follow, chat }
 
 class _Registration {
   final _RegistrationType type;

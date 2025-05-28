@@ -1,7 +1,5 @@
 import 'package:obssource/di/service_locator.dart';
-import 'package:obssource/secrets.dart';
 import 'package:obssource/settings.dart';
-import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/ws_manager.dart';
 
 class AppServiceLocator extends ServiceLocator {
@@ -18,7 +16,9 @@ class AppServiceLocator extends ServiceLocator {
   AppServiceLocator._(this.settings) {
     final wsManager = WebSocketManager(
       'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30',
-      settings);
+      settings,
+      listenChat: false,
+    );
 
     map[Settings] = settings;
     map[ServiceLocator] = this;

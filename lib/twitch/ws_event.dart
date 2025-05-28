@@ -43,22 +43,30 @@ class WsMessageEvent {
   final String? userId;
 
   final WsReward? reward;
+  final WsChatMessage? message;
+
+  /*Example: text, power_ups_gigantified_emote, power_ups_message_effect*/
+  final String? messageType;
 
   WsMessageEvent({
     required this.id,
     required this.userName,
     required this.userId,
     required this.reward,
+    required this.message,
+    required this.messageType,
   });
 
   static WsMessageEvent fromJson(dynamic json) {
     final rewardJson = json['reward'];
-
+    final messageJson = json['message'];
     return WsMessageEvent(
       id: json['id'] as String?,
       userName: json['user_name'] as String?,
       userId: json['user_id'] as String?,
+      message: messageJson != null ? WsChatMessage.fromJson(messageJson) : null,
       reward: rewardJson != null ? WsReward.fromJson(rewardJson) : null,
+      messageType: json['message_type'] as String?,
     );
   }
 }
@@ -70,5 +78,74 @@ class WsMessageSubscription {
 
   static WsMessageSubscription fromJson(dynamic json) {
     return WsMessageSubscription(type: json['type'] as String);
+  }
+}
+
+class WsChatMessage {
+  final String? text;
+  final List<WsChatMessageFragment> fragments;
+
+  WsChatMessage({required this.text, required this.fragments});
+
+  static WsChatMessage fromJson(dynamic json) {
+    return WsChatMessage(
+      text: json['text'] as String?,
+      fragments:
+          ((json['fragments'] as List<dynamic>? ?? []).map(
+            WsChatMessageFragment.fromJson,
+          )).toList(),
+    );
+  }
+}
+
+enum WsFragmentType {
+  mention,
+  text,
+  emote,
+  unknown;
+
+  static WsFragmentType fromString(String type) {
+    for (var e in WsFragmentType.values) {
+      if (type == e.name) {
+        return e;
+      }
+    }
+    return unknown;
+  }
+}
+
+class WsChatMessageFragment {
+  final WsFragmentType type;
+  final String? text;
+  final WsChatEmote? emote;
+
+  WsChatMessageFragment({
+    required this.type,
+    required this.text,
+    required this.emote,
+  });
+
+  static WsChatMessageFragment fromJson(dynamic json) {
+    final emoteJson = json['emote'];
+    return WsChatMessageFragment(
+      type: WsFragmentType.fromString(json['type'] as String),
+      text: json['text'] as String?,
+      emote: emoteJson != null ? WsChatEmote.fromJson(emoteJson) : null,
+    );
+  }
+}
+
+class WsChatEmote {
+  final String id;
+  final List<String> format;
+
+  WsChatEmote({required this.id, required this.format});
+
+  static WsChatEmote fromJson(dynamic json) {
+    return WsChatEmote(
+      id: json['id'] as String,
+      format:
+          (json['format'] as List<dynamic>).map((e) => e.toString()).toList(),
+    );
   }
 }
