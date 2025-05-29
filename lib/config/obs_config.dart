@@ -11,7 +11,6 @@ class ObsConfig {
 
   ObsConfig() {
     _configCh.setMessageHandler((msg) async {
-      print('Config Update $msg');
       if (msg != null) {
         _updateConfig(msg);
       }
