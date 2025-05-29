@@ -79,7 +79,9 @@ class _State extends State<LoggedWidget> {
       builder: (context, constraints) {
         return Stack(
           children: [
-            ScreenAttackGameWidget(locator: widget.locator),
+            if (_obsConfig.getBool('screen_attack_game')) ...[
+              ScreenAttackGameWidget(locator: widget.locator),
+            ],
             _createConnectionIndicator(),
             if (_off) ...[CRTOffAnimation(onEnd: _handleCrtOff)],
             if (_off && _crtOffFinished) ...[
@@ -371,10 +373,33 @@ class _State extends State<LoggedWidget> {
     });
   }
 
+  final _firstChatSenders = <String>{};
+
   Future<void> _handleChatMessage(WsMessage event, WsChatMessage msg) async {
-    final user = await _getUser(event.payload.event?.chatterUserId);
+    final senderId = event.payload.event?.chatterUserId;
+
+    if (senderId == null) return;
+
+    final user = await _getUser(senderId);
     final name = event.payload.event?.chatterUserName;
     final id = event.payload.event?.messageId;
+
+    final String title;
+    final Color color;
+
+    if (!mounted) return;
+
+    final firstMessage = _firstChatSenders.add(senderId);
+
+    if ('channel_points_highlighted' == event.payload.event?.messageType) {
+      title = context.localizations.chat_message_highlighted;
+      color = Color(0xFFFF6905);
+    } else if (_obsConfig.getBool('first_chat_message') && firstMessage) {
+      title = context.localizations.chat_message_first;
+      color = Color(0xFF8829FF);
+    } else {
+      return;
+    }
 
     if (name != null && id != null) {
       final spans = msg.fragments.map<InlineSpan>((f) {
@@ -402,19 +427,6 @@ class _State extends State<LoggedWidget> {
             );
         }
       });
-
-      if (!mounted) return;
-
-      final String title;
-      final Color color;
-
-      if ('channel_points_highlighted' == event.payload.event?.messageType) {
-        title = context.localizations.chat_message_highlighted;
-        color = Color(0xFFFF6905);
-      } else {
-        title = context.localizations.chat_message_first;
-        color = Color(0xFF8829FF);
-      }
 
       final rooster = _Rooster(
         color: color,
