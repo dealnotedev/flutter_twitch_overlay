@@ -2,6 +2,7 @@
 class Assets {
   Assets._();
 
+  static const String assetsBallons = 'assets/ballons.json';
   static const String assetsBoomWhite = 'assets/boom_white.json';
   static const String assetsCat = 'assets/cat.json';
   static const String assetsFollowAnimation = 'assets/follow_animation.json';

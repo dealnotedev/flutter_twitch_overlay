@@ -2,13 +2,13 @@ import 'dart:async';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:cool_background_animation/cool_background_animation.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
-import 'package:obssource/animated_horizontal_mover.dart';
+import 'package:obssource/animated_mover.dart';
 import 'package:obssource/avatar_widget.dart';
+import 'package:obssource/data/events.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/generated/assets.dart';
@@ -72,7 +72,6 @@ class _State extends State<LoggedWidget> {
   @override
   Widget build(BuildContext context) {
     final offTv = _offTv;
-    final follow = _followBanner;
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
@@ -91,13 +90,14 @@ class _State extends State<LoggedWidget> {
               if (offTv != null) ...[_createOffTvByWidget(offTv)],
             ],
             _createRewardsWidget(context),
-            if (follow != null) ...[
-              MultipleBalloons(areaConstraints: constraints),
-              Align(
-                alignment: Alignment.center,
-                child: _FollowWidget(event: follow, key: ValueKey(follow.time)),
-              ),
-            ],
+            ..._follows.map((f) {
+              return _FollowBallonsWidget(
+                event: f,
+                constraints: constraints,
+                duration: _followDuration,
+                key: ValueKey(f),
+              );
+            }),
             ..._roosters.map((r) {
               return _RoosterWidget(
                 constraints: constraints,
@@ -112,7 +112,7 @@ class _State extends State<LoggedWidget> {
     );
   }
 
-  Widget _createOffTvByWidget(_UserRedeemedEvent offTv) {
+  Widget _createOffTvByWidget(UserRedeemedEvent offTv) {
     final avatarPlaceholder = '{user_avatar}';
     return Positioned(
       bottom: 0,
@@ -176,11 +176,11 @@ class _State extends State<LoggedWidget> {
     );
   }
 
-  final _rewards = <_UserRedeemedEvent>[];
+  final _rewards = <UserRedeemedEvent>[];
 
   final _receivedEventIds = <String>{};
 
-  _UserRedeemedEvent? _offTv;
+  UserRedeemedEvent? _offTv;
 
   static const _offTvDuration = Duration(seconds: 30);
 
@@ -189,7 +189,7 @@ class _State extends State<LoggedWidget> {
     return off != null && off.time.add(_offTvDuration).isAfter(DateTime.now());
   }
 
-  Future<void> _handleReward(_UserRedeemedEvent reward) async {
+  Future<void> _handleReward(UserRedeemedEvent reward) async {
     if ('Дуля (30с)' == reward.reward) {
       ObsAudio.loadAsset(Assets.assetsTvOffSound).then((id) {
         ObsAudio.play(id);
@@ -211,45 +211,36 @@ class _State extends State<LoggedWidget> {
   }
 
   static const _roosterDuration = Duration(seconds: 10);
+  static const _followDuration = Duration(seconds: 10);
 
   final _roosters = <_Rooster>{};
-
-  _UserFollowEvent? _followBanner;
-  Completer<_UserFollowEvent>? _followCompleter;
-
-  static const _followDuration = Duration(seconds: 10);
+  final _follows = <UserFollowEvent>{};
 
   void _handleUserFollow(WsMessageEvent event) async {
     final user = await _getUser(event.userId);
     final userName = event.userName;
 
     if (userName != null) {
-      final follow = _UserFollowEvent(
+      final follow = UserFollowEvent(
         time: DateTime.now(),
         end: DateTime.now().add(_followDuration),
         userName: userName,
         user: user,
       );
 
-      await _followCompleter?.future;
+      setState(() {
+        _follows.add(follow);
+      });
 
       ObsAudio.loadAsset(Assets.assetsFollowSound).then((id) {
         ObsAudio.play(id);
       });
 
-      final completer = _followCompleter = Completer<_UserFollowEvent>();
-
-      setState(() {
-        _followBanner = follow;
-      });
-
       await Future.delayed(_followDuration);
 
       setState(() {
-        _followBanner = null;
+        _follows.remove(follow);
       });
-
-      completer.complete(follow);
     }
   }
 
@@ -286,7 +277,7 @@ class _State extends State<LoggedWidget> {
         reward != null) {
       final UserDto? user = await _getUser(userId);
 
-      final event = _UserRedeemedEvent(
+      final event = UserRedeemedEvent(
         eventId,
         time: DateTime.now(),
         user: userName,
@@ -421,7 +412,7 @@ class _State extends State<LoggedWidget> {
 }
 
 class _RewardWidget extends StatelessWidget {
-  final _UserRedeemedEvent event;
+  final UserRedeemedEvent event;
 
   const _RewardWidget({super.key, required this.event});
 
@@ -585,115 +576,81 @@ class _RoosterWidget extends StatelessWidget {
   }
 }
 
-class _FollowWidget extends StatelessWidget {
-  final _UserFollowEvent event;
-
-  const _FollowWidget({super.key, required this.event});
-
+class _FollowBallonsWidget extends StatelessWidget {
   static const _avatarPlaceholder = '{avatart_placeholder}';
+
+  final UserFollowEvent event;
+  final Duration duration;
+  final BoxConstraints constraints;
+
+  const _FollowBallonsWidget({
+    super.key,
+    required this.event,
+    required this.duration,
+    required this.constraints,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final userName = event.userName;
-    final user = event.user;
-
-    return Stack(
-      children: [
-        Positioned(
-          top: 0,
-          bottom: 0,
-          right: 0,
-          left: 0,
-          child: BubbleBackground(
-            bubbleColors: [
-              Color(0xFFFCE9B9),
-              Color(0xFFF58A1F),
-              Color(0xFFFFB000),
-              Color(0xFFFFCC59),
-            ],
-            numberOfBubbles: 16,
+    return AnimatedVerticalMover(
+      duration: duration,
+      size: Size(280, 280),
+      constraints: constraints,
+      alreadyInsideStack: true,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          LottieBuilder.asset(
+            Assets.assetsBallons,
+            width: 280,
+            height: 280,
+            fit: BoxFit.cover,
+            frameRate: FrameRate(60),
           ),
-        ),
-        Container(
-          padding: EdgeInsets.all(16),
-          constraints: BoxConstraints(maxWidth: 512),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(128),
-            color: Color(0xFF3C3C3C).withValues(alpha: 0.75),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              LottieBuilder.asset(
-                Assets.assetsFollowAnimation,
-                width: 306,
-                height: 189,
-                repeat: false,
-                frameRate: FrameRate.max,
-              ),
-              Gap(16),
-              RichText(
-                textAlign: TextAlign.center,
-                text: TextSpan(
-                  style: TextStyle(fontSize: 40),
-                  children: SpanUtil.createSpansAdvanced(
-                    context.localizations.user_now_following_title(
-                      _avatarPlaceholder,
-                      userName,
-                    ),
-                    [_avatarPlaceholder, userName],
-                    (t) {
-                      if (t == _avatarPlaceholder) {
-                        return WidgetSpan(
-                          alignment: PlaceholderAlignment.middle,
-                          child: Avatar(size: 40, url: user?.profileImageUrl),
+          Positioned(
+            top: 48,
+            left: 160,
+            child: Transform.rotate(
+              angle: -0.15,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
+                  borderRadius: BorderRadius.circular(32),
+                ),
+                padding: EdgeInsets.all(16),
+                child: RichText(
+                  textAlign: TextAlign.center,
+                  text: TextSpan(
+                    style: TextStyle(fontSize: 24),
+                    children: SpanUtil.createSpansAdvanced(
+                      context.localizations.user_now_following_title(
+                        _avatarPlaceholder,
+                        event.userName,
+                      ),
+                      [_avatarPlaceholder, event.userName],
+                      (t) {
+                        if (t == _avatarPlaceholder) {
+                          return WidgetSpan(
+                            alignment: PlaceholderAlignment.middle,
+                            child: Avatar(
+                              size: 24,
+                              url: event.user?.profileImageUrl,
+                            ),
+                          );
+                        }
+                        return TextSpan(
+                          text: t,
+                          style: TextStyle(fontWeight: FontWeight.bold),
                         );
-                      }
-                      return TextSpan(
-                        text: t,
-                        style: TextStyle(fontWeight: FontWeight.bold),
-                      );
-                    },
+                      },
+                    ),
                   ),
                 ),
               ),
-              Gap(16),
-            ],
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
-}
-
-class _UserFollowEvent {
-  final DateTime time;
-  final DateTime end;
-  final String userName;
-  final UserDto? user;
-
-  _UserFollowEvent({
-    required this.userName,
-    required this.user,
-    required this.time,
-    required this.end,
-  });
-}
-
-class _UserRedeemedEvent {
-  final String id;
-  final DateTime time;
-  final String user;
-  final String reward;
-  final String? avatar;
-  final int cost;
-
-  _UserRedeemedEvent(
-    this.id, {
-    required this.user,
-    required this.reward,
-    required this.avatar,
-    required this.cost,
-    required this.time,
-  });
 }
