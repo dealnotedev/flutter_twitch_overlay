@@ -4,8 +4,8 @@ import 'dart:io';
 
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
+import 'package:obssource/config/settings.dart';
 import 'package:obssource/secrets.dart';
-import 'package:obssource/settings.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/twitch/ws_event.dart';

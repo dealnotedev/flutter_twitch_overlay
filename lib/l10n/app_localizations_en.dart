@@ -34,4 +34,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get chat_message_highlighted => 'Highlighted';
+
+  @override
+  String get config_invalid => 'Invalid OBS config';
 }

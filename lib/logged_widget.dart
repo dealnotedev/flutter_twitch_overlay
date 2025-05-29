@@ -8,6 +8,8 @@ import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:obssource/animated_mover.dart';
 import 'package:obssource/avatar_widget.dart';
+import 'package:obssource/config/obs_config.dart';
+import 'package:obssource/config/settings.dart';
 import 'package:obssource/data/events.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
@@ -15,7 +17,6 @@ import 'package:obssource/generated/assets.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
-import 'package:obssource/settings.dart';
 import 'package:obssource/span_util.dart';
 import 'package:obssource/srt_off.dart';
 import 'package:obssource/twitch/twitch_api.dart';
@@ -40,10 +41,12 @@ class _State extends State<LoggedWidget> {
   late WsState _state;
   late Timer _timer;
   late Settings _settings;
+  late ObsConfig _obsConfig;
 
   @override
   void initState() {
     _settings = widget.locator.provide();
+    _obsConfig = widget.locator.provide();
 
     final ws = widget.locator.provide<WebSocketManager>();
     _state = ws.currentState;
@@ -106,7 +109,40 @@ class _State extends State<LoggedWidget> {
                 duration: _roosterDuration,
               );
             }),
+            _createConfigInfo(context),
           ],
+        );
+      },
+    );
+  }
+
+  Widget _createConfigInfo(BuildContext context) {
+    return StreamBuilder(
+      stream: _obsConfig.config.changes,
+      initialData: _obsConfig.config.current,
+      builder: (cntx, config) {
+        final valid = config.requireData.valid;
+        if (valid) {
+          return SizedBox.shrink();
+        }
+        return Positioned(
+          bottom: 16,
+          right: 16,
+          child: Container(
+            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.red,
+            ),
+            child: Text(
+              context.localizations.config_invalid,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
         );
       },
     );
@@ -254,7 +290,8 @@ class _State extends State<LoggedWidget> {
     }
 
     if (event != null &&
-        message.payload.subscription?.type == 'channel.follow') {
+        message.payload.subscription?.type == 'channel.follow' &&
+        _obsConfig.getBool('followers')) {
       _handleUserFollow(event);
       return;
     }

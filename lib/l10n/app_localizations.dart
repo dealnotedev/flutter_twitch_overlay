@@ -128,6 +128,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Highlighted'**
   String get chat_message_highlighted;
+
+  /// No description provided for @config_invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid OBS config'**
+  String get config_invalid;
 }
 
 class _AppLocalizationsDelegate

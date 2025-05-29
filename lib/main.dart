@@ -1,18 +1,24 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:obssource/config/obs_config.dart';
+import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/logged_widget.dart';
-import 'package:obssource/settings.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   final settings = Settings();
   await settings.init();
 
-  final locator = AppServiceLocator.init(settings);
+  final obsConfig = ObsConfig();
+  await obsConfig.init();
+
+  final locator = AppServiceLocator.init(settings, obsConfig);
 
   runApp(MyApp(locator: locator));
 

@@ -1,5 +1,5 @@
 import 'package:dio/dio.dart';
-import 'package:obssource/settings.dart';
+import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_creds_interceptor.dart';
 
 class Statuses {

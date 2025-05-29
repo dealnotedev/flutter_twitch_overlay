@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:obssource/config/settings.dart';
 import 'package:obssource/secrets.dart';
-import 'package:obssource/settings.dart';
 import 'package:obssource/twitch/twitch_authenticator.dart';
 
 class TwitchLoginWidget extends StatefulWidget {

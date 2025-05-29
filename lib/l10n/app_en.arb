@@ -47,5 +47,6 @@
     }
   },
   "chat_message_first": "First message",
-  "chat_message_highlighted": "Highlighted"
+  "chat_message_highlighted": "Highlighted",
+  "config_invalid": "Invalid OBS config"
 }
