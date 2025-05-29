@@ -73,37 +73,42 @@ class _State extends State<LoggedWidget> {
   Widget build(BuildContext context) {
     final offTv = _offTv;
     final follow = _followBanner;
-    return Stack(
-      children: [
-        ScreenAttackGameWidget(locator: widget.locator),
-        _createConnectionIndicator(),
-        if (_off) ...[CRTOffAnimation(onEnd: _handleCrtOff)],
-        if (_off && _crtOffFinished) ...[
-          Center(
-            child: Image.asset(Assets.assetsIcDulya, width: 200, height: 200),
-          ),
-          if (offTv != null) ...[_createOffTvByWidget(offTv)],
-        ],
-        _createRewardsWidget(context),
-        if (follow != null) ...[
-          LayoutBuilder(
-            builder: (ctx, sizes) {
-              return MultipleBalloons(areaConstraints: sizes);
-            },
-          ),
-          Align(
-            alignment: Alignment.center,
-            child: _FollowWidget(event: follow, key: ValueKey(follow.time)),
-          ),
-        ],
-        ..._roosters.map((r) {
-          return _RoosterWidget(
-            key: ValueKey(r.id),
-            event: r,
-            duration: _roosterDuration,
-          );
-        }),
-      ],
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return Stack(
+          children: [
+            ScreenAttackGameWidget(locator: widget.locator),
+            _createConnectionIndicator(),
+            if (_off) ...[CRTOffAnimation(onEnd: _handleCrtOff)],
+            if (_off && _crtOffFinished) ...[
+              Center(
+                child: Image.asset(
+                  Assets.assetsIcDulya,
+                  width: 200,
+                  height: 200,
+                ),
+              ),
+              if (offTv != null) ...[_createOffTvByWidget(offTv)],
+            ],
+            _createRewardsWidget(context),
+            if (follow != null) ...[
+              MultipleBalloons(areaConstraints: constraints),
+              Align(
+                alignment: Alignment.center,
+                child: _FollowWidget(event: follow, key: ValueKey(follow.time)),
+              ),
+            ],
+            ..._roosters.map((r) {
+              return _RoosterWidget(
+                constraints: constraints,
+                key: ValueKey(r.id),
+                event: r,
+                duration: _roosterDuration,
+              );
+            }),
+          ],
+        );
+      },
     );
   }
 
@@ -485,23 +490,31 @@ class _Rooster {
   final String id;
   final List<InlineSpan> text;
 
-  _Rooster(
-      {required this.id, required this.text, required this.title, required this.color});
+  _Rooster({
+    required this.id,
+    required this.text,
+    required this.title,
+    required this.color,
+  });
 }
 
 class _RoosterWidget extends StatelessWidget {
   final Duration duration;
   final _Rooster event;
+  final BoxConstraints constraints;
 
   const _RoosterWidget({
     super.key,
     required this.event,
     required this.duration,
+    required this.constraints,
   });
 
   @override
   Widget build(BuildContext context) {
     return AnimatedHorizontalMover(
+      alreadyInsideStack: true,
+      constraints: constraints,
       duration: duration,
       size: Size(400, 320),
       child: Stack(

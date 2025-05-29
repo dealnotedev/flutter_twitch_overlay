@@ -4,12 +4,15 @@ class AnimatedHorizontalMover extends StatefulWidget {
   final Size size;
   final Widget child;
   final Duration duration;
+  final bool alreadyInsideStack;
+  final BoxConstraints constraints;
 
   const AnimatedHorizontalMover({
     super.key,
     required this.child,
     this.duration = const Duration(seconds: 10),
     required this.size,
+    required this.constraints, required this.alreadyInsideStack,
   });
 
   @override
@@ -36,21 +39,25 @@ class _AnimatedHorizontalMoverState extends State<AnimatedHorizontalMover>
 
   @override
   Widget build(BuildContext context) {
-    return LayoutBuilder(
-      builder: (cntx, sizes) {
-        final startX = -widget.size.width;
-        final endX = sizes.maxWidth;
+    final startX = -widget.size.width;
+    final endX = widget.constraints.maxWidth;
 
-        return AnimatedBuilder(
-          animation: _controller,
-          builder: (context, _) {
-            final x = startX + ((endX - startX).toDouble() * _controller.value);
-            return Stack(
-              children: [Positioned(left: x, bottom: 0, child: widget.child)],
-            );
-          },
-        );
+    final child = AnimatedBuilder(
+      animation: _controller,
+      builder: (context, _) {
+        final x = startX + ((endX - startX).toDouble() * _controller.value);
+        return Positioned(left: x, bottom: 0, child: widget.child);
       },
     );
+
+    if (widget.alreadyInsideStack) {
+      return child;
+    } else {
+      return Stack(
+        children: [
+          child
+        ],
+      );
+    }
   }
 }
