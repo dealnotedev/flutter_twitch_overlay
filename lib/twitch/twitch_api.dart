@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:dio/dio.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_creds_interceptor.dart';
@@ -21,6 +23,26 @@ class TwitchApi {
     dio.interceptors.add(interceptor);
   }
 
+  Future<int> cleanupInactiveEventSubs() async {
+    final resp = await dio.get('/eventsub/subscriptions');
+    final data = (resp.data['data'] as List).cast<Map<String, dynamic>>();
+
+    int count = 0;
+
+    for (final sub in data) {
+      final status = sub['status'];
+      final id = sub['id'];
+
+      if (status == 'websocket_disconnected') {
+        await dio.delete(
+            '/eventsub/subscriptions', queryParameters: {'id': id});
+        count++;
+      }
+    }
+
+    return count;
+  }
+
   Future<void> subscribeCustomRewards({
     required String? broadcasterUserId,
     required String sessionId,
@@ -33,6 +55,16 @@ class TwitchApi {
     };
 
     return dio.post('/eventsub/subscriptions', data: data);
+  }
+
+  Future<void> getActiveSubs() {
+    return dio.get('https://api.twitch.tv/helix/eventsub/subscriptions')
+        .then((response) {
+      return response.data;
+    })
+        .then((json) {
+      print(jsonEncode(json));
+    });
   }
 
   Future<void> subscribeChat({

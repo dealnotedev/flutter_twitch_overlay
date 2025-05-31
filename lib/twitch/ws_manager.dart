@@ -197,6 +197,13 @@ class WebSocketManager {
     );
 
     try {
+      final cleaned = await api.cleanupInactiveEventSubs();
+      print('Deleting inactive subscription: $cleaned');
+    } on DioException catch (e) {
+      print('Api Error ${e.response?.statusCode} with message ${e.message}');
+    } catch (_) {}
+
+    try {
       await _registerInternal(
         api,
         _Registration(
