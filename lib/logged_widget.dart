@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -15,6 +16,9 @@ import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/obs_audio.dart';
+import 'package:obssource/pixel_rain.dart';
+import 'package:obssource/pixel_rain_avatar.dart';
+import 'package:obssource/pixel_rain_letters.dart';
 import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/span_util.dart';
@@ -112,9 +116,53 @@ class _State extends State<LoggedWidget> {
               );
             }),
             _createConfigInfo(context),
+            _createPixeledName(constraints, 'bilosnizhka_ua'),
+            RainyAvatar(
+              duration: Duration(seconds: 5),
+              url:
+                  'https://static-cdn.jtvnw.net/jtv_user_pictures/57633519-a597-4544-9226-3eeb114a6cd1-profile_image-300x300.png',
+              constraints: constraints,
+            ),
           ],
         );
       },
+    );
+  }
+
+  final _colors = [
+    Color(0xFF200060),
+    Color(0xFF602080),
+    Color(0xFF000040),
+    Color(0xFF402080),
+    Color(0xFF000000),
+    Color(0xFF8040A0),
+    Color(0xFF200040),
+    Color(0xFF604080),
+    Color(0xFF6040A0),
+    Color(0xFF402060),
+    Color(0xFF804080),
+    Color(0xFFE0C0A0),
+    Color(0xFFA060A0),
+    Color(0xFFE0A080),
+  ];
+
+  Widget _createPixeledName(BoxConstraints constraints, String name) {
+    return Row(
+      spacing: 16,
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children:
+          name.characters
+              .toList()
+              .mapIndexed(
+                (index, l) => SequentialPixelRainLetterA(
+                  color: _colors[index],
+                  duration: Duration(seconds: 5),
+                  constraints: constraints,
+                  letter: PixelRainLetter.get(l),
+                ),
+              )
+              .toList(),
     );
   }
 
