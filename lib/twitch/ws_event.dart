@@ -39,14 +39,13 @@ class WsReward {
 
 class WsMessageEvent {
   final String? id;
-  final String? userName;
-  final String? userId;
+
+  final UserInfo? user;
 
   final WsReward? reward;
   final WsChatMessage? message;
 
-  final String? chatterUserName;
-  final String? chatterUserId;
+  final UserInfo? chatter;
 
   /*Example: text, power_ups_gigantified_emote, power_ups_message_effect, channel_points_highlighted*/
   final String? messageType;
@@ -54,38 +53,96 @@ class WsMessageEvent {
   final String? messageId;
   final String? color;
 
+  final WsReply? reply;
+  final String? userInput;
+
+  final UserInfo? fromBroadcaster;
+  final UserInfo? toBroadcaster;
+  final int? viewers;
+
   WsMessageEvent({
     required this.id,
-    required this.userName,
-    required this.userId,
+    required this.user,
     required this.reward,
     required this.message,
     required this.messageType,
-    required this.chatterUserId,
-    required this.chatterUserName,
+    required this.chatter,
     required this.messageId,
-    required this.color
+    required this.color,
+    required this.reply,
+    required this.userInput,
+    required this.fromBroadcaster,
+    required this.toBroadcaster,
+    required this.viewers,
   });
 
   static WsMessageEvent fromJson(dynamic json) {
     final rewardJson = json['reward'];
     final messageJson = json['message'];
+    final replyJson = json['reply'];
+
     return WsMessageEvent(
       id: json['id'] as String?,
-      userName: json['user_name'] as String?,
-      userId: json['user_id'] as String?,
+      user: ParseUtil.parseUserInfo(json),
+      fromBroadcaster: ParseUtil.parseUserInfo(
+        json,
+        prefix: 'from_broadcaster_',
+      ),
+      toBroadcaster: ParseUtil.parseUserInfo(json, prefix: 'to_broadcaster_'),
+      chatter: ParseUtil.parseUserInfo(json, prefix: 'chatter_'),
       message: messageJson != null ? WsChatMessage.fromJson(messageJson) : null,
       reward: rewardJson != null ? WsReward.fromJson(rewardJson) : null,
       messageType: json['message_type'] as String?,
-        chatterUserId: json['chatter_user_id'] as String?,
-        chatterUserName: json['chatter_user_name'] as String?,
-        messageId: json['message_id'] as String?,
-        color: json['color'] as String?
+      messageId: json['message_id'] as String?,
+      color: json['color'] as String?,
+      reply: replyJson != null ? WsReply.fromJson(replyJson) : null,
+      userInput: json['user_input'] as String?,
+      viewers: json['viewers'] as int?,
+    );
+  }
+}
+
+class UserInfo {
+  final String id;
+  final String login;
+  final String name;
+
+  UserInfo({required this.id, required this.login, required this.name});
+}
+
+class ParseUtil {
+  ParseUtil._();
+
+  static UserInfo? parseUserInfo(dynamic json, {String prefix = ''}) {
+    final id = json['${prefix}user_id'] as String?;
+    final login = json['${prefix}user_login'] as String?;
+    final name = json['${prefix}user_name'] as String?;
+
+    if (id != null && login != null && name != null) {
+      return UserInfo(id: id, login: login, name: name);
+    } else {
+      return null;
+    }
+  }
+}
+
+class WsReply {
+  final UserInfo? parentUser;
+  final String? parentMessageBody;
+
+  WsReply({required this.parentUser, required this.parentMessageBody});
+
+  static WsReply fromJson(dynamic json) {
+    return WsReply(
+      parentUser: ParseUtil.parseUserInfo(json, prefix: 'parent_'),
+      parentMessageBody: json['parent_message_body'] as String?,
     );
   }
 }
 
 class WsMessageSubscription {
+  static const raid = 'channel.raid';
+
   final String type;
 
   WsMessageSubscription({required this.type});

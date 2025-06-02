@@ -125,7 +125,7 @@ class _SequentialPixelRainLetterAState
                       color: pixel.color,
                       borderRadius: BorderRadius.circular(2),
                       border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.25),
+                        color: Colors.black,
                         width: 1,
                       ),
                     ),

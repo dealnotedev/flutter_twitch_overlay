@@ -79,6 +79,8 @@ class _State extends State<LoggedWidget> {
   @override
   Widget build(BuildContext context) {
     final offTv = _offTv;
+    final pause = _pause;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
@@ -98,7 +100,16 @@ class _State extends State<LoggedWidget> {
               ),
               if (offTv != null) ...[_createOffTvByWidget(offTv)],
             ],
-            _createRewardsWidget(context),
+            if (pause != null) ...[
+              RainyAvatar(
+                key: ValueKey(pause),
+                pixelSize: 12,
+                fallDuration: pause.fallDuration,
+                duration: pause.duration,
+                image: pause.image,
+                constraints: constraints,
+              ),
+            ],
             ..._follows.map((f) {
               return _FollowBallonsWidget(
                 event: f,
@@ -116,35 +127,13 @@ class _State extends State<LoggedWidget> {
               );
             }),
             _createConfigInfo(context),
-            _createPixeledName(constraints, 'bilosnizhka_ua'),
-            RainyAvatar(
-              duration: Duration(seconds: 5),
-              url:
-                  'https://static-cdn.jtvnw.net/jtv_user_pictures/57633519-a597-4544-9226-3eeb114a6cd1-profile_image-300x300.png',
-              constraints: constraints,
-            ),
+            //_createPixeledName(constraints, 'bilosnizhka_ua'),
+            _createRewardsWidget(context),
           ],
         );
       },
     );
   }
-
-  final _colors = [
-    Color(0xFF200060),
-    Color(0xFF602080),
-    Color(0xFF000040),
-    Color(0xFF402080),
-    Color(0xFF000000),
-    Color(0xFF8040A0),
-    Color(0xFF200040),
-    Color(0xFF604080),
-    Color(0xFF6040A0),
-    Color(0xFF402060),
-    Color(0xFF804080),
-    Color(0xFFE0C0A0),
-    Color(0xFFA060A0),
-    Color(0xFFE0A080),
-  ];
 
   Widget _createPixeledName(BoxConstraints constraints, String name) {
     return Row(
@@ -156,7 +145,7 @@ class _State extends State<LoggedWidget> {
               .toList()
               .mapIndexed(
                 (index, l) => SequentialPixelRainLetterA(
-                  color: _colors[index],
+                  color: Colors.white,
                   duration: Duration(seconds: 5),
                   constraints: constraints,
                   letter: PixelRainLetter.get(l),
@@ -294,17 +283,42 @@ class _State extends State<LoggedWidget> {
       setState(() {});
       return;
     }
+
+    if ('Пауза' == reward.reward) {
+      final args = (reward.input ?? '').split(' ');
+      final mins = int.parse(args.firstOrNull ?? '0');
+
+      if (mins == 0) {
+        setState(() {
+          _pause = null;
+        });
+        return;
+      }
+
+      final image = await RainyAvatar.loadImageFromAssets(
+        Assets.assetsImgPause1,
+      );
+      setState(() {
+        _pause = Pause(
+          image: image!,
+          duration: Duration(minutes: mins),
+          fallDuration: Duration(milliseconds: 1500),
+        );
+      });
+    }
   }
 
   static const _roosterDuration = Duration(seconds: 10);
   static const _followDuration = Duration(seconds: 10);
 
+  Pause? _pause;
+
   final _roosters = <_Rooster>{};
   final _follows = <UserFollowEvent>{};
 
   void _handleUserFollow(WsMessageEvent event) async {
-    final user = await _getUser(event.userId);
-    final userName = event.userName;
+    final user = await _getUser(event.user?.id);
+    final userName = event.user?.name;
 
     if (userName != null) {
       final follow = UserFollowEvent(
@@ -352,8 +366,8 @@ class _State extends State<LoggedWidget> {
       return;
     }
 
-    final userId = event?.userId;
-    final userName = event?.userName;
+    final userId = event?.user?.id;
+    final userName = event?.user?.name;
 
     final reward = event?.reward?.title;
     final cost = event?.reward?.cost;
@@ -371,6 +385,7 @@ class _State extends State<LoggedWidget> {
         reward: reward,
         avatar: user?.profileImageUrl,
         cost: cost ?? 0,
+        input: message.payload.event?.userInput,
       );
 
       _handleReward(event);
@@ -424,12 +439,12 @@ class _State extends State<LoggedWidget> {
   final _firstChatSenders = <String>{};
 
   Future<void> _handleChatMessage(WsMessage event, WsChatMessage msg) async {
-    final senderId = event.payload.event?.chatterUserId;
+    final senderId = event.payload.event?.chatter?.id;
 
     if (senderId == null) return;
 
     final user = await _getUser(senderId);
-    final name = event.payload.event?.chatterUserName;
+    final name = event.payload.event?.chatter?.name;
     final id = event.payload.event?.messageId;
 
     final String title;

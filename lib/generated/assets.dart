@@ -11,6 +11,7 @@ class Assets {
   static const String assetsIcDulya = 'assets/ic_dulya.png';
   static const String assetsIcTwitchChannelPosints32dp =
       'assets/ic_twitch_channel_posints_32dp.png';
+  static const String assetsImgPause1 = 'assets/img_pause_1.png';
   static const String assetsImgSticker1 = 'assets/img_sticker_1.webp';
   static const String assetsImgSticker10 = 'assets/img_sticker_10.webp';
   static const String assetsImgSticker11 = 'assets/img_sticker_11.webp';

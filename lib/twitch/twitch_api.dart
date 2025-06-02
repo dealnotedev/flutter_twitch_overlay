@@ -35,7 +35,9 @@ class TwitchApi {
 
       if (status == 'websocket_disconnected') {
         await dio.delete(
-            '/eventsub/subscriptions', queryParameters: {'id': id});
+          '/eventsub/subscriptions',
+          queryParameters: {'id': id},
+        );
         count++;
       }
     }
@@ -58,13 +60,29 @@ class TwitchApi {
   }
 
   Future<void> getActiveSubs() {
-    return dio.get('https://api.twitch.tv/helix/eventsub/subscriptions')
+    return dio
+        .get('https://api.twitch.tv/helix/eventsub/subscriptions')
         .then((response) {
-      return response.data;
-    })
+          return response.data;
+        })
         .then((json) {
-      print(jsonEncode(json));
-    });
+          print(jsonEncode(json));
+        });
+  }
+
+  Future<void> subscribeRaid({
+    required String toBroadcasterId,
+    required String sessionId,
+  }) {
+    return dio.post(
+      '/eventsub/subscriptions',
+      data: {
+        "type": "channel.raid",
+        "version": "1",
+        "condition": {"to_broadcaster_user_id": toBroadcasterId},
+        'transport': {'session_id': sessionId, 'method': 'websocket'},
+      },
+    );
   }
 
   Future<void> subscribeChat({
