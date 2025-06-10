@@ -48,5 +48,18 @@
   },
   "chat_message_first": "First message",
   "chat_message_highlighted": "Highlighted",
-  "config_invalid": "Invalid OBS config"
+  "config_invalid": "Invalid OBS config",
+  "raid_text": "{broadcaster} is raiding with a party of {raiders}",
+  "@raid_text": {
+    "placeholders": {
+      "broadcaster": {
+        "type": "String",
+        "example": "kekotopko"
+      },
+      "raiders": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  }
 }

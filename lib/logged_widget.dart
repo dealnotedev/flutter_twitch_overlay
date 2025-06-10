@@ -5,7 +5,6 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:obssource/animated_mover.dart';
@@ -61,6 +60,8 @@ class _State extends State<LoggedWidget> {
     _stateSubscription = ws.state.listen(_handleWebsocketState);
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
+
+    _simulateRaid();
     super.initState();
   }
 
@@ -133,9 +134,11 @@ class _State extends State<LoggedWidget> {
             //_createPixeledName(constraints, 'bilosnizhka_ua'),
             _createRewardsWidget(context),
             if (raid != null) ...[
-              RaidWidget(constraints: constraints,
-                  who: raid.from,
-                  avatar: raid.avatar),
+              RaidWidget(
+                constraints: constraints,
+                raid: raid,
+                onDone: _handleRaidAnimationDone,
+              ),
             ],
           ],
         );
@@ -535,32 +538,51 @@ class _State extends State<LoggedWidget> {
     }
   }
 
-  _Raid? _raid;
+  Raid? _raid;
+
+  void _simulateRaid() async {
+    final from = UserDto.dealnotedev;
+    final avatarUrl = from.profileImageUrl;
+
+    final avatar =
+        avatarUrl != null
+            ? await RainyAvatar.loadImageFromUrl(avatarUrl)
+            : null;
+
+    setState(() {
+      _raid = Raid(who: from, avatar: avatar, raiders: 20, id: from.id);
+    });
+  }
 
   void _handleRaid(WsMessage message) async {
     final fromId = message.payload.event?.fromBroadcaster?.id;
     final from = fromId != null ? await _getUser(fromId) : null;
 
-    if (from != null) {
+    if (fromId != null && from != null) {
       final avatarUrl = from.profileImageUrl;
-      final avatar = avatarUrl != null ? await RainyAvatar.loadImageFromUrl(
-          avatarUrl) : null;
+      final avatar =
+          avatarUrl != null
+              ? await RainyAvatar.loadImageFromUrl(avatarUrl)
+              : null;
 
       setState(() {
-        _raid = _Raid(from: from,
-            avatar: avatar,
-            raiders: message.payload.event?.viewers ?? 0);
+        _raid = Raid(
+          who: from,
+          avatar: avatar,
+          raiders: message.payload.event?.viewers ?? 0,
+          id: fromId,
+        );
       });
     }
   }
-}
 
-class _Raid {
-  final UserDto from;
-  final img.Image? avatar;
-  final int raiders;
+  void _handleRaidAnimationDone(Raid raid) {
+    if (_raid != raid) return;
 
-  _Raid({required this.from, required this.avatar, required this.raiders});
+    setState(() {
+      _raid = null;
+    });
+  }
 }
 
 class _RewardWidget extends StatelessWidget {

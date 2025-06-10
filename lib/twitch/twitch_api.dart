@@ -135,7 +135,15 @@ class UserDto {
   final String? displayName;
   final String? profileImageUrl;
 
-  UserDto({
+  static const dealnotedev = UserDto(
+    id: '215541934',
+    login: 'dealnotedev',
+    displayName: 'DealnoteDev',
+    profileImageUrl:
+        'https://static-cdn.jtvnw.net/jtv_user_pictures/b49bedc2-8fbb-4485-9a1b-b5cb6e52e864-profile_image-300x300.png',
+  );
+
+  const UserDto({
     required this.id,
     required this.login,
     required this.displayName,

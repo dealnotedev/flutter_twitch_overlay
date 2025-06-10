@@ -134,6 +134,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Invalid OBS config'**
   String get config_invalid;
+
+  /// No description provided for @raid_text.
+  ///
+  /// In en, this message translates to:
+  /// **'{broadcaster} is raiding with a party of {raiders}'**
+  String raid_text(String broadcaster, int raiders);
 }
 
 class _AppLocalizationsDelegate

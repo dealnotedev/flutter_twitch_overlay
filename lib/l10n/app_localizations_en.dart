@@ -36,4 +36,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get config_invalid => 'Invalid OBS config';
+
+  @override
+  String raid_text(String broadcaster, int raiders) {
+    return '$broadcaster is raiding with a party of $raiders';
+  }
 }
