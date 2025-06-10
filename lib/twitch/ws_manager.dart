@@ -222,6 +222,15 @@ class WebSocketManager {
         ),
       );
 
+      await _registerInternal(
+        api,
+        _Registration(
+          _RegistrationType.raid,
+          sessionId: sessionId,
+          broadcasterId: broadcasterId,
+        ),
+      );
+
       if (_listenChat) {
         await _registerInternal(
           api,
@@ -267,6 +276,13 @@ class WebSocketManager {
           sessionId: registration.sessionId,
         );
         break;
+
+      case _RegistrationType.raid:
+        await api.subscribeRaid(
+          toBroadcasterId: registration.broadcasterId,
+          sessionId: registration.sessionId,
+        );
+        break;
     }
 
     _registrations.add(registration);
@@ -281,10 +297,11 @@ class _Channel {
   _Channel({required this.channel});
 }
 
-enum _RegistrationType { rewards, follow, chat }
+enum _RegistrationType { rewards, follow, chat, raid }
 
 class _Registration {
   final _RegistrationType type;
+
   final String sessionId;
   final String broadcasterId;
 

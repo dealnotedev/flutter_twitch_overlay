@@ -1,3 +1,4 @@
+import 'package:image/image.dart' as img;
 import 'package:obssource/twitch/twitch_api.dart';
 
 class UserFollowEvent {
@@ -14,6 +15,18 @@ class UserFollowEvent {
   });
 }
 
+class Pause {
+  final img.Image image;
+  final Duration duration;
+  final Duration fallDuration;
+
+  Pause({
+    required this.image,
+    required this.duration,
+    required this.fallDuration,
+  });
+}
+
 class UserRedeemedEvent {
   final String id;
   final DateTime time;
@@ -21,6 +34,7 @@ class UserRedeemedEvent {
   final String reward;
   final String? avatar;
   final int cost;
+  final String? input;
 
   UserRedeemedEvent(
     this.id, {
@@ -29,5 +43,6 @@ class UserRedeemedEvent {
     required this.avatar,
     required this.cost,
     required this.time,
+    required this.input,
   });
 }
