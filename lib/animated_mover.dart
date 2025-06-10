@@ -6,12 +6,14 @@ class AnimatedHorizontalMover extends StatefulWidget {
   final Duration duration;
   final bool alreadyInsideStack;
   final BoxConstraints constraints;
+  final double bottomOffset;
 
   const AnimatedHorizontalMover({
     super.key,
     required this.child,
     this.duration = const Duration(seconds: 10),
     required this.size,
+    this.bottomOffset = 0,
     required this.constraints, required this.alreadyInsideStack,
   });
 
@@ -46,7 +48,8 @@ class _AnimatedHorizontalMoverState extends State<AnimatedHorizontalMover>
       animation: _controller,
       builder: (context, _) {
         final x = startX + ((endX - startX).toDouble() * _controller.value);
-        return Positioned(left: x, bottom: 0, child: widget.child);
+        return Positioned(
+            left: x, bottom: widget.bottomOffset, child: widget.child);
       },
     );
 

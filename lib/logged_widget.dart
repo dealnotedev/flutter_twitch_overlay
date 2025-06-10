@@ -2,8 +2,10 @@ import 'dart:async';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:obssource/animated_mover.dart';
@@ -15,6 +17,10 @@ import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/obs_audio.dart';
+import 'package:obssource/pixel_rain.dart';
+import 'package:obssource/pixel_rain_avatar.dart';
+import 'package:obssource/pixel_rain_letters.dart';
+import 'package:obssource/raid.dart';
 import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/span_util.dart';
@@ -75,6 +81,9 @@ class _State extends State<LoggedWidget> {
   @override
   Widget build(BuildContext context) {
     final offTv = _offTv;
+    final pause = _pause;
+    final raid = _raid;
+
     return LayoutBuilder(
       builder: (context, constraints) {
         return Stack(
@@ -94,7 +103,16 @@ class _State extends State<LoggedWidget> {
               ),
               if (offTv != null) ...[_createOffTvByWidget(offTv)],
             ],
-            _createRewardsWidget(context),
+            if (pause != null) ...[
+              RainyAvatar(
+                key: ValueKey(pause),
+                pixelSize: 12,
+                fallDuration: pause.fallDuration,
+                duration: pause.duration,
+                image: pause.image,
+                constraints: constraints,
+              ),
+            ],
             ..._follows.map((f) {
               return _FollowBallonsWidget(
                 event: f,
@@ -112,9 +130,37 @@ class _State extends State<LoggedWidget> {
               );
             }),
             _createConfigInfo(context),
+            //_createPixeledName(constraints, 'bilosnizhka_ua'),
+            _createRewardsWidget(context),
+            if (raid != null) ...[
+              RaidWidget(constraints: constraints,
+                  who: raid.from,
+                  avatar: raid.avatar),
+            ],
           ],
         );
       },
+    );
+  }
+
+  Widget _createPixeledName(BoxConstraints constraints, String name) {
+    return Row(
+      spacing: 16,
+      mainAxisSize: MainAxisSize.max,
+      mainAxisAlignment: MainAxisAlignment.center,
+      children:
+      name.characters
+          .toList()
+          .mapIndexed(
+            (index, l) =>
+            SequentialPixelRainLetterA(
+              color: Colors.white,
+              duration: Duration(seconds: 5),
+              constraints: constraints,
+              letter: PixelRainLetter.get(l),
+            ),
+      )
+          .toList(),
     );
   }
 
@@ -246,17 +292,42 @@ class _State extends State<LoggedWidget> {
       setState(() {});
       return;
     }
+
+    if ('Пауза' == reward.reward) {
+      final args = (reward.input ?? '').split(' ');
+      final mins = int.parse(args.firstOrNull ?? '0');
+
+      if (mins == 0) {
+        setState(() {
+          _pause = null;
+        });
+        return;
+      }
+
+      final image = await RainyAvatar.loadImageFromAssets(
+        Assets.assetsImgPause1,
+      );
+      setState(() {
+        _pause = Pause(
+          image: image!,
+          duration: Duration(minutes: mins),
+          fallDuration: Duration(milliseconds: 1500),
+        );
+      });
+    }
   }
 
   static const _roosterDuration = Duration(seconds: 10);
   static const _followDuration = Duration(seconds: 10);
 
+  Pause? _pause;
+
   final _roosters = <_Rooster>{};
   final _follows = <UserFollowEvent>{};
 
   void _handleUserFollow(WsMessageEvent event) async {
-    final user = await _getUser(event.userId);
-    final userName = event.userName;
+    final user = await _getUser(event.user?.id);
+    final userName = event.user?.name;
 
     if (userName != null) {
       final follow = UserFollowEvent(
@@ -291,6 +362,11 @@ class _State extends State<LoggedWidget> {
       return;
     }
 
+    if (event != null && message.payload.subscription?.type == 'channel.raid') {
+      _handleRaid(message);
+      return;
+    }
+
     if (event != null &&
         message.payload.subscription?.type == 'channel.follow' &&
         _obsConfig.getBool('followers')) {
@@ -304,8 +380,8 @@ class _State extends State<LoggedWidget> {
       return;
     }
 
-    final userId = event?.userId;
-    final userName = event?.userName;
+    final userId = event?.user?.id;
+    final userName = event?.user?.name;
 
     final reward = event?.reward?.title;
     final cost = event?.reward?.cost;
@@ -323,6 +399,7 @@ class _State extends State<LoggedWidget> {
         reward: reward,
         avatar: user?.profileImageUrl,
         cost: cost ?? 0,
+        input: message.payload.event?.userInput,
       );
 
       _handleReward(event);
@@ -376,12 +453,12 @@ class _State extends State<LoggedWidget> {
   final _firstChatSenders = <String>{};
 
   Future<void> _handleChatMessage(WsMessage event, WsChatMessage msg) async {
-    final senderId = event.payload.event?.chatterUserId;
+    final senderId = event.payload.event?.chatter?.id;
 
     if (senderId == null) return;
 
     final user = await _getUser(senderId);
-    final name = event.payload.event?.chatterUserName;
+    final name = event.payload.event?.chatter?.name;
     final id = event.payload.event?.messageId;
 
     final String title;
@@ -458,6 +535,33 @@ class _State extends State<LoggedWidget> {
       });
     }
   }
+
+  _Raid? _raid;
+
+  void _handleRaid(WsMessage message) async {
+    final fromId = message.payload.event?.fromBroadcaster?.id;
+    final from = fromId != null ? await _getUser(fromId) : null;
+
+    if (from != null) {
+      final avatarUrl = from.profileImageUrl;
+      final avatar = avatarUrl != null ? await RainyAvatar.loadImageFromUrl(
+          avatarUrl) : null;
+
+      setState(() {
+        _raid = _Raid(from: from,
+            avatar: avatar,
+            raiders: message.payload.event?.viewers ?? 0);
+      });
+    }
+  }
+}
+
+class _Raid {
+  final UserDto from;
+  final img.Image? avatar;
+  final int raiders;
+
+  _Raid({required this.from, required this.avatar, required this.raiders});
 }
 
 class _RewardWidget extends StatelessWidget {
