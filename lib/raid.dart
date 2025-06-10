@@ -67,27 +67,24 @@ class _State extends State<RaidWidget> {
 
   @override
   void initState() {
+    _spawnAll();
+    super.initState();
+  }
+
+  void _spawnAll() async {
     for (int i = 0; i < 10; i++) {
       final next = _all[_random.nextInt(_all.length)];
 
-      //final additionalDelay = Duration(milliseconds: _random.nextInt(250));
-      //final delay =
-      //    _random.nextBool()
-      //        ? Duration(seconds: i) - additionalDelay
-      //        : Duration(seconds: i) + additionalDelay;
+      await Future.delayed(Duration(milliseconds: 500 + _random.nextInt(500)));
 
-      _spawnRaider(next, delay: Duration(seconds: 2) + Duration(seconds: i), id: i.toString());
+      _spawnRaider(next, id: i.toString());
     }
-    super.initState();
   }
 
   void _spawnRaider(
     _Raider raider, {
-    required Duration delay,
     required String id,
   }) async {
-    await Future.delayed(delay);
-
     final unique = _UniqueRaider(id, raider: raider);
 
     setState(() {
