@@ -37,11 +37,14 @@ class _State extends State<RaidWidget> {
           RainyAvatar(
             image: widget.avatar,
             constraints: widget.constraints,
-            duration: Duration(seconds: 5),
+            duration: Duration(seconds: 10),
             resolution: 64,
             pixelSize: 8,
             randomBackground: false,
             verticalOffset: -128,
+            scaleWhenStart: false,
+            initialDelay: Duration(milliseconds: 1000),
+            origin: RainyPixelOrigin.outside,
           ),
           ..._raiders.map(
             (r) => _RaiderWidget(

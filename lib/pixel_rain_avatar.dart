@@ -8,6 +8,8 @@ import 'package:image/image.dart' as img;
 
 class RainyAvatar extends StatefulWidget {
   final BoxConstraints constraints;
+
+  final Duration? initialDelay;
   final Duration duration;
   final Duration fallDuration;
 
@@ -17,12 +19,18 @@ class RainyAvatar extends StatefulWidget {
   final bool randomBackground;
   final double verticalOffset;
 
+  final bool scaleWhenStart;
+  final RainyPixelOrigin origin;
+
   const RainyAvatar({
     super.key,
+    this.initialDelay,
     this.verticalOffset = 0,
     this.pixelSize = 12,
     this.resolution = 64,
+    this.origin = RainyPixelOrigin.inside,
     this.randomBackground = true,
+    this.scaleWhenStart = true,
     required this.image,
     required this.constraints,
     required this.duration,
@@ -49,6 +57,8 @@ class RainyAvatar extends StatefulWidget {
   }
 }
 
+enum RainyPixelOrigin { inside, outside }
+
 class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late int _fallDurationMs;
@@ -56,6 +66,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
 
   @override
   void initState() {
+    _scale = widget.scaleWhenStart ? 1.25 : 1.0;
     _decoration =
         widget.randomBackground ? (List.of(_decorations)..shuffle())[0] : null;
 
@@ -76,6 +87,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
       widget.constraints.maxHeight,
       widget.pixelSize,
       _fallDurationMs,
+      widget.origin,
     );
 
     _startAnimation();
@@ -90,18 +102,64 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
 
   List<_Pixel>? _pixels;
 
-  double _scale = 1.25;
+  late double _scale;
 
   void _startAnimation() async {
-    await Future.delayed(Duration(milliseconds: 250));
+    final delay = widget.initialDelay;
 
-    setState(() {
-      _scale = 1.0;
-    });
+    if (delay != null) {
+      await Future.delayed(delay);
+    }
 
-    await Future.delayed(Duration(milliseconds: 2000));
+    if (widget.scaleWhenStart) {
+      await Future.delayed(Duration(milliseconds: 250));
+
+      setState(() {
+        _scale = 1.0;
+      });
+
+      await Future.delayed(Duration(milliseconds: 2000));
+    }
 
     _controller.forward();
+  }
+
+  static List<Point<double>> _generateEnoughPerimeterPoints2(
+    double widgetWidth,
+    double widgetHeight,
+    double pixelSize,
+    int pixelCount,
+  ) {
+    final points = <Point<double>>[];
+
+    final startLeft = -pixelSize;
+    final startRight = widgetWidth;
+
+    final verticalCount = (widgetHeight / pixelSize).toInt();
+    final verticalPadding = (widgetHeight - (verticalCount * pixelSize)) / 2.0;
+
+    final top = verticalPadding;
+
+    int row = 0;
+    while (points.length < pixelCount) {
+      final left = startLeft - row * pixelSize;
+      final right = startRight + row * pixelSize;
+
+      for (int y = 0; y < verticalCount; y++) {
+        if (points.length >= pixelCount) break;
+
+        points.add(Point(right, top + (y * pixelSize)));
+      }
+
+      for (int y = 0; y < verticalCount; y++) {
+        if (points.length >= pixelCount) break;
+
+        points.add(Point(left, top + (y * pixelSize)));
+      }
+      row++;
+    }
+
+    return points;
   }
 
   static List<Point<double>> _generateEnoughPerimeterPoints(
@@ -112,25 +170,26 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
   ) {
     final points = <Point<double>>[];
 
+    final verticalCount = (widgetHeight / pixelSize).toInt();
+    final verticalPadding = (widgetHeight - (verticalCount * pixelSize)) / 2.0;
+
+    final top = verticalPadding;
+
     int row = 0;
     while (points.length < pixelCount) {
       final left = row * pixelSize;
       final right = widgetWidth - (row + 1) * pixelSize;
 
-      final top = 0.0;
-      final bottom = widgetHeight - pixelSize;
+      for (int y = 0; y < verticalCount; y++) {
+        if (points.length >= pixelCount) break;
 
-      if (left > right) break;
-
-      // Right side
-      for (double y = top; y <= bottom; y += pixelSize) {
-        points.add(Point(right, y));
+        points.add(Point(right, top + (y * pixelSize)));
       }
-      // Left side
-      if (left != right) {
-        for (double y = top; y <= bottom; y += pixelSize) {
-          points.add(Point(left, y));
-        }
+
+      for (int y = 0; y < verticalCount; y++) {
+        if (points.length >= pixelCount) break;
+
+        points.add(Point(left, top + (y * pixelSize)));
       }
       row++;
     }
@@ -144,6 +203,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
     double widgetHeight,
     double pixelSize,
     int fallDurationMs,
+    RainyPixelOrigin origin,
   ) {
     final pixels = <_Pixel>[];
 
@@ -176,12 +236,25 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
       }
     }
 
-    final startPositions = _generateEnoughPerimeterPoints(
-      widgetWidth,
-      widgetHeight,
-      pixelSize,
-      pixels.length,
-    );
+    final List<Point<double>> startPositions;
+    switch (origin) {
+      case RainyPixelOrigin.inside:
+        startPositions = _generateEnoughPerimeterPoints(
+          widgetWidth,
+          widgetHeight,
+          pixelSize,
+          pixels.length,
+        );
+        break;
+      case RainyPixelOrigin.outside:
+        startPositions = _generateEnoughPerimeterPoints2(
+          widgetWidth,
+          widgetHeight,
+          pixelSize,
+          pixels.length,
+        );
+        break;
+    }
 
     if (startPositions.length < pixels.length) {
       throw StateError('Widget is too small!');
