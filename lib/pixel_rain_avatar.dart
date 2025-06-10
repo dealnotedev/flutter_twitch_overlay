@@ -14,11 +14,15 @@ class RainyAvatar extends StatefulWidget {
   final double pixelSize;
   final int resolution;
   final img.Image image;
+  final bool randomBackground;
+  final double verticalOffset;
 
   const RainyAvatar({
     super.key,
+    this.verticalOffset = 0,
     this.pixelSize = 12,
     this.resolution = 64,
+    this.randomBackground = true,
     required this.image,
     required this.constraints,
     required this.duration,
@@ -52,7 +56,8 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
 
   @override
   void initState() {
-    _decoration = (List.of(_decorations)..shuffle())[0];
+    _decoration =
+        widget.randomBackground ? (List.of(_decorations)..shuffle())[0] : null;
 
     _fallDurationMs = widget.fallDuration.inMilliseconds;
     _controller = AnimationController(vsync: this, duration: widget.duration);
@@ -217,7 +222,8 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
   static List<List<Color?>> _avatarToColorMatrix(
     img.Image image,
     int gridW,
-    int gridH,) {
+    int gridH,
+  ) {
     final resized = img.copyResize(image, width: gridW, height: gridH);
 
     return List.generate(
@@ -307,6 +313,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
                 scale: _scale,
                 duration: Duration(seconds: 1),
                 child: _AvatarPixelRain(
+                  verticalOffset: widget.verticalOffset,
                   widgetWidth: widget.constraints.maxWidth,
                   widgetHeight: widget.constraints.maxHeight,
                   pixelSize: widget.pixelSize,
@@ -322,6 +329,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
 }
 
 class _AvatarPixelRain extends StatelessWidget {
+  final double verticalOffset;
   final List<_Pixel> pixels;
   final double pixelSize;
   final Animation<double> animation;
@@ -333,6 +341,7 @@ class _AvatarPixelRain extends StatelessWidget {
 
   const _AvatarPixelRain({
     required this.pixels,
+    required this.verticalOffset,
     required this.pixelSize,
     required this.animation,
     required this.durationMs,
@@ -354,6 +363,7 @@ class _AvatarPixelRain extends StatelessWidget {
             pixelSize,
             durationMs,
             fallDurationMs,
+            verticalOffset,
           ),
         );
       },
@@ -385,6 +395,7 @@ class _AvatarRainPainter extends CustomPainter {
   final double pixelSize;
   final int durationMs;
   final int fallDurationMs;
+  final double verticalOffset;
 
   _AvatarRainPainter(
     this.pixels,
@@ -392,6 +403,7 @@ class _AvatarRainPainter extends CustomPainter {
     this.pixelSize,
     this.durationMs,
     this.fallDurationMs,
+    this.verticalOffset,
   );
 
   static const _padding = 0.25;
@@ -409,7 +421,7 @@ class _AvatarRainPainter extends CustomPainter {
             : (pixels.map((p) => p.y).reduce(max) + 1) * pixelSize;
 
     final offsetX = (size.width - imageW) / 2;
-    final offsetY = (size.height - imageH) / 2;
+    final offsetY = (size.height - imageH) / 2 + verticalOffset;
 
     final currentMs = progress * durationMs;
 
@@ -435,13 +447,6 @@ class _AvatarRainPainter extends CustomPainter {
 
       final y = lerpDouble(yStart, yTarget, pixelProgress)!;
       final x = lerpDouble(xStart, xTarget, pixelProgress)!;
-
-      /*if(pixelProgress >= 1.0){
-        canvas.drawRect(
-          Rect.fromLTWH(x, y, pixelSize, pixelSize),
-          _paint..color = Colors.black,
-        );
-      }*/
 
       final rect = Rect.fromLTWH(
         x + _padding,

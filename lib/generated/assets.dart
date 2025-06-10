@@ -26,6 +26,7 @@ class Assets {
   static const String assetsRunningDogBlue = 'assets/running_dog_blue.json';
   static const String assetsRunningDogBrown = 'assets/running_dog_brown.json';
   static const String assetsRunningDogOrange = 'assets/running_dog_orange.json';
+  static const String assetsRunningSomething = 'assets/running_something.json';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
 
 }

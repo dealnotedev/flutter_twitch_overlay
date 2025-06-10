@@ -5,6 +5,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:lottie/lottie.dart';
 import 'package:obssource/animated_mover.dart';
@@ -60,6 +61,14 @@ class _State extends State<LoggedWidget> {
     _stateSubscription = ws.state.listen(_handleWebsocketState);
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
+
+    RainyAvatar.loadImageFromAssets(
+      Assets.assetsImgPause1,
+    ).then((image) {
+      setState(() {
+        _raid = image;
+      });
+    });
     super.initState();
   }
 
@@ -81,6 +90,7 @@ class _State extends State<LoggedWidget> {
   Widget build(BuildContext context) {
     final offTv = _offTv;
     final pause = _pause;
+    final raid = _raid;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -130,12 +140,16 @@ class _State extends State<LoggedWidget> {
             _createConfigInfo(context),
             //_createPixeledName(constraints, 'bilosnizhka_ua'),
             _createRewardsWidget(context),
-            RaidWidget(constraints: constraints, who: null)
+            if (raid != null) ...[
+              RaidWidget(constraints: constraints, who: null, avatar: raid,),
+            ],
           ],
         );
       },
     );
   }
+
+  img.Image? _raid;
 
   Widget _createPixeledName(BoxConstraints constraints, String name) {
     return Row(

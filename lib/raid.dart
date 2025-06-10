@@ -1,16 +1,24 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:lottie/lottie.dart';
 import 'package:obssource/animated_mover.dart';
 import 'package:obssource/generated/assets.dart';
+import 'package:obssource/pixel_rain_avatar.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 
 class RaidWidget extends StatefulWidget {
+  final img.Image avatar;
   final UserDto? who;
   final BoxConstraints constraints;
 
-  const RaidWidget({super.key, required this.constraints, required this.who});
+  const RaidWidget({
+    super.key,
+    required this.constraints,
+    required this.who,
+    required this.avatar,
+  });
 
   @override
   State<StatefulWidget> createState() => _State();
@@ -26,6 +34,15 @@ class _State extends State<RaidWidget> {
       height: widget.constraints.maxHeight,
       child: Stack(
         children: [
+          RainyAvatar(
+            image: widget.avatar,
+            constraints: widget.constraints,
+            duration: Duration(seconds: 5),
+            resolution: 64,
+            pixelSize: 8,
+            randomBackground: false,
+            verticalOffset: -128,
+          ),
           ..._raiders.map(
             (r) => _RaiderWidget(
               key: ValueKey(r.id),
@@ -46,6 +63,13 @@ class _State extends State<RaidWidget> {
   void initState() {
     for (int i = 0; i < 10; i++) {
       final next = _all[_random.nextInt(_all.length)];
+
+      //final additionalDelay = Duration(milliseconds: _random.nextInt(250));
+      //final delay =
+      //    _random.nextBool()
+      //        ? Duration(seconds: i) - additionalDelay
+      //        : Duration(seconds: i) + additionalDelay;
+
       _spawnRaider(next, delay: Duration(seconds: i), id: i.toString());
     }
     super.initState();
@@ -89,8 +113,14 @@ class _State extends State<RaidWidget> {
     height: 256,
     bottomOffset: -64,
   );
+  static const _raider4 = _Raider(
+    lottie: Assets.assetsRunningSomething,
+    width: 256,
+    height: 256,
+    bottomOffset: -50,
+  );
 
-  static const _all = [_raider1, _raider2, _raider3];
+  static const _all = [_raider1, _raider2, _raider3, _raider4];
 }
 
 class _UniqueRaider {
