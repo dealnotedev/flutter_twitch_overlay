@@ -61,14 +61,6 @@ class _State extends State<LoggedWidget> {
     _stateSubscription = ws.state.listen(_handleWebsocketState);
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
-
-    RainyAvatar.loadImageFromAssets(
-      Assets.assetsImgPause1,
-    ).then((image) {
-      setState(() {
-        _raid = image;
-      });
-    });
     super.initState();
   }
 
@@ -141,15 +133,15 @@ class _State extends State<LoggedWidget> {
             //_createPixeledName(constraints, 'bilosnizhka_ua'),
             _createRewardsWidget(context),
             if (raid != null) ...[
-              RaidWidget(constraints: constraints, who: null, avatar: raid,),
+              RaidWidget(constraints: constraints,
+                  who: raid.from,
+                  avatar: raid.avatar),
             ],
           ],
         );
       },
     );
   }
-
-  img.Image? _raid;
 
   Widget _createPixeledName(BoxConstraints constraints, String name) {
     return Row(
@@ -369,6 +361,11 @@ class _State extends State<LoggedWidget> {
       return;
     }
 
+    if (event != null && message.payload.subscription?.type == 'channel.raid') {
+      _handleRaid(message);
+      return;
+    }
+
     if (event != null &&
         message.payload.subscription?.type == 'channel.follow' &&
         _obsConfig.getBool('followers')) {
@@ -537,6 +534,33 @@ class _State extends State<LoggedWidget> {
       });
     }
   }
+
+  _Raid? _raid;
+
+  void _handleRaid(WsMessage message) async {
+    final fromId = message.payload.event?.fromBroadcaster?.id;
+    final from = fromId != null ? await _getUser(fromId) : null;
+
+    if (from != null) {
+      final avatarUrl = from.profileImageUrl;
+      final avatar = avatarUrl != null ? await RainyAvatar.loadImageFromUrl(
+          avatarUrl) : null;
+
+      setState(() {
+        _raid = _Raid(from: from,
+            avatar: avatar,
+            raiders: message.payload.event?.viewers ?? 0);
+      });
+    }
+  }
+}
+
+class _Raid {
+  final UserDto from;
+  final img.Image? avatar;
+  final int raiders;
+
+  _Raid({required this.from, required this.avatar, required this.raiders});
 }
 
 class _RewardWidget extends StatelessWidget {

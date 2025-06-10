@@ -9,7 +9,7 @@ import 'package:obssource/pixel_rain_avatar.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 
 class RaidWidget extends StatefulWidget {
-  final img.Image avatar;
+  final img.Image? avatar;
   final UserDto? who;
   final BoxConstraints constraints;
 
@@ -29,23 +29,26 @@ class _State extends State<RaidWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final avatar = widget.avatar;
     return SizedBox(
       width: widget.constraints.maxWidth,
       height: widget.constraints.maxHeight,
       child: Stack(
         children: [
-          RainyAvatar(
-            image: widget.avatar,
-            constraints: widget.constraints,
-            duration: Duration(seconds: 10),
-            resolution: 64,
-            pixelSize: 8,
-            randomBackground: false,
-            verticalOffset: -128,
-            scaleWhenStart: false,
-            initialDelay: Duration(milliseconds: 1000),
-            origin: RainyPixelOrigin.outside,
-          ),
+          if(avatar != null) ... [
+            RainyAvatar(
+              image: avatar,
+              constraints: widget.constraints,
+              duration: Duration(seconds: 10),
+              resolution: 64,
+              pixelSize: 8,
+              randomBackground: false,
+              verticalOffset: -128,
+              scaleWhenStart: false,
+              initialDelay: Duration(milliseconds: 1000),
+              origin: RainyPixelOrigin.outside,
+            ),
+          ],
           ..._raiders.map(
             (r) => _RaiderWidget(
               key: ValueKey(r.id),
