@@ -48,8 +48,7 @@ class _AnimatedHorizontalMoverState extends State<AnimatedHorizontalMover>
       animation: _controller,
       builder: (context, _) {
         final x = startX + ((endX - startX).toDouble() * _controller.value);
-        return Positioned(
-            left: x, bottom: widget.bottomOffset, child: widget.child);
+        return Positioned(left: x, bottom: widget.bottomOffset, child: widget.child);
       },
     );
 

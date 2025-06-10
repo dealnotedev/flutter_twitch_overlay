@@ -149,18 +149,17 @@ class _State extends State<LoggedWidget> {
       mainAxisSize: MainAxisSize.max,
       mainAxisAlignment: MainAxisAlignment.center,
       children:
-      name.characters
-          .toList()
-          .mapIndexed(
-            (index, l) =>
-            SequentialPixelRainLetterA(
-              color: Colors.white,
-              duration: Duration(seconds: 5),
-              constraints: constraints,
-              letter: PixelRainLetter.get(l),
-            ),
-      )
-          .toList(),
+          name.characters
+              .toList()
+              .mapIndexed(
+                (index, l) => SequentialPixelRainLetterA(
+                  color: Colors.white,
+                  duration: Duration(seconds: 5),
+                  constraints: constraints,
+                  letter: PixelRainLetter.get(l),
+                ),
+              )
+              .toList(),
     );
   }
 

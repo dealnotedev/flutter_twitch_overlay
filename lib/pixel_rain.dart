@@ -124,7 +124,10 @@ class _SequentialPixelRainLetterAState
                     decoration: BoxDecoration(
                       color: pixel.color,
                       borderRadius: BorderRadius.circular(2),
-                      border: Border.all(color: Colors.black, width: 1),
+                      border: Border.all(
+                        color: Colors.black,
+                        width: 1,
+                      ),
                     ),
                   ),
                 ),

@@ -35,7 +35,7 @@ class _State extends State<RaidWidget> {
       height: widget.constraints.maxHeight,
       child: Stack(
         children: [
-          if (avatar != null) ...[
+          if(avatar != null) ... [
             RainyAvatar(
               image: avatar,
               constraints: widget.constraints,
@@ -76,11 +76,7 @@ class _State extends State<RaidWidget> {
       //        ? Duration(seconds: i) - additionalDelay
       //        : Duration(seconds: i) + additionalDelay;
 
-      _spawnRaider(
-        next,
-        delay: Duration(seconds: 2) + Duration(seconds: i),
-        id: i.toString(),
-      );
+      _spawnRaider(next, delay: Duration(seconds: 2) + Duration(seconds: i), id: i.toString());
     }
     super.initState();
   }
