@@ -73,7 +73,7 @@ class _State extends State<RaidWidget> {
       //        ? Duration(seconds: i) - additionalDelay
       //        : Duration(seconds: i) + additionalDelay;
 
-      _spawnRaider(next, delay: Duration(seconds: i), id: i.toString());
+      _spawnRaider(next, delay: Duration(seconds: 2) + Duration(seconds: i), id: i.toString());
     }
     super.initState();
   }
