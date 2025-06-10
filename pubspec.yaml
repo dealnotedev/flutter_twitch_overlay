@@ -64,8 +64,6 @@ dependencies:
 
   cool_background_animation: ^0.1.0
 
-  http: ^1.4.0
-
 dev_dependencies:
   flutter_test:
     sdk: flutter

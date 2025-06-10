@@ -9,8 +9,7 @@ class Assets {
   static const String assetsFollowSound = 'assets/follow_sound.mp3';
   static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
   static const String assetsIcDulya = 'assets/ic_dulya.png';
-  static const String assetsIcTwitchChannelPosints32dp =
-      'assets/ic_twitch_channel_posints_32dp.png';
+  static const String assetsIcTwitchChannelPosints32dp = 'assets/ic_twitch_channel_posints_32dp.png';
   static const String assetsImgPause1 = 'assets/img_pause_1.png';
   static const String assetsImgSticker1 = 'assets/img_sticker_1.webp';
   static const String assetsImgSticker10 = 'assets/img_sticker_10.webp';
@@ -24,5 +23,9 @@ class Assets {
   static const String assetsImgSticker8 = 'assets/img_sticker_8.webp';
   static const String assetsImgSticker9 = 'assets/img_sticker_9.webp';
   static const String assetsRooster = 'assets/rooster.json';
+  static const String assetsRunningDogBlue = 'assets/running_dog_blue.json';
+  static const String assetsRunningDogBrown = 'assets/running_dog_brown.json';
+  static const String assetsRunningDogOrange = 'assets/running_dog_orange.json';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
+
 }

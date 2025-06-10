@@ -19,6 +19,7 @@ import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixel_rain.dart';
 import 'package:obssource/pixel_rain_avatar.dart';
 import 'package:obssource/pixel_rain_letters.dart';
+import 'package:obssource/raid.dart';
 import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/span_util.dart';
@@ -129,6 +130,7 @@ class _State extends State<LoggedWidget> {
             _createConfigInfo(context),
             //_createPixeledName(constraints, 'bilosnizhka_ua'),
             _createRewardsWidget(context),
+            RaidWidget(constraints: constraints, who: null)
           ],
         );
       },
