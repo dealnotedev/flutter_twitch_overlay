@@ -370,7 +370,8 @@ class _State extends State<LoggedWidget> {
     }
 
     if (event != null &&
-        message.payload.subscription?.type == 'channel.follow') {
+        message.payload.subscription?.type == 'channel.follow' &&
+        _obsConfig.getBool('followers')) {
       _handleUserFollow(event);
       return;
     }
