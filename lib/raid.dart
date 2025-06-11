@@ -44,7 +44,7 @@ class Raid {
 
 class _State extends State<RaidWidget> {
   static const _avatarDuration = Duration(seconds: 10);
-  static const _duration = Duration(seconds: 5);
+  static const _duration = Duration(seconds: 6);
 
   @override
   Widget build(BuildContext context) {
@@ -159,7 +159,7 @@ class _State extends State<RaidWidget> {
       final completer = Completer<void>();
       completers.add(completer);
 
-      await Future.delayed(Duration(milliseconds: 300 + _random.nextInt(500)));
+      await Future.delayed(Duration(milliseconds: 750));
 
       _spawnRaider(next, id: i.toString(), completer: completer);
     }

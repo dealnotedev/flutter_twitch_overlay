@@ -551,7 +551,7 @@ class _State extends State<LoggedWidget> {
             : null;
 
     setState(() {
-      _raid = Raid(who: from, avatar: avatar, raiders: 20, id: from.id);
+      _raid = Raid(who: from, avatar: avatar, raiders: 5, id: from.id);
     });
   }
 
