@@ -1,0 +1,223 @@
+{
+	"metadata": {
+		"message_id": "K4jLNfS9tMsuHADjET1pos-PcfoPhTzLrTmWONsK32w=",
+		"message_type": "notification",
+		"message_timestamp": "2025-06-11T15:16:02.483733723Z",
+		"subscription_type": "channel.subscription.gift",
+		"subscription_version": "1"
+	},
+	"payload": {
+		"subscription": {
+			"id": "1adfdb89-7af5-429b-ae89-6437e3fcec91",
+			"status": "enabled",
+			"type": "channel.subscription.gift",
+			"version": "1",
+			"condition": {
+				"broadcaster_user_id": "215541934"
+			},
+			"transport": {
+				"method": "websocket",
+				"session_id": "AgoQGk4Fh_WBR9mvq0NXtMfVpBIGY2VsbC1j"
+			},
+			"created_at": "2025-06-11T15:08:36.512721182Z",
+			"cost": 0
+		},
+		"event": {
+			"user_id": "215541934",
+			"user_login": "dealnotedev",
+			"user_name": "dealnoteDev",
+			"broadcaster_user_id": "215541934",
+			"broadcaster_user_login": "dealnotedev",
+			"broadcaster_user_name": "dealnoteDev",
+			"tier": "1000",
+			"total": 5,
+			"cumulative_total": null,
+			"is_anonymous": false
+		}
+	}
+}
+
+{
+	"metadata": {
+		"message_id": "Tp_s7riquEaJ9HktQ2pBcCbu9oSJR_S_AZf6uL4SIsI=",
+		"message_type": "notification",
+		"message_timestamp": "2025-06-11T15:16:02.814Z",
+		"subscription_type": "channel.subscribe",
+		"subscription_version": "1"
+	},
+	"payload": {
+		"subscription": {
+			"id": "5464fc10-31f5-4c1f-b39c-de3142e7c081",
+			"status": "enabled",
+			"type": "channel.subscribe",
+			"version": "1",
+			"condition": {
+				"broadcaster_user_id": "215541934"
+			},
+			"transport": {
+				"method": "websocket",
+				"session_id": "AgoQGk4Fh_WBR9mvq0NXtMfVpBIGY2VsbC1j"
+			},
+			"created_at": "2025-06-11T15:08:36.308645308Z",
+			"cost": 0
+		},
+		"event": {
+			"user_id": "122108833",
+			"user_login": "zupaman_",
+			"user_name": "zupaman_",
+			"broadcaster_user_id": "215541934",
+			"broadcaster_user_login": "dealnotedev",
+			"broadcaster_user_name": "dealnoteDev",
+			"tier": "1000",
+			"is_gift": true
+		}
+	}
+}
+
+{
+	"metadata": {
+		"message_id": "Dppu5yOrH67idfaUA0KYUNL5XtTgFEYuu-AN_tKeV7E=",
+		"message_type": "notification",
+		"message_timestamp": "2025-06-11T15:16:02.856Z",
+		"subscription_type": "channel.subscribe",
+		"subscription_version": "1"
+	},
+	"payload": {
+		"subscription": {
+			"id": "5464fc10-31f5-4c1f-b39c-de3142e7c081",
+			"status": "enabled",
+			"type": "channel.subscribe",
+			"version": "1",
+			"condition": {
+				"broadcaster_user_id": "215541934"
+			},
+			"transport": {
+				"method": "websocket",
+				"session_id": "AgoQGk4Fh_WBR9mvq0NXtMfVpBIGY2VsbC1j"
+			},
+			"created_at": "2025-06-11T15:08:36.308645308Z",
+			"cost": 0
+		},
+		"event": {
+			"user_id": "523668315",
+			"user_login": "n__er__v",
+			"user_name": "n__er__v",
+			"broadcaster_user_id": "215541934",
+			"broadcaster_user_login": "dealnotedev",
+			"broadcaster_user_name": "dealnoteDev",
+			"tier": "1000",
+			"is_gift": true
+		}
+	}
+}
+
+{
+	"metadata": {
+		"message_id": "Vk-2yxa5u2YIUm5DPSyzgKhTGVToz0YfsjqLofpEGfM=",
+		"message_type": "notification",
+		"message_timestamp": "2025-06-11T15:16:02.854Z",
+		"subscription_type": "channel.subscribe",
+		"subscription_version": "1"
+	},
+	"payload": {
+		"subscription": {
+			"id": "5464fc10-31f5-4c1f-b39c-de3142e7c081",
+			"status": "enabled",
+			"type": "channel.subscribe",
+			"version": "1",
+			"condition": {
+				"broadcaster_user_id": "215541934"
+			},
+			"transport": {
+				"method": "websocket",
+				"session_id": "AgoQGk4Fh_WBR9mvq0NXtMfVpBIGY2VsbC1j"
+			},
+			"created_at": "2025-06-11T15:08:36.308645308Z",
+			"cost": 0
+		},
+		"event": {
+			"user_id": "761737884",
+			"user_login": "enot_poloskun_ua",
+			"user_name": "enot_poloskun_ua",
+			"broadcaster_user_id": "215541934",
+			"broadcaster_user_login": "dealnotedev",
+			"broadcaster_user_name": "dealnoteDev",
+			"tier": "1000",
+			"is_gift": true
+		}
+	}
+}
+
+{
+	"metadata": {
+		"message_id": "2MbpyYF7nmi9AAohB321BlDTDBzV446QCuIb8EhRkgo=",
+		"message_type": "notification",
+		"message_timestamp": "2025-06-11T15:16:02.857Z",
+		"subscription_type": "channel.subscribe",
+		"subscription_version": "1"
+	},
+	"payload": {
+		"subscription": {
+			"id": "5464fc10-31f5-4c1f-b39c-de3142e7c081",
+			"status": "enabled",
+			"type": "channel.subscribe",
+			"version": "1",
+			"condition": {
+				"broadcaster_user_id": "215541934"
+			},
+			"transport": {
+				"method": "websocket",
+				"session_id": "AgoQGk4Fh_WBR9mvq0NXtMfVpBIGY2VsbC1j"
+			},
+			"created_at": "2025-06-11T15:08:36.308645308Z",
+			"cost": 0
+		},
+		"event": {
+			"user_id": "179972791",
+			"user_login": "radar22_ua",
+			"user_name": "RaDaR22_UA",
+			"broadcaster_user_id": "215541934",
+			"broadcaster_user_login": "dealnotedev",
+			"broadcaster_user_name": "dealnoteDev",
+			"tier": "1000",
+			"is_gift": true
+		}
+	}
+}
+
+{
+	"metadata": {
+		"message_id": "wmxonPyNji3zi7sfxdXavQv4K6n0sLPMJzItpmGufJE=",
+		"message_type": "notification",
+		"message_timestamp": "2025-06-11T15:16:02.864Z",
+		"subscription_type": "channel.subscribe",
+		"subscription_version": "1"
+	},
+	"payload": {
+		"subscription": {
+			"id": "5464fc10-31f5-4c1f-b39c-de3142e7c081",
+			"status": "enabled",
+			"type": "channel.subscribe",
+			"version": "1",
+			"condition": {
+				"broadcaster_user_id": "215541934"
+			},
+			"transport": {
+				"method": "websocket",
+				"session_id": "AgoQGk4Fh_WBR9mvq0NXtMfVpBIGY2VsbC1j"
+			},
+			"created_at": "2025-06-11T15:08:36.308645308Z",
+			"cost": 0
+		},
+		"event": {
+			"user_id": "1144796306",
+			"user_login": "stre2462",
+			"user_name": "stre2462",
+			"broadcaster_user_id": "215541934",
+			"broadcaster_user_login": "dealnotedev",
+			"broadcaster_user_name": "dealnoteDev",
+			"tier": "1000",
+			"is_gift": true
+		}
+	}
+}
