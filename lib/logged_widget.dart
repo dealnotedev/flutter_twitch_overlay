@@ -61,7 +61,7 @@ class _State extends State<LoggedWidget> {
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
 
-    //_simulateRaid();
+    _simulateRaid();
     super.initState();
   }
 
@@ -560,6 +560,10 @@ class _State extends State<LoggedWidget> {
     final from = fromId != null ? await _getUser(fromId) : null;
 
     if (fromId != null && from != null) {
+      ObsAudio.loadAsset(Assets.assetsRaid).then((id) {
+        ObsAudio.play(id);
+      });
+
       final avatarUrl = from.profileImageUrl;
       final avatar =
           avatarUrl != null

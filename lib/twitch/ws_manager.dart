@@ -14,6 +14,8 @@ import 'package:web_socket_channel/io.dart';
 
 class WebSocketManager {
   final bool _listenChat;
+  final bool _listenSubs;
+
   final String _url;
   final Settings _settings;
 
@@ -38,8 +40,13 @@ class WebSocketManager {
 
   Stream<WsMessage> get messages => _messagesSubject.stream;
 
-  WebSocketManager(this._url, this._settings, {required bool listenChat})
-    : _listenChat = listenChat {
+  WebSocketManager(this._url,
+      this._settings, {
+        required bool listenChat,
+        required bool listenSubs,
+      })
+      : _listenChat = listenChat,
+        _listenSubs = listenSubs {
     _settings.twitchAuthStream.listen(_handleAuth);
   }
 
@@ -231,6 +238,33 @@ class WebSocketManager {
         ),
       );
 
+      if (_listenSubs) {
+        await _registerInternal(
+          api,
+          _Registration(
+            _RegistrationType.subs,
+            sessionId: sessionId,
+            broadcasterId: broadcasterId,
+          ),
+        );
+        await _registerInternal(
+          api,
+          _Registration(
+            _RegistrationType.subGifts,
+            sessionId: sessionId,
+            broadcasterId: broadcasterId,
+          ),
+        );
+        await _registerInternal(
+          api,
+          _Registration(
+            _RegistrationType.subMessages,
+            sessionId: sessionId,
+            broadcasterId: broadcasterId,
+          ),
+        );
+      }
+
       if (_listenChat) {
         await _registerInternal(
           api,
@@ -270,6 +304,13 @@ class WebSocketManager {
         );
         break;
 
+      case _RegistrationType.subs:
+        await api.subscribeSubs(
+          broadcasterUserId: registration.broadcasterId,
+          sessionId: registration.sessionId,
+        );
+        break;
+
       case _RegistrationType.follow:
         await api.subscribeFollowEvents(
           broadcasterUserId: registration.broadcasterId,
@@ -280,6 +321,20 @@ class WebSocketManager {
       case _RegistrationType.raid:
         await api.subscribeRaid(
           toBroadcasterId: registration.broadcasterId,
+          sessionId: registration.sessionId,
+        );
+        break;
+
+      case _RegistrationType.subGifts:
+        await api.subscribeSubGifts(
+          broadcasterUserId: registration.broadcasterId,
+          sessionId: registration.sessionId,
+        );
+        break;
+
+      case _RegistrationType.subMessages:
+        await api.subscribeSubMessages(
+          broadcasterUserId: registration.broadcasterId,
           sessionId: registration.sessionId,
         );
         break;
@@ -297,7 +352,15 @@ class _Channel {
   _Channel({required this.channel});
 }
 
-enum _RegistrationType { rewards, follow, chat, raid }
+enum _RegistrationType {
+  rewards,
+  follow,
+  chat,
+  raid,
+  subs,
+  subGifts,
+  subMessages
+}
 
 class _Registration {
   final _RegistrationType type;

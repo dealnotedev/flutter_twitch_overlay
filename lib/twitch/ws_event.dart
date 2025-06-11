@@ -60,6 +60,11 @@ class WsMessageEvent {
   final UserInfo? toBroadcaster;
   final int? viewers;
 
+  final int? total;
+  final bool? anonymous;
+  final String? tier;
+  final bool? gift;
+
   WsMessageEvent({
     required this.id,
     required this.user,
@@ -74,6 +79,10 @@ class WsMessageEvent {
     required this.fromBroadcaster,
     required this.toBroadcaster,
     required this.viewers,
+    required this.total,
+    required this.anonymous,
+    required this.tier,
+    required this.gift
   });
 
   static WsMessageEvent fromJson(dynamic json) {
@@ -98,6 +107,10 @@ class WsMessageEvent {
       reply: replyJson != null ? WsReply.fromJson(replyJson) : null,
       userInput: json['user_input'] as String?,
       viewers: json['viewers'] as int?,
+        total: json['total'] as int?,
+        anonymous: json['is_anonymous'] as bool?,
+        tier: json['tier'] as String?,
+        gift: json['is_gift'] as bool?
     );
   }
 }

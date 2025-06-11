@@ -25,6 +25,7 @@ class Assets {
   static const String assetsImgSticker7 = 'assets/img_sticker_7.webp';
   static const String assetsImgSticker8 = 'assets/img_sticker_8.webp';
   static const String assetsImgSticker9 = 'assets/img_sticker_9.webp';
+  static const String assetsRaid = 'assets/raid.mp3';
   static const String assetsRooster = 'assets/rooster.json';
   static const String assetsRunningDogBlue = 'assets/running_dog_blue.json';
   static const String assetsRunningDogBrown = 'assets/running_dog_brown.json';

@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:dio/dio.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_creds_interceptor.dart';
@@ -45,6 +43,48 @@ class TwitchApi {
     return count;
   }
 
+  Future<void> subscribeSubGifts({
+    required String? broadcasterUserId,
+    required String sessionId,
+  }) {
+    final data = {
+      'version': '1',
+      'type': 'channel.subscription.gift',
+      'condition': {'broadcaster_user_id': broadcasterUserId},
+      'transport': {'session_id': sessionId, 'method': 'websocket'},
+    };
+
+    return dio.post('/eventsub/subscriptions', data: data);
+  }
+
+  Future<void> subscribeSubMessages({
+    required String? broadcasterUserId,
+    required String sessionId,
+  }) {
+    final data = {
+      'version': '1',
+      'type': 'channel.subscription.message',
+      'condition': {'broadcaster_user_id': broadcasterUserId},
+      'transport': {'session_id': sessionId, 'method': 'websocket'},
+    };
+
+    return dio.post('/eventsub/subscriptions', data: data);
+  }
+
+  Future<void> subscribeSubs({
+    required String? broadcasterUserId,
+    required String sessionId,
+  }) {
+    final data = {
+      'version': '1',
+      'type': 'channel.subscribe',
+      'condition': {'broadcaster_user_id': broadcasterUserId},
+      'transport': {'session_id': sessionId, 'method': 'websocket'},
+    };
+
+    return dio.post('/eventsub/subscriptions', data: data);
+  }
+
   Future<void> subscribeCustomRewards({
     required String? broadcasterUserId,
     required String sessionId,
@@ -57,17 +97,6 @@ class TwitchApi {
     };
 
     return dio.post('/eventsub/subscriptions', data: data);
-  }
-
-  Future<void> getActiveSubs() {
-    return dio
-        .get('https://api.twitch.tv/helix/eventsub/subscriptions')
-        .then((response) {
-          return response.data;
-        })
-        .then((json) {
-          print(jsonEncode(json));
-        });
   }
 
   Future<void> subscribeRaid({
