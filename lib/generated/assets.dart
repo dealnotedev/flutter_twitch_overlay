@@ -4,6 +4,7 @@ class Assets {
 
   static const String assetsBallons = 'assets/ballons.json';
   static const String assetsBear = 'assets/bear.json';
+  static const String assetsBee = 'assets/bee.json';
   static const String assetsBoomWhite = 'assets/boom_white.json';
   static const String assetsCat = 'assets/cat.json';
   static const String assetsFollowAnimation = 'assets/follow_animation.json';
@@ -25,6 +26,7 @@ class Assets {
   static const String assetsImgSticker7 = 'assets/img_sticker_7.webp';
   static const String assetsImgSticker8 = 'assets/img_sticker_8.webp';
   static const String assetsImgSticker9 = 'assets/img_sticker_9.webp';
+  static const String assetsLion = 'assets/lion.json';
   static const String assetsRaid = 'assets/raid.mp3';
   static const String assetsRooster = 'assets/rooster.json';
   static const String assetsRunningDogBlue = 'assets/running_dog_blue.json';

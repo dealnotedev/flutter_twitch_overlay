@@ -159,7 +159,7 @@ class _State extends State<RaidWidget> {
       final completer = Completer<void>();
       completers.add(completer);
 
-      await Future.delayed(Duration(milliseconds: 500 + _random.nextInt(500)));
+      await Future.delayed(Duration(milliseconds: 300 + _random.nextInt(500)));
 
       _spawnRaider(next, id: i.toString(), completer: completer);
     }
@@ -211,8 +211,27 @@ class _State extends State<RaidWidget> {
     height: 256,
     bottomOffset: -50,
   );
+  static const _raider5 = _Raider(
+    lottie: Assets.assetsLion,
+    width: 300,
+    height: 300,
+    bottomOffset: -48,
+  );
+  static const _raider6 = _Raider(
+    lottie: Assets.assetsBee,
+    width: 128,
+    height: 128,
+    bottomOffset: 0,
+  );
 
-  static const _all = [_raider1, _raider2, _raider3, _raider4];
+  static const _all = [
+    _raider1,
+    _raider2,
+    _raider3,
+    _raider4,
+    _raider5,
+    _raider6,
+  ];
 }
 
 class _UniqueRaider {
