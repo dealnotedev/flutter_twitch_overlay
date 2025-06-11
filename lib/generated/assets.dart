@@ -3,10 +3,13 @@ class Assets {
   Assets._();
 
   static const String assetsBallons = 'assets/ballons.json';
+  static const String assetsBear = 'assets/bear.json';
   static const String assetsBoomWhite = 'assets/boom_white.json';
   static const String assetsCat = 'assets/cat.json';
   static const String assetsFollowAnimation = 'assets/follow_animation.json';
   static const String assetsFollowSound = 'assets/follow_sound.mp3';
+  static const String assetsFox = 'assets/fox.json';
+  static const String assetsGiraffe = 'assets/giraffe.json';
   static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
   static const String assetsIcDulya = 'assets/ic_dulya.png';
   static const String assetsIcTwitchChannelPosints32dp = 'assets/ic_twitch_channel_posints_32dp.png';

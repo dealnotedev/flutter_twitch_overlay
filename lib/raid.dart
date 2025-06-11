@@ -78,7 +78,7 @@ class _State extends State<RaidWidget> {
             child: Container(
               alignment: Alignment.center,
               decoration: BoxDecoration(
-                color: Color(0xFF3C3C3C).withValues(alpha: 0.8),
+                color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
               ),
               padding: EdgeInsets.only(
                 left: 128,
@@ -95,7 +95,11 @@ class _State extends State<RaidWidget> {
                     who,
                     (t) => TextSpan(
                       text: t,
-                      style: TextStyle(fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF8829FF),
+                        fontSize: 48,
+                      ),
                     ),
                   ),
                 ),

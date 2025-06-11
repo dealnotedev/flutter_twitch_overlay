@@ -6,15 +6,15 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
-import 'package:lottie/lottie.dart';
-import 'package:obssource/animated_mover.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/data/events.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/follow/follow_ballons.dart';
 import 'package:obssource/generated/assets.dart';
+import 'package:obssource/highlighed/highlighted_message.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixel_rain.dart';
 import 'package:obssource/pixel_rain_avatar.dart';
@@ -61,7 +61,7 @@ class _State extends State<LoggedWidget> {
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
 
-    _simulateRaid();
+    //_simulateRaid();
     super.initState();
   }
 
@@ -115,19 +115,19 @@ class _State extends State<LoggedWidget> {
               ),
             ],
             ..._follows.map((f) {
-              return _FollowBallonsWidget(
+              return FollowBallonsWidget(
                 event: f,
                 constraints: constraints,
                 duration: _followDuration,
                 key: ValueKey(f),
               );
             }),
-            ..._roosters.map((r) {
-              return _RoosterWidget(
+            ..._highlightedMessages.map((r) {
+              return HighlightedMessageWidget(
                 constraints: constraints,
                 key: ValueKey(r.id),
                 event: r,
-                duration: _roosterDuration,
+                duration: _highlightedMessageDuration,
               );
             }),
             _createConfigInfo(context),
@@ -319,12 +319,12 @@ class _State extends State<LoggedWidget> {
     }
   }
 
-  static const _roosterDuration = Duration(seconds: 10);
+  static const _highlightedMessageDuration = Duration(seconds: 10);
   static const _followDuration = Duration(seconds: 10);
 
   Pause? _pause;
 
-  final _roosters = <_Rooster>{};
+  final _highlightedMessages = <HighlightedMessage>{};
   final _follows = <UserFollowEvent>{};
 
   void _handleUserFollow(WsMessageEvent event) async {
@@ -370,8 +370,7 @@ class _State extends State<LoggedWidget> {
     }
 
     if (event != null &&
-        message.payload.subscription?.type == 'channel.follow' &&
-        _obsConfig.getBool('followers')) {
+        message.payload.subscription?.type == 'channel.follow') {
       _handleUserFollow(event);
       return;
     }
@@ -507,7 +506,8 @@ class _State extends State<LoggedWidget> {
         }
       });
 
-      final rooster = _Rooster(
+      final highlightedMessage = HighlightedMessage(
+        firstMessage: firstMessage,
         color: color,
         title: title,
         id: id,
@@ -527,13 +527,13 @@ class _State extends State<LoggedWidget> {
       );
 
       setState(() {
-        _roosters.add(rooster);
+        _highlightedMessages.add(highlightedMessage);
       });
 
-      await Future.delayed(_roosterDuration);
+      await Future.delayed(_highlightedMessageDuration);
 
       setState(() {
-        _roosters.remove(rooster);
+        _highlightedMessages.remove(highlightedMessage);
       });
     }
   }
@@ -644,186 +644,6 @@ class _RewardWidget extends StatelessWidget {
             Gap(8),
           ],
         ),
-      ),
-    );
-  }
-}
-
-class _Rooster {
-  final Color color;
-  final String title;
-  final String id;
-  final List<InlineSpan> text;
-
-  _Rooster({
-    required this.id,
-    required this.text,
-    required this.title,
-    required this.color,
-  });
-}
-
-class _RoosterWidget extends StatelessWidget {
-  final Duration duration;
-  final _Rooster event;
-  final BoxConstraints constraints;
-
-  const _RoosterWidget({
-    super.key,
-    required this.event,
-    required this.duration,
-    required this.constraints,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedHorizontalMover(
-      alreadyInsideStack: true,
-      constraints: constraints,
-      duration: duration,
-      size: Size(400, 320),
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          LottieBuilder.asset(
-            Assets.assetsRooster,
-            width: 400,
-            height: 320,
-            fit: BoxFit.cover,
-            frameRate: FrameRate(60),
-          ),
-          Positioned(
-            left: 256,
-            bottom: 200,
-            child: Transform.rotate(
-              angle: -0.25,
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    constraints: BoxConstraints(maxWidth: 448),
-                    decoration: BoxDecoration(
-                      color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
-                      borderRadius: BorderRadius.circular(24),
-                    ),
-                    padding: EdgeInsets.only(
-                      left: 16,
-                      right: 16,
-                      bottom: 12,
-                      top: 12,
-                    ),
-                    child: RichText(
-                      textWidthBasis: TextWidthBasis.longestLine,
-                      text: TextSpan(
-                        style: TextStyle(fontSize: 16, color: Colors.white),
-                        children: event.text,
-                      ),
-                    ),
-                  ),
-                  Positioned(
-                    right: 24,
-                    top: -16,
-                    child: Container(
-                      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: event.color,
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Text(
-                        event.title,
-                        style: TextStyle(
-                          fontSize: 14,
-                          height: 1,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.white,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _FollowBallonsWidget extends StatelessWidget {
-  static const _avatarPlaceholder = '{avatart_placeholder}';
-
-  final UserFollowEvent event;
-  final Duration duration;
-  final BoxConstraints constraints;
-
-  const _FollowBallonsWidget({
-    super.key,
-    required this.event,
-    required this.duration,
-    required this.constraints,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedVerticalMover(
-      duration: duration,
-      size: Size(280, 280),
-      constraints: constraints,
-      alreadyInsideStack: true,
-      child: Stack(
-        clipBehavior: Clip.none,
-        children: [
-          LottieBuilder.asset(
-            Assets.assetsBallons,
-            width: 280,
-            height: 280,
-            fit: BoxFit.cover,
-            frameRate: FrameRate(60),
-          ),
-          Positioned(
-            top: 48,
-            left: 160,
-            child: Transform.rotate(
-              angle: -0.15,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                padding: EdgeInsets.all(16),
-                child: RichText(
-                  textAlign: TextAlign.center,
-                  text: TextSpan(
-                    style: TextStyle(fontSize: 24),
-                    children: SpanUtil.createSpansAdvanced(
-                      context.localizations.user_now_following_title(
-                        _avatarPlaceholder,
-                        event.userName,
-                      ),
-                      [_avatarPlaceholder, event.userName],
-                      (t) {
-                        if (t == _avatarPlaceholder) {
-                          return WidgetSpan(
-                            alignment: PlaceholderAlignment.middle,
-                            child: Avatar(
-                              size: 24,
-                              url: event.user?.profileImageUrl,
-                            ),
-                          );
-                        }
-                        return TextSpan(
-                          text: t,
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
       ),
     );
   }
