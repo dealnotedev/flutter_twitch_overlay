@@ -13,6 +13,8 @@ class AvatarPixelRain extends StatelessWidget {
   final double widgetWidth;
   final double widgetHeight;
 
+  final double pixelPadding;
+
   const AvatarPixelRain({
     super.key,
     required this.pixels,
@@ -22,6 +24,7 @@ class AvatarPixelRain extends StatelessWidget {
     required this.widgetWidth,
     required this.widgetHeight,
     required this.fallDurationMs,
+    this.pixelPadding = 0.25
   });
 
   @override
@@ -37,6 +40,7 @@ class AvatarPixelRain extends StatelessWidget {
             pixelSize,
             durationMs,
             fallDurationMs,
+              pixelPadding: pixelPadding
           ),
         );
       },
@@ -51,16 +55,17 @@ class _AvatarRainPainter extends CustomPainter {
   final int durationMs;
   final int fallDurationMs;
 
+  final double pixelPadding;
+  final double dualPixelPadding;
+
   _AvatarRainPainter(
     this.pixels,
     this.progress,
     this.pixelSize,
     this.durationMs,
-    this.fallDurationMs,
-  );
-
-  static const _padding = 0.25;
-  static const _dualPadding = 0.5;
+      this.fallDurationMs, {
+        required this.pixelPadding,
+      }) : dualPixelPadding = pixelPadding * 2.0;
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -90,13 +95,18 @@ class _AvatarRainPainter extends CustomPainter {
       final x = lerpDouble(xStart, xTarget, pixelProgress)!;
 
       final rect = Rect.fromLTWH(
-        x + _padding,
-        y + _padding,
-        pixelSize - _dualPadding,
-        pixelSize - _dualPadding,
+        x + pixelPadding,
+        y + pixelPadding,
+        pixelSize - dualPixelPadding,
+        pixelSize - dualPixelPadding,
       );
 
       final rrect = RRect.fromRectAndRadius(rect, _radius);
+
+      //_paint.maskFilter = MaskFilter.blur(BlurStyle.normal, 16);
+      //canvas.drawRRect(rrect, _paint..color = p.color);
+      //_paint.maskFilter = null;
+
       canvas.drawRRect(rrect, _paint..color = p.color);
     }
   }

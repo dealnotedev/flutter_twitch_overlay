@@ -24,6 +24,7 @@ import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/span_util.dart';
 import 'package:obssource/srt_off.dart';
+import 'package:obssource/subs/subs_widget.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/twitch/ws_event.dart';
@@ -61,7 +62,7 @@ class _State extends State<LoggedWidget> {
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
 
-    _simulateRaid();
+    //_simulateRaid();
     super.initState();
   }
 
@@ -140,6 +141,7 @@ class _State extends State<LoggedWidget> {
                 onDone: _handleRaidAnimationDone,
               ),
             ],
+            SubsWidget(who: 'the_way_to_valhalla', constraints: constraints),
           ],
         );
       },

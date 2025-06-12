@@ -16,4 +16,15 @@ class Pixel {
     required this.color,
     required this.delayMs,
   });
+
+  Pixel copy({double? startX, double? startY}) {
+    return Pixel(
+      x: x,
+      y: y,
+      startX: startX ?? this.startX,
+      startY: startY ?? this.startY,
+      color: color,
+      delayMs: delayMs,
+    );
+  }
 }
