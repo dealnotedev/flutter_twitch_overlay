@@ -1,10 +1,11 @@
 import 'dart:math';
-import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:obssource/pixels/pixel.dart';
+import 'package:obssource/pixels/pixel_rain_animator.dart';
 
 class RainyAvatar extends StatefulWidget {
   final BoxConstraints constraints;
@@ -88,6 +89,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
       widget.pixelSize,
       _fallDurationMs,
       widget.origin,
+      verticalOffset: widget.verticalOffset,
     );
 
     _startAnimation();
@@ -100,7 +102,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
     super.dispose();
   }
 
-  List<_Pixel>? _pixels;
+  List<Pixel>? _pixels;
 
   late double _scale;
 
@@ -196,16 +198,17 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
     return points;
   }
 
-  static List<_Pixel> _makePixels(
+  static List<Pixel> _makePixels(
     List<List<Color?>> matrix,
     int durationMs,
     double widgetWidth,
     double widgetHeight,
     double pixelSize,
     int fallDurationMs,
-    RainyPixelOrigin origin,
-  ) {
-    final pixels = <_Pixel>[];
+    RainyPixelOrigin origin, {
+    required double verticalOffset,
+  }) {
+    final pixels = <Pixel>[];
 
     final h = matrix.length;
     final w = matrix[0].length;
@@ -214,17 +217,24 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
     final cy = h / 2 - 0.5;
     final radius = (w < h ? w : h) / 2 - 0.5;
 
+    final width = w * pixelSize;
+    final height = h * pixelSize;
+
+    final startX = (widgetWidth / 2.0) - (width / 2.0);
+    final startY = (widgetHeight / 2.0) - (height / 2.0) + verticalOffset;
+
     for (int y = 0; y < h; y++) {
       for (int x = 0; x < w; x++) {
         final color = matrix[y][x];
+
         if (color != null) {
           final dx = x - cx;
           final dy = y - cy;
           if (dx * dx + dy * dy <= radius * radius) {
             pixels.add(
-              _Pixel(
-                x: x,
-                y: y,
+              Pixel(
+                x: startX + (x * pixelSize),
+                y: startY + (y * pixelSize),
                 startX: 0,
                 startY: 0,
                 color: color,
@@ -263,11 +273,11 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
     for (int i = 0; i < pixels.length; i++) {
       final p = pixels[i];
       final start = startPositions[i];
-      pixels[i] = _Pixel(
+      pixels[i] = Pixel(
         x: p.x,
         y: p.y,
-        startX: start.x / pixelSize,
-        startY: start.y / pixelSize,
+        startX: start.x,
+        startY: start.y,
         color: p.color,
         delayMs: p.delayMs,
       );
@@ -279,7 +289,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
     final step = totalSpan / pixels.length;
 
     for (int i = 0; i < pixels.length; i++) {
-      pixels[i] = _Pixel(
+      pixels[i] = Pixel(
         x: pixels[i].x,
         y: pixels[i].y,
         startX: pixels[i].startX,
@@ -385,8 +395,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
               ? AnimatedScale(
                 scale: _scale,
                 duration: Duration(seconds: 1),
-                child: _AvatarPixelRain(
-                  verticalOffset: widget.verticalOffset,
+                child: AvatarPixelRain(
                   widgetWidth: widget.constraints.maxWidth,
                   widgetHeight: widget.constraints.maxHeight,
                   pixelSize: widget.pixelSize,
@@ -399,143 +408,4 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
               : null,
     );
   }
-}
-
-class _AvatarPixelRain extends StatelessWidget {
-  final double verticalOffset;
-  final List<_Pixel> pixels;
-  final double pixelSize;
-  final Animation<double> animation;
-  final int durationMs;
-  final int fallDurationMs;
-
-  final double widgetWidth;
-  final double widgetHeight;
-
-  const _AvatarPixelRain({
-    required this.pixels,
-    required this.verticalOffset,
-    required this.pixelSize,
-    required this.animation,
-    required this.durationMs,
-    required this.widgetWidth,
-    required this.widgetHeight,
-    required this.fallDurationMs,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return AnimatedBuilder(
-      animation: animation,
-      builder: (context, _) {
-        return CustomPaint(
-          size: Size(widgetWidth, widgetHeight),
-          painter: _AvatarRainPainter(
-            pixels,
-            animation.value,
-            pixelSize,
-            durationMs,
-            fallDurationMs,
-            verticalOffset,
-          ),
-        );
-      },
-    );
-  }
-}
-
-class _Pixel {
-  final int x;
-  final int y;
-  final double startX;
-  final double startY;
-  final Color color;
-  final int delayMs;
-
-  _Pixel({
-    required this.x,
-    required this.y,
-    required this.startX,
-    required this.startY,
-    required this.color,
-    required this.delayMs,
-  });
-}
-
-class _AvatarRainPainter extends CustomPainter {
-  final List<_Pixel> pixels;
-  final double progress;
-  final double pixelSize;
-  final int durationMs;
-  final int fallDurationMs;
-  final double verticalOffset;
-
-  _AvatarRainPainter(
-    this.pixels,
-    this.progress,
-    this.pixelSize,
-    this.durationMs,
-    this.fallDurationMs,
-    this.verticalOffset,
-  );
-
-  static const _padding = 0.25;
-  static const _dualPadding = 0.5;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final imageW =
-        pixels.isEmpty
-            ? 0
-            : (pixels.map((p) => p.x).reduce(max) + 1) * pixelSize;
-    final imageH =
-        pixels.isEmpty
-            ? 0
-            : (pixels.map((p) => p.y).reduce(max) + 1) * pixelSize;
-
-    final offsetX = (size.width - imageW) / 2;
-    final offsetY = (size.height - imageH) / 2 + verticalOffset;
-
-    final currentMs = progress * durationMs;
-
-    for (final p in pixels) {
-      final startMs = p.delayMs;
-      final endMs = startMs + fallDurationMs;
-
-      double pixelProgress;
-
-      if (currentMs < startMs) {
-        pixelProgress = 0.0;
-      } else if (currentMs >= endMs) {
-        pixelProgress = 1.0;
-      } else {
-        pixelProgress = (currentMs - startMs) / fallDurationMs;
-        pixelProgress = Curves.easeOut.transform(pixelProgress.clamp(0.0, 1.0));
-      }
-
-      final yTarget = p.y * pixelSize + offsetY;
-      final xTarget = p.x * pixelSize + offsetX;
-      final yStart = p.startY * pixelSize;
-      final xStart = p.startX * pixelSize;
-
-      final y = lerpDouble(yStart, yTarget, pixelProgress)!;
-      final x = lerpDouble(xStart, xTarget, pixelProgress)!;
-
-      final rect = Rect.fromLTWH(
-        x + _padding,
-        y + _padding,
-        pixelSize - _dualPadding,
-        pixelSize - _dualPadding,
-      );
-
-      final rrect = RRect.fromRectAndRadius(rect, _radius);
-      canvas.drawRRect(rrect, _paint..color = p.color);
-    }
-  }
-
-  static const _radius = Radius.circular(2);
-  final _paint = Paint();
-
-  @override
-  bool shouldRepaint(covariant _AvatarRainPainter oldDelegate) => true;
 }

@@ -65,7 +65,7 @@ class _State extends State<RaidWidget> {
               resolution: 64,
               pixelSize: 8,
               randomBackground: false,
-              verticalOffset: -128,
+              verticalOffset: -144,
               scaleWhenStart: false,
               initialDelay: Duration(milliseconds: 1000),
               origin: RainyPixelOrigin.outside,
