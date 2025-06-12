@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
+import 'package:obssource/generated/assets.dart';
+import 'package:obssource/pixel_rain_avatar.dart';
 import 'package:obssource/pixel_rain_letters.dart';
 import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_text.dart';
@@ -19,10 +22,10 @@ class _State extends State<SubsWidget> {
 
   static const _pixelSize = 12.0;
 
-  late final _Graffity _name;
-  late final _Graffity _heart;
-  late final _Graffity _description;
-  late final _Graffity _heartBackground;
+  _Graffity _name = _Graffity.empty;
+  _Graffity _heart = _Graffity.empty;
+  _Graffity _description = _Graffity.empty;
+  _Graffity _heartBackground = _Graffity.empty;
 
   static _Graffity _createDescription({
     required String text,
@@ -67,9 +70,12 @@ class _State extends State<SubsWidget> {
   static _Graffity _createHeartBackground({
     required _Graffity description,
     required BoxConstraints constraints,
+    required img.Image image,
   }) {
+    final maxtrix = PixelRainText.generateMatrixFromImage(image: image);
+
     final size = PixelRainText.calculateSize2(
-      mask: PixelRainLetter.heartBackground,
+      mask: maxtrix,
       pixelSize: _pixelSize,
     );
 
@@ -80,7 +86,7 @@ class _State extends State<SubsWidget> {
 
     final pixels = List.of(
       PixelRainText.generatePixels(
-        mask: PixelRainLetter.heartBackground,
+        mask: maxtrix,
         startOffset: start,
         pixelSize: _pixelSize,
         color: _descriptionColor,
@@ -98,8 +104,8 @@ class _State extends State<SubsWidget> {
         final from = description.pixels[i];
         pixels.add(
           Pixel(
-            x: constraints.maxWidth - _pixelSize,
-            y: constraints.maxHeight - _pixelSize,
+            x: constraints.maxWidth,
+            y: constraints.maxHeight,
             startX: from.x,
             startY: from.y,
             color: from.color,
@@ -144,9 +150,12 @@ class _State extends State<SubsWidget> {
   static _Graffity _createHeart({
     required BoxConstraints constraints,
     required _Graffity name,
+    required img.Image image,
   }) {
+    final matrix = PixelRainText.generateMatrixFromImage(image: image);
+
     final size = PixelRainText.calculateSize2(
-      mask: PixelRainLetter.heart,
+      mask: matrix,
       pixelSize: _pixelSize,
     );
 
@@ -156,7 +165,7 @@ class _State extends State<SubsWidget> {
     );
 
     final pixels = PixelRainText.generatePixels(
-      mask: PixelRainLetter.heart,
+      mask: matrix,
       startOffset: start,
       pixelSize: _pixelSize,
       color: _twitchColor,
@@ -172,8 +181,8 @@ class _State extends State<SubsWidget> {
         final from = name.pixels[i];
         pixels.add(
           Pixel(
-            x: constraints.maxWidth - _pixelSize,
-            y: constraints.maxHeight - _pixelSize,
+            x: constraints.maxWidth,
+            y: constraints.maxHeight,
             startX: from.x,
             startY: from.y,
             color: from.color,
@@ -188,30 +197,43 @@ class _State extends State<SubsWidget> {
 
   @override
   void initState() {
-    _description = _createDescription(
-      text: 'is now tier 3 subscriber'.toUpperCase(),
-      constraints: widget.constraints,
-    );
-    _heartBackground = _createHeartBackground(
-      description: _description,
-      constraints: widget.constraints,
-    );
-    _name = _createName(
-      name: widget.who,
-      description: _description,
-      constraints: widget.constraints,
-    );
-    _heart = _createHeart(constraints: widget.constraints, name: _name);
-
     _startAnimation();
     super.initState();
   }
 
   bool _leaving = false;
+  bool _ready = false;
 
   static const _startDuration = Duration(seconds: 5);
 
   void _startAnimation() async {
+    final heart = (await RainyAvatar.loadImageFromAssets(Assets.assetsHeart))!;
+    final bg =
+        (await RainyAvatar.loadImageFromAssets(Assets.assetsHeartBackground))!;
+
+    setState(() {
+      _description = _createDescription(
+        text: 'is now tier 3 subscriber'.toUpperCase(),
+        constraints: widget.constraints,
+      );
+      _heartBackground = _createHeartBackground(
+        image: bg,
+        description: _description,
+        constraints: widget.constraints,
+      );
+      _name = _createName(
+        name: widget.who,
+        description: _description,
+        constraints: widget.constraints,
+      );
+      _heart = _createHeart(
+        constraints: widget.constraints,
+        name: _name,
+        image: heart,
+      );
+      _ready = true;
+    });
+
     await Future.delayed(Duration(seconds: 10));
 
     setState(() {
@@ -224,9 +246,12 @@ class _State extends State<SubsWidget> {
 
   @override
   Widget build(BuildContext context) {
+    if (!_ready) {
+      return SizedBox.expand();
+    }
     return Stack(
       children: [
-        /*Positioned(
+        Positioned(
           bottom: _description.size.height + 32.0 + 32.0,
           left: 0,
           right: 0,
@@ -253,7 +278,7 @@ class _State extends State<SubsWidget> {
               color: Color(0xFF3C3C3C),
             ),
           ),
-        ),*/
+        ),
         if (_leaving) ...[
           PixelRainText(
             key: ValueKey('heart_background'),
@@ -304,4 +329,10 @@ class _Graffity {
   final List<Pixel> pixels;
 
   _Graffity({required this.size, required this.pixels, required this.start});
+
+  static _Graffity empty = _Graffity(
+    size: Size.zero,
+    pixels: [],
+    start: Offset.zero,
+  );
 }

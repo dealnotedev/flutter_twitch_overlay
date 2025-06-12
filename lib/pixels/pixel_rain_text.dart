@@ -1,6 +1,7 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 
@@ -12,9 +13,11 @@ class PixelRainText extends StatefulWidget {
   final Duration duration;
   final Duration fallDuration;
   final double pixelPadding;
+  final Radius pixelRadius;
 
   const PixelRainText({
     super.key,
+    this.pixelRadius = const Radius.circular(2),
     required this.constraints,
     required this.pixels,
     required this.duration,
@@ -59,6 +62,16 @@ class PixelRainText extends StatefulWidget {
     required double pixelSize,
   }) {
     return Size(mask[0].length * pixelSize, mask.length * pixelSize);
+  }
+
+  static List<List<int>> generateMatrixFromImage({required img.Image image}) {
+    return List.generate(
+      image.height,
+      (y) => List.generate(image.width, (x) {
+        final pixel = image.getPixel(x, y);
+        return pixel.a == 0.0 ? 0 : 1;
+      }),
+    );
   }
 
   static List<Pixel> generatePixels({
@@ -180,6 +193,7 @@ class _State extends State<PixelRainText> with SingleTickerProviderStateMixin {
         pixels: pixels,
         animation: animation,
         pixelPadding: widget.pixelPadding,
+        pixelRadius: widget.pixelRadius,
       ),
     );
   }

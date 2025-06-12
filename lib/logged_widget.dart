@@ -141,7 +141,7 @@ class _State extends State<LoggedWidget> {
                 onDone: _handleRaidAnimationDone,
               ),
             ],
-            SubsWidget(who: 'the_way_to_valhalla', constraints: constraints),
+            SubsWidget(who: 'v4ns__', constraints: constraints),
           ],
         );
       },
