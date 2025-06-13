@@ -5,15 +5,19 @@ import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/pixels/pixel_rain_letters.dart';
 import 'package:obssource/pixels/pixel_rain_text.dart';
+import 'package:obssource/pixels/pixel_util.dart';
 
 class SubsWidget extends StatefulWidget {
-
   final String description;
   final String who;
   final BoxConstraints constraints;
 
-  const SubsWidget(
-      {super.key, required this.who, required this.constraints, required this.description});
+  const SubsWidget({
+    super.key,
+    required this.who,
+    required this.constraints,
+    required this.description,
+  });
 
   @override
   State<StatefulWidget> createState() => _State();
@@ -34,7 +38,7 @@ class _State extends State<SubsWidget> {
     required String text,
     required BoxConstraints constraints,
   }) {
-    final size = PixelRainText.calculateSize(
+    final size = PixelUtil.calculatePixelTextSize(
       word: text.toUpperCase(),
       letters: PixelRainLetter.all,
       pixelSize: _pixelSize,
@@ -46,8 +50,8 @@ class _State extends State<SubsWidget> {
       constraints.maxHeight - size.height - 32.0,
     );
 
-    final pixels = PixelRainText.generateWordPixels(
-      word: text.toUpperCase(),
+    final pixels = PixelUtil.generateTextPixels(
+      text: text.toUpperCase(),
       letters: PixelRainLetter.all,
       startOffset: start,
       pixelSize: _pixelSize,
@@ -75,9 +79,9 @@ class _State extends State<SubsWidget> {
     required BoxConstraints constraints,
     required img.Image image,
   }) {
-    final maxtrix = PixelRainText.generateMatrixFromImage(image: image);
+    final maxtrix = PixelUtil.generateMatrixFromImage(image: image);
 
-    final size = PixelRainText.calculateSize2(
+    final size = PixelUtil.calculateSize(
       mask: maxtrix,
       pixelSize: _pixelSize,
     );
@@ -88,7 +92,7 @@ class _State extends State<SubsWidget> {
     );
 
     final pixels = List.of(
-      PixelRainText.generatePixels(
+      PixelUtil.generatePixels(
         mask: maxtrix,
         startOffset: start,
         pixelSize: _pixelSize,
@@ -126,7 +130,7 @@ class _State extends State<SubsWidget> {
     required _Graffity description,
     required BoxConstraints constraints,
   }) {
-    final size = PixelRainText.calculateSize(
+    final size = PixelUtil.calculatePixelTextSize(
       letters: PixelRainLetter.all,
       word: name.toUpperCase(),
       pixelSize: _pixelSize,
@@ -138,9 +142,9 @@ class _State extends State<SubsWidget> {
       description.start.dy - size.height - 64.0,
     );
 
-    final pixels = PixelRainText.generateWordPixels(
+    final pixels = PixelUtil.generateTextPixels(
       color: _twitchColor,
-      word: name.toUpperCase(),
+      text: name.toUpperCase(),
       letters: PixelRainLetter.all,
       pixelSize: _pixelSize,
       letterSpacing: _pixelSize,
@@ -155,9 +159,9 @@ class _State extends State<SubsWidget> {
     required _Graffity name,
     required img.Image image,
   }) {
-    final matrix = PixelRainText.generateMatrixFromImage(image: image);
+    final matrix = PixelUtil.generateMatrixFromImage(image: image);
 
-    final size = PixelRainText.calculateSize2(
+    final size = PixelUtil.calculateSize(
       mask: matrix,
       pixelSize: _pixelSize,
     );
@@ -167,7 +171,7 @@ class _State extends State<SubsWidget> {
       constraints.maxHeight / 2.0 - size.height / 2.0,
     );
 
-    final pixels = PixelRainText.generatePixels(
+    final pixels = PixelUtil.generatePixels(
       mask: matrix,
       startOffset: start,
       pixelSize: _pixelSize,
@@ -213,7 +217,8 @@ class _State extends State<SubsWidget> {
     final heart = (await RainyAvatar.loadImageFromAssets(Assets.assetsHeart))!;
     final bg =
     (await RainyAvatar.loadImageFromAssets(
-        Assets.assetsHeartBackgroundFilled))!;
+      Assets.assetsHeartBackgroundFilled,
+    ))!;
 
     setState(() {
       _description = _createDescription(
