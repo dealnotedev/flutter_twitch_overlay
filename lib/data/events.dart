@@ -19,11 +19,13 @@ class Pause {
   final img.Image image;
   final Duration duration;
   final Duration fallDuration;
+  final String? message;
 
   Pause({
     required this.image,
     required this.duration,
     required this.fallDuration,
+    required this.message
   });
 }
 

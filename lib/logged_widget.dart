@@ -16,9 +16,9 @@ import 'package:obssource/follow/follow_ballons.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/highlighed/highlighted_message.dart';
 import 'package:obssource/obs_audio.dart';
-import 'package:obssource/pixel_rain.dart';
-import 'package:obssource/pixel_rain_avatar.dart';
-import 'package:obssource/pixel_rain_letters.dart';
+import 'package:obssource/pixels/pixel_rain.dart';
+import 'package:obssource/pixels/pixel_rain_avatar.dart';
+import 'package:obssource/pixels/pixel_rain_letters.dart';
 import 'package:obssource/raid.dart';
 import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
@@ -409,8 +409,9 @@ class _State extends State<LoggedWidget> {
     }
 
     if ('Пауза' == reward.reward) {
-      final args = (reward.input ?? '').split(' ');
+      final args = (reward.input?.trim() ?? '').split(' ');
       final mins = int.parse(args.firstOrNull ?? '0');
+      final message = args.length > 1 ? args.sublist(1).join(' ') : null;
 
       if (mins == 0) {
         setState(() {
@@ -424,6 +425,7 @@ class _State extends State<LoggedWidget> {
       );
       setState(() {
         _pause = Pause(
+          message: message,
           image: image!,
           duration: Duration(minutes: mins),
           fallDuration: Duration(milliseconds: 1500),

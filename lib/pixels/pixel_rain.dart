@@ -1,7 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:obssource/pixel_rain_letters.dart';
+import 'package:obssource/pixels/pixel_rain_letters.dart';
 
 class SequentialPixelRainLetterA extends StatefulWidget {
   final BoxConstraints constraints;

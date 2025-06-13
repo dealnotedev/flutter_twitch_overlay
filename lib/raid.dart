@@ -7,7 +7,7 @@ import 'package:lottie/lottie.dart';
 import 'package:obssource/animated_mover.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/generated/assets.dart';
-import 'package:obssource/pixel_rain_avatar.dart';
+import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/span_util.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 

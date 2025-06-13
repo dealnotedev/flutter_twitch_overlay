@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:obssource/generated/assets.dart';
-import 'package:obssource/pixel_rain_avatar.dart';
-import 'package:obssource/pixel_rain_letters.dart';
 import 'package:obssource/pixels/pixel.dart';
+import 'package:obssource/pixels/pixel_rain_avatar.dart';
+import 'package:obssource/pixels/pixel_rain_letters.dart';
 import 'package:obssource/pixels/pixel_rain_text.dart';
 
 class SubsWidget extends StatefulWidget {
