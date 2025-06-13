@@ -61,5 +61,40 @@
         "example": "5"
       }
     }
+  },
+  "subscription_subscribe_description": "is now Tier {tier} subscriber",
+  "@subscription_subscribe_description": {
+    "placeholders": {
+      "tier": {
+        "type": "String",
+        "example": "3"
+      }
+    }
+  },
+  "subscription_gift_description": "is gifting {count} Tier {tier} Subs",
+  "@subscription_gift_description": {
+    "placeholders": {
+      "tier": {
+        "type": "String",
+        "example": "3"
+      },
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "subscription_message_description": "subscribed at Tier {tier} for {months} months",
+  "@subscription_message_description": {
+    "placeholders": {
+      "tier": {
+        "type": "String",
+        "example": "3"
+      },
+      "months": {
+        "type": "int",
+        "example": "3"
+      }
+    }
   }
 }

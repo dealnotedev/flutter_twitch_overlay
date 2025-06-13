@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -40,5 +41,20 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String raid_text(String broadcaster, int raiders) {
     return '$broadcaster is raiding with a party of $raiders';
+  }
+
+  @override
+  String subscription_subscribe_description(String tier) {
+    return 'is now Tier $tier subscriber';
+  }
+
+  @override
+  String subscription_gift_description(String tier, int count) {
+    return 'is gifting $count Tier $tier Subs';
+  }
+
+  @override
+  String subscription_message_description(String tier, int months) {
+    return 'subscribed at Tier $tier for $months months';
   }
 }

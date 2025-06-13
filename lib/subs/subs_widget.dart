@@ -7,10 +7,13 @@ import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_text.dart';
 
 class SubsWidget extends StatefulWidget {
+
+  final String description;
   final String who;
   final BoxConstraints constraints;
 
-  const SubsWidget({super.key, required this.who, required this.constraints});
+  const SubsWidget(
+      {super.key, required this.who, required this.constraints, required this.description});
 
   @override
   State<StatefulWidget> createState() => _State();
@@ -20,7 +23,7 @@ class _State extends State<SubsWidget> {
   static const _descriptionColor = Colors.white;
   static const _twitchColor = Color(0xFF8829FF);
 
-  static const _pixelSize = 12.0;
+  static const _pixelSize = 10.0;
 
   _Graffity _name = _Graffity.empty;
   _Graffity _heart = _Graffity.empty;
@@ -32,7 +35,7 @@ class _State extends State<SubsWidget> {
     required BoxConstraints constraints,
   }) {
     final size = PixelRainText.calculateSize(
-      word: text,
+      word: text.toUpperCase(),
       letters: PixelRainLetter.all,
       pixelSize: _pixelSize,
       letterSpacing: _pixelSize,
@@ -44,7 +47,7 @@ class _State extends State<SubsWidget> {
     );
 
     final pixels = PixelRainText.generateWordPixels(
-      word: text,
+      word: text.toUpperCase(),
       letters: PixelRainLetter.all,
       startOffset: start,
       pixelSize: _pixelSize,
@@ -209,11 +212,12 @@ class _State extends State<SubsWidget> {
   void _startAnimation() async {
     final heart = (await RainyAvatar.loadImageFromAssets(Assets.assetsHeart))!;
     final bg =
-        (await RainyAvatar.loadImageFromAssets(Assets.assetsHeartBackground))!;
+    (await RainyAvatar.loadImageFromAssets(
+        Assets.assetsHeartBackgroundFilled))!;
 
     setState(() {
       _description = _createDescription(
-        text: 'is now tier 3 subscriber'.toUpperCase(),
+        text: widget.description,
         constraints: widget.constraints,
       );
       _heartBackground = _createHeartBackground(
@@ -234,6 +238,12 @@ class _State extends State<SubsWidget> {
       _ready = true;
     });
 
+    await Future.delayed(Duration(seconds: 1));
+
+    setState(() {
+      _opacity = 1.0;
+    });
+
     await Future.delayed(Duration(seconds: 10));
 
     setState(() {
@@ -242,7 +252,7 @@ class _State extends State<SubsWidget> {
     });
   }
 
-  double _opacity = 1.0;
+  double _opacity = 0.0;
 
   @override
   Widget build(BuildContext context) {
@@ -261,7 +271,7 @@ class _State extends State<SubsWidget> {
             child: Container(
               height: _name.size.height + 32.0 + 32.0,
               width: double.infinity,
-              color: Colors.white,
+              color: Colors.white.withValues(alpha: 0.9),
             ),
           ),
         ),
@@ -275,7 +285,7 @@ class _State extends State<SubsWidget> {
             child: Container(
               height: _description.size.height + 32.0 + 32.0,
               width: double.infinity,
-              color: Color(0xFF3C3C3C),
+              color: Color(0xFF3C3C3C).withValues(alpha: 0.9),
             ),
           ),
         ),

@@ -140,6 +140,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{broadcaster} is raiding with a party of {raiders}'**
   String raid_text(String broadcaster, int raiders);
+
+  /// No description provided for @subscription_subscribe_description.
+  ///
+  /// In en, this message translates to:
+  /// **'is now Tier {tier} subscriber'**
+  String subscription_subscribe_description(String tier);
+
+  /// No description provided for @subscription_gift_description.
+  ///
+  /// In en, this message translates to:
+  /// **'is gifting {count} Tier {tier} Subs'**
+  String subscription_gift_description(String tier, int count);
+
+  /// No description provided for @subscription_message_description.
+  ///
+  /// In en, this message translates to:
+  /// **'subscribed at Tier {tier} for {months} months'**
+  String subscription_message_description(String tier, int months);
 }
 
 class _AppLocalizationsDelegate

@@ -64,6 +64,7 @@ class WsMessageEvent {
   final bool? anonymous;
   final String? tier;
   final bool? gift;
+  final int? cumulativeMonths;
 
   WsMessageEvent({
     required this.id,
@@ -82,7 +83,8 @@ class WsMessageEvent {
     required this.total,
     required this.anonymous,
     required this.tier,
-    required this.gift
+    required this.gift,
+    required this.cumulativeMonths,
   });
 
   static WsMessageEvent fromJson(dynamic json) {
@@ -107,10 +109,11 @@ class WsMessageEvent {
       reply: replyJson != null ? WsReply.fromJson(replyJson) : null,
       userInput: json['user_input'] as String?,
       viewers: json['viewers'] as int?,
-        total: json['total'] as int?,
-        anonymous: json['is_anonymous'] as bool?,
-        tier: json['tier'] as String?,
-        gift: json['is_gift'] as bool?
+      total: json['total'] as int?,
+      anonymous: json['is_anonymous'] as bool?,
+      tier: json['tier'] as String?,
+      gift: json['is_gift'] as bool?,
+      cumulativeMonths: json['cumulative_months'] as int?,
     );
   }
 }

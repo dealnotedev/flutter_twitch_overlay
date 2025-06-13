@@ -13,6 +13,8 @@ class Assets {
   static const String assetsGiraffe = 'assets/giraffe.json';
   static const String assetsHeart = 'assets/heart.png';
   static const String assetsHeartBackground = 'assets/heart_background.png';
+  static const String assetsHeartBackgroundFilled =
+      'assets/heart_background_filled.png';
   static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
   static const String assetsIcDulya = 'assets/ic_dulya.png';
   static const String assetsIcTwitchChannelPosints32dp = 'assets/ic_twitch_channel_posints_32dp.png';
@@ -35,6 +37,7 @@ class Assets {
   static const String assetsRunningDogBrown = 'assets/running_dog_brown.json';
   static const String assetsRunningDogOrange = 'assets/running_dog_orange.json';
   static const String assetsRunningSomething = 'assets/running_something.json';
+  static const String assetsSub = 'assets/sub.mp3';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
 
 }

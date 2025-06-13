@@ -63,6 +63,10 @@ class _State extends State<LoggedWidget> {
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
 
     //_simulateRaid();
+
+    //_pushSubscription(
+    //  _Sub(who: 'dealnotedev', text: 'subscribed at Tier 3 for 19 months'),
+    //);
     super.initState();
   }
 
@@ -85,6 +89,7 @@ class _State extends State<LoggedWidget> {
     final offTv = _offTv;
     final pause = _pause;
     final raid = _raid;
+    final sub = _sub;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -141,12 +146,110 @@ class _State extends State<LoggedWidget> {
                 onDone: _handleRaidAnimationDone,
               ),
             ],
-            SubsWidget(who: 'v4ns__', constraints: constraints),
+            if (sub != null) ...[
+              SubsWidget(
+                key: ValueKey(sub.who),
+                who: sub.who,
+                description: sub.text,
+                constraints: constraints,
+              ),
+            ],
           ],
         );
       },
     );
   }
+
+  void _handleSubscriptionMessage(WsMessage message) {
+    final who = message.payload.event?.user?.name;
+    final tier = _subTierOf(message.payload.event?.tier);
+
+    final months = message.payload.event?.cumulativeMonths;
+
+    if (who != null && months != null) {
+      _pushSubscription(
+        _Sub(
+          who: who,
+          text: context.localizations.subscription_message_description(
+            tier,
+            months,
+          ),
+        ),
+      );
+    }
+  }
+
+  void _handleSubscriptionGift(WsMessage message) {
+    final tier = _subTierOf(message.payload.event?.tier);
+    final who = message.payload.event?.user?.name;
+    final count = message.payload.event?.total ?? 0;
+
+    if (who != null) {
+      _pushSubscription(
+        _Sub(
+          who: who,
+          text: context.localizations.subscription_gift_description(
+            tier,
+            count,
+          ),
+        ),
+      );
+    }
+  }
+
+  static String _subTierOf(String? value) {
+    switch (value) {
+      case "1000":
+        return "1";
+      case "2000":
+        return "2";
+      case "3000":
+        return "3";
+      default:
+        return "?";
+    }
+  }
+
+  void _handleSubscription(WsMessage message) async {
+    final tier = _subTierOf(message.payload.event?.tier);
+    final who = message.payload.event?.user?.name;
+    final gift = message.payload.event?.gift ?? false;
+
+    if (who == null || gift) return;
+
+    _pushSubscription(
+      _Sub(
+        who: who,
+        text: context.localizations.subscription_subscribe_description(tier),
+      ),
+    );
+  }
+
+  void _pushSubscription(_Sub sub) async {
+    final previous = _subCompleter;
+    final completer = _subCompleter = Completer<void>();
+
+    await previous?.future;
+
+    ObsAudio.loadAsset(Assets.assetsSub).then((id) {
+      ObsAudio.play(id);
+    });
+
+    setState(() {
+      _sub = sub;
+    });
+
+    await Future.delayed(Duration(seconds: 20));
+
+    setState(() {
+      _sub = null;
+    });
+
+    completer.complete();
+  }
+
+  _Sub? _sub;
+  Completer<void>? _subCompleter;
 
   Widget _createPixeledName(BoxConstraints constraints, String name) {
     return Row(
@@ -366,7 +469,22 @@ class _State extends State<LoggedWidget> {
       return;
     }
 
-    if (event != null && message.payload.subscription?.type == 'channel.raid') {
+    if (message.payload.subscription?.type == 'channel.subscription.gift') {
+      _handleSubscriptionGift(message);
+      return;
+    }
+
+    if (message.payload.subscription?.type == 'channel.subscription.message') {
+      _handleSubscriptionMessage(message);
+      return;
+    }
+
+    if (message.payload.subscription?.type == 'channel.subscribe') {
+      _handleSubscription(message);
+      return;
+    }
+
+    if (message.payload.subscription?.type == 'channel.raid') {
       _handleRaid(message);
       return;
     }
@@ -590,6 +708,13 @@ class _State extends State<LoggedWidget> {
       _raid = null;
     });
   }
+}
+
+class _Sub {
+  final String who;
+  final String text;
+
+  _Sub({required this.who, required this.text});
 }
 
 class _RewardWidget extends StatelessWidget {
