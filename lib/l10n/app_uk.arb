@@ -46,7 +46,7 @@
       }
     }
   },
-  "chat_message_first": "Перше повідомлення",
+  "chat_message_first": "Перше",
   "chat_message_highlighted": "Важливе",
   "config_invalid": "Неправильна конфігурація OBS",
   "raid_text": "{broadcaster} вривається рейдом разом із {raiders,plural, =1{{raiders} глядачем} other{{raiders} глядачами}}!",

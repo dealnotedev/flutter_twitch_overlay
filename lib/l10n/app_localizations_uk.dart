@@ -30,7 +30,7 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String get chat_message_first => 'Перше повідомлення';
+  String get chat_message_first => 'Перше';
 
   @override
   String get chat_message_highlighted => 'Важливе';
@@ -72,5 +72,5 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String get subscription_anonymous => 'Анонімно';
+  String get subscription_anonymous => 'Анонім';
 }
