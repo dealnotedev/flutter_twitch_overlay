@@ -477,22 +477,26 @@ class _State extends State<LoggedWidget> {
       return;
     }
 
-    if (message.payload.subscription?.type == 'channel.subscription.gift') {
+    if (message.payload.subscription?.type == 'channel.subscription.gift' &&
+        _obsConfig.getBool('subscriptions')) {
       _handleSubscriptionGift(message);
       return;
     }
 
-    if (message.payload.subscription?.type == 'channel.subscription.message') {
+    if (message.payload.subscription?.type == 'channel.subscription.message' &&
+        _obsConfig.getBool('subscriptions')) {
       _handleSubscriptionMessage(message);
       return;
     }
 
-    if (message.payload.subscription?.type == 'channel.subscribe') {
+    if (message.payload.subscription?.type == 'channel.subscribe' &&
+        _obsConfig.getBool('subscriptions')) {
       _handleSubscription(message);
       return;
     }
 
-    if (message.payload.subscription?.type == 'channel.raid') {
+    if (message.payload.subscription?.type == 'channel.raid' &&
+        _obsConfig.getBool('raids')) {
       _handleRaid(message);
       return;
     }
