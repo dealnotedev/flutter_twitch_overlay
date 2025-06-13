@@ -57,4 +57,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String subscription_message_description(String tier, int months) {
     return 'subscribed at Tier $tier for $months months';
   }
+
+  @override
+  String get subscription_anonymous => 'Anonymous';
 }

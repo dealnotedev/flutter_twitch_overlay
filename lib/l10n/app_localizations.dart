@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'subscribed at Tier {tier} for {months} months'**
   String subscription_message_description(String tier, int months);
+
+  /// No description provided for @subscription_anonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous'**
+  String get subscription_anonymous;
 }
 
 class _AppLocalizationsDelegate

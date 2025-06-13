@@ -181,8 +181,16 @@ class _State extends State<LoggedWidget> {
 
   void _handleSubscriptionGift(WsMessage message) {
     final tier = _subTierOf(message.payload.event?.tier);
-    final who = message.payload.event?.user?.name;
+    final anonymous = message.payload.event?.anonymous ?? false;
     final count = message.payload.event?.total ?? 0;
+
+    final String? who;
+
+    if (anonymous) {
+      who = context.localizations.subscription_anonymous;
+    } else {
+      who = message.payload.event?.user?.name;
+    }
 
     if (who != null) {
       _pushSubscription(

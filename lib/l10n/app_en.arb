@@ -96,5 +96,6 @@
         "example": "3"
       }
     }
-  }
+  },
+  "subscription_anonymous": "Anonymous"
 }
