@@ -1,0 +1,101 @@
+{
+  "user_redeemed_reward_title": "{user} бере {reward} за {currency_icon}\u00A0{cost}",
+  "@user_redeemed_reward_title": {
+    "placeholders": {
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      },
+      "reward": {
+        "type": "String",
+        "example": "вздріст"
+      },
+      "currency_icon": {
+        "type": "String",
+        "example": "currency_icon"
+      },
+      "cost": {
+        "type": "String",
+        "example": "10,000"
+      }
+    }
+  },
+  "by_user": "від {user_avatar} {user}",
+  "@by_user": {
+    "placeholders": {
+      "user_avatar": {
+        "type": "String",
+        "example": "url"
+      },
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      }
+    }
+  },
+  "user_now_following_title": "{user_avatar} {user} тепер з нами!",
+  "@user_now_following_title": {
+    "placeholders": {
+      "user_avatar": {
+        "type": "String",
+        "example": "url"
+      },
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      }
+    }
+  },
+  "chat_message_first": "Перше повідомлення",
+  "chat_message_highlighted": "Важливе",
+  "config_invalid": "Неправильна конфігурація OBS",
+  "raid_text": "{broadcaster} вривається рейдом разом із {raiders,plural, =1{{raiders} глядачем} other{{raiders} глядачами}}!",
+  "@raid_text": {
+    "placeholders": {
+      "broadcaster": {
+        "type": "String",
+        "example": "kekotopko"
+      },
+      "raiders": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  },
+  "subscription_subscribe_description": "тепер підписник {tier}-го рівня",
+  "@subscription_subscribe_description": {
+    "placeholders": {
+      "tier": {
+        "type": "String",
+        "example": "3"
+      }
+    }
+  },
+  "subscription_gift_description": "дарує {count,plural, =1{{count} підписку} few{{count} підписки} other{{count} підписок}} {tier}-го рівня",
+  "@subscription_gift_description": {
+    "placeholders": {
+      "tier": {
+        "type": "String",
+        "example": "3"
+      },
+      "count": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "subscription_message_description": "підписник {tier}-го рівня вже {months} міс.",
+  "@subscription_message_description": {
+    "placeholders": {
+      "tier": {
+        "type": "String",
+        "example": "3"
+      },
+      "months": {
+        "type": "int",
+        "example": "3"
+      }
+    }
+  },
+  "subscription_anonymous": "Анонім"
+}

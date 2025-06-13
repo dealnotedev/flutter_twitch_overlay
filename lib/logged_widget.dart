@@ -62,9 +62,12 @@ class _State extends State<LoggedWidget> {
 
     //_simulateRaid();
 
-    //_pushSubscription(
-    //  _Sub(who: 'dealnotedev', text: 'subscribed at Tier 3 for 19 months'),
-    //);
+    /*WidgetsBinding.instance.addPostFrameCallback((_) {
+      _pushSubscription(
+        _Sub(who: 'dealnotedev',
+            text: context.localizations.subscription_gift_description('1', 5)),
+      );
+    });*/
     super.initState();
   }
 
