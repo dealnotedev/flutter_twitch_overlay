@@ -16,9 +16,7 @@ import 'package:obssource/follow/follow_ballons.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/highlighed/highlighted_message.dart';
 import 'package:obssource/obs_audio.dart';
-import 'package:obssource/pixels/pixel_rain.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
-import 'package:obssource/pixels/pixel_rain_letters.dart';
 import 'package:obssource/raid.dart';
 import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
@@ -258,26 +256,6 @@ class _State extends State<LoggedWidget> {
 
   _Sub? _sub;
   Completer<void>? _subCompleter;
-
-  Widget _createPixeledName(BoxConstraints constraints, String name) {
-    return Row(
-      spacing: 16,
-      mainAxisSize: MainAxisSize.max,
-      mainAxisAlignment: MainAxisAlignment.center,
-      children:
-          name.characters
-              .toList()
-              .mapIndexed(
-                (index, l) => SequentialPixelRainLetterA(
-                  color: Colors.white,
-                  duration: Duration(seconds: 5),
-                  constraints: constraints,
-                  letter: PixelRainLetter.get(l),
-                ),
-              )
-              .toList(),
-    );
-  }
 
   Widget _createConfigInfo(BuildContext context) {
     return StreamBuilder(
