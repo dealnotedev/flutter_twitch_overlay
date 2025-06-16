@@ -30,14 +30,21 @@ class Assets {
   static const String assetsImgSticker7 = 'assets/img_sticker_7.webp';
   static const String assetsImgSticker8 = 'assets/img_sticker_8.webp';
   static const String assetsImgSticker9 = 'assets/img_sticker_9.webp';
+  static const String assetsLama = 'assets/lama.json';
   static const String assetsLion = 'assets/lion.json';
+  static const String assetsMavpa1 = 'assets/mavpa1.json';
+  static const String assetsMavpa2 = 'assets/mavpa2.json';
+  static const String assetsMavpa3 = 'assets/mavpa3.json';
+  static const String assetsMavpa4 = 'assets/mavpa4.json';
   static const String assetsRaid = 'assets/raid.mp3';
+  static const String assetsRaidDaria = 'assets/raid_daria.mp3';
   static const String assetsRooster = 'assets/rooster.json';
   static const String assetsRunningDogBlue = 'assets/running_dog_blue.json';
   static const String assetsRunningDogBrown = 'assets/running_dog_brown.json';
   static const String assetsRunningDogOrange = 'assets/running_dog_orange.json';
   static const String assetsRunningSomething = 'assets/running_something.json';
   static const String assetsSub = 'assets/sub.mp3';
+  static const String assetsSubDaria = 'assets/sub_daria.wav';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
 
 }

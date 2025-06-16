@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:lottie/lottie.dart';
 import 'package:obssource/animated_mover.dart';
+import 'package:obssource/constants.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
@@ -43,8 +44,23 @@ class Raid {
 }
 
 class _State extends State<RaidWidget> {
-  static const _avatarDuration = Duration(seconds: 10);
-  static const _duration = Duration(seconds: 6);
+  static Duration get _avatarDuration {
+    switch (Constants.broadcaster) {
+      case Broadcaster.daria:
+        return Duration(seconds: 15);
+      case Broadcaster.dealnotedev:
+        return Duration(seconds: 10);
+    }
+  }
+
+  static Duration get _duration {
+    switch (Constants.broadcaster) {
+      case Broadcaster.daria:
+        return Duration(seconds: 15);
+      case Broadcaster.dealnotedev:
+        return Duration(seconds: 6);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -133,7 +149,16 @@ class _State extends State<RaidWidget> {
 
     final raid = widget.raid;
 
-    await _spawnAll(raid);
+    switch (Constants.broadcaster) {
+      case Broadcaster.daria:
+        await _spawnAllMavps();
+        break;
+
+      case Broadcaster.dealnotedev:
+        await _spawnAll(raid);
+        break;
+    }
+
     await _avatarCompleter.future;
 
     await Future.delayed(Duration(seconds: 5));
@@ -146,6 +171,25 @@ class _State extends State<RaidWidget> {
   void _runAvatarAnimation() async {
     await Future.delayed(_avatarDuration);
     _avatarCompleter.complete();
+  }
+
+  Future<void> _spawnAllMavps() async {
+    await Future.delayed(Duration(seconds: 1));
+
+    final completers = <Completer<void>>[];
+
+    for (int i = 0; i < _mavpas.length; i++) {
+      final next = _mavpas[i];
+
+      final completer = Completer<void>();
+      completers.add(completer);
+
+      await Future.delayed(Duration(milliseconds: 1500));
+
+      _spawnRaider(next, id: i.toString(), completer: completer);
+    }
+
+    await Future.wait(completers.map((c) => c.future));
   }
 
   Future<void> _spawnAll(Raid raid) async {
@@ -231,6 +275,33 @@ class _State extends State<RaidWidget> {
     _raider4,
     _raider5,
     _raider6,
+  ];
+
+  static const _mavpas = [
+    _Raider(
+      lottie: Assets.assetsMavpa1,
+      width: 440,
+      height: 248,
+      bottomOffset: -60,
+    ),
+    _Raider(
+      lottie: Assets.assetsMavpa2,
+      width: 440,
+      height: 248,
+      bottomOffset: -40,
+    ),
+    _Raider(
+      lottie: Assets.assetsMavpa3,
+      width: 512,
+      height: 288,
+      bottomOffset: -60,
+    ),
+    _Raider(
+      lottie: Assets.assetsMavpa4,
+      width: 600,
+      height: 338,
+      bottomOffset: -88,
+    ),
   ];
 }
 
