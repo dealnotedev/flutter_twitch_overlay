@@ -82,7 +82,6 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
 
     _pixels = _makePixels(
       matrix,
-
       widget.duration.inMilliseconds,
       widget.constraints.maxWidth,
       widget.constraints.maxHeight,

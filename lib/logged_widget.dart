@@ -91,6 +91,7 @@ class _State extends State<LoggedWidget> {
   Widget build(BuildContext context) {
     final offTv = _offTv;
     final pause = _pause;
+    final pauseMsg = pause?.message;
     final raid = _raid;
     final sub = _sub;
 
@@ -114,13 +115,36 @@ class _State extends State<LoggedWidget> {
               if (offTv != null) ...[_createOffTvByWidget(offTv)],
             ],
             if (pause != null) ...[
-              RainyAvatar(
+              Stack(
                 key: ValueKey(pause),
-                pixelSize: 12,
-                fallDuration: pause.fallDuration,
-                duration: pause.duration,
-                image: pause.image,
-                constraints: constraints,
+                children: [
+                  RainyAvatar(
+                    pixelSize: 12,
+                    verticalOffset: pauseMsg != null ? -64 : 0,
+                    fallDuration: pause.fallDuration,
+                    duration: pause.duration,
+                    image: pause.image,
+                    constraints: constraints,
+                  ),
+                  if (pauseMsg != null) ...[
+                    Positioned(
+                      left: 320,
+                      right: 320,
+                      bottom: 48,
+                      child: Text(
+                        pauseMsg,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 56,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
               ),
             ],
             ..._follows.map((f) {
@@ -149,9 +173,7 @@ class _State extends State<LoggedWidget> {
                 onDone: _handleRaidAnimationDone,
               ),
             ],
-            if (sub != null) ...[
-              _createSubsWidget(sub, constraints)
-            ],
+            if (sub != null) ...[_createSubsWidget(sub, constraints)],
           ],
         );
       },
@@ -162,10 +184,16 @@ class _State extends State<LoggedWidget> {
     switch (Constants.broadcaster) {
       case Broadcaster.daria:
         return LamaSubsWidget(
-            who: sub.who, constraints: constraints, description: sub.text);
+          who: sub.who,
+          constraints: constraints,
+          description: sub.text,
+        );
       case Broadcaster.dealnotedev:
         return SubsWidget(
-            who: sub.who, constraints: constraints, description: sub.text);
+          who: sub.who,
+          constraints: constraints,
+          description: sub.text,
+        );
     }
   }
 
