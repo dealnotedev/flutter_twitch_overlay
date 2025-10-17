@@ -7,10 +7,16 @@ import 'package:obssource/pixels/pixel_rain_text.dart';
 import 'package:obssource/pixels/pixel_util.dart';
 
 class KillWidget extends StatefulWidget {
+  final int streak;
   final String text;
   final BoxConstraints constraints;
 
-  const KillWidget({super.key, required this.text, required this.constraints});
+  const KillWidget({
+    super.key,
+    required this.text,
+    required this.constraints,
+    required this.streak,
+  });
 
   @override
   State<StatefulWidget> createState() => _State();
@@ -23,14 +29,47 @@ class _State extends State<KillWidget> {
 
   @override
   void initState() {
-    _graffity = _createText(name: widget.text, constraints: widget.constraints);
+    _graffity = _createText(
+      name: widget.text,
+      constraints: widget.constraints,
+      color: _color,
+    );
     super.initState();
   }
 
-  static const _twitchColor = Color(0xFF8829FF);
+  Color get _color {
+    switch (widget.streak) {
+      case 1:
+        return Color(0xFFE53935);
+      case 2:
+        return Color(0xFFFB8C00);
+      case 3:
+        return Color(0xFFAB47BC);
+      case 4:
+        return Color(0xFF43A047);
+      case 5:
+        return Color(0xFF1E88E5);
+      case 6:
+        return Color(0xFF8E24AA);
+      case 7:
+        return Color(0xFF6D4C41);
+      case 8:
+        return Color(0xFFD81B60);
+      case 9:
+        return Color(0xFFE91E63);
+      case 10:
+        return Color(0xFFFF7043);
+      case 11:
+        return Color(0xFF5E35B1);
+      case 12:
+      default:
+        return Color(0xFF000000);
+    }
+  }
 
   static Graffity _createText({
     required String name,
+    required Color color,
     required BoxConstraints constraints,
   }) {
     final size = PixelUtil.calculatePixelTextSize(
@@ -47,7 +86,7 @@ class _State extends State<KillWidget> {
 
     final pixels = PixelUtil.generateTextPixels(
       maxDelayMs: 500,
-      color: Color(0xFFE53935),
+      color: color,
       text: name.toUpperCase(),
       letters: PixelRainLetter.all,
       pixelSize: _pixelSize,
@@ -73,7 +112,7 @@ class _State extends State<KillWidget> {
   @override
   Widget build(BuildContext context) {
     return Stack(
-      alignment: AlignmentGeometry.center,
+      alignment: Alignment.center,
       children: [
         Positioned(
           left: 0,

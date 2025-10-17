@@ -21,3 +21,31 @@ extension HexColor on Color {
     return null;
   }
 }
+
+extension TextStyleExt on TextStyle {
+  Size calculateMaxSingleLineTextSize(Iterable<String> texts,
+      {required TextScaler scaler, TextDirection? direction}) {
+    double width = 0;
+    double height = 0;
+
+    for (String text in texts) {
+      final textPainter = TextPainter(
+        text: TextSpan(style: this, text: text),
+        textScaler: scaler,
+        maxLines: 1,
+        textDirection: direction ?? TextDirection.ltr,
+      );
+
+      textPainter.layout();
+
+      if (width < textPainter.width) {
+        width = textPainter.width;
+      }
+      if (height < textPainter.height) {
+        height = textPainter.height;
+      }
+    }
+
+    return Size(width, height);
+  }
+}

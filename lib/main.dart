@@ -6,6 +6,7 @@ import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/l10n/app_localizations.dart';
+import 'package:obssource/local_server.dart';
 import 'package:obssource/logged_widget.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
 
@@ -18,7 +19,10 @@ void main() async {
   final obsConfig = ObsConfig();
   await obsConfig.init();
 
-  final locator = AppServiceLocator.init(settings, obsConfig);
+  final localServer = LocalServer();
+  localServer.run();
+
+  final locator = AppServiceLocator.init(settings, obsConfig, localServer);
 
   runApp(MyApp(locator: locator));
 
@@ -38,6 +42,7 @@ class MyApp extends StatelessWidget {
       supportedLocales: const [Locale('en'), Locale('uk')],
       locale: Locale('uk'),
       theme: ThemeData(
+        fontFamily: 'RobotoMono',
         useMaterial3: false,
         colorScheme: ColorScheme.fromSeed(
           seedColor: Colors.orange,

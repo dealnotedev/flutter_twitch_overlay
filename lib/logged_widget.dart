@@ -16,6 +16,8 @@ import 'package:obssource/extensions.dart';
 import 'package:obssource/follow/follow_ballons.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/highlighed/highlighted_message.dart';
+import 'package:obssource/kill_widget.dart';
+import 'package:obssource/local_server.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/raid.dart';
@@ -43,16 +45,19 @@ class LoggedWidget extends StatefulWidget {
 class _State extends State<LoggedWidget> {
   StreamSubscription<WsMessage>? _eventsSubscription;
   StreamSubscription<WsStateEvent>? _stateSubscription;
+  StreamSubscription<KillInfo>? _killsSubscription;
 
   late WsState _state;
   late Timer _timer;
   late Settings _settings;
   late ObsConfig _obsConfig;
+  late LocalServer _localServer;
 
   @override
   void initState() {
     _settings = widget.locator.provide();
     _obsConfig = widget.locator.provide();
+    _localServer = widget.locator.provide();
 
     final ws = widget.locator.provide<WebSocketManager>();
     _state = ws.currentState;
@@ -62,7 +67,7 @@ class _State extends State<LoggedWidget> {
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
 
-    //_simulateRaid();
+    //_simulateRaid(raiders: 20);
 
     /*WidgetsBinding.instance.addPostFrameCallback((_) {
       _pushSubscription(
@@ -70,6 +75,8 @@ class _State extends State<LoggedWidget> {
             text: context.localizations.subscription_gift_description('1', 5)),
       );
     });*/
+
+    _killsSubscription = _localServer.kills.listen(_handleKill);
     super.initState();
   }
 
@@ -84,6 +91,7 @@ class _State extends State<LoggedWidget> {
     _timer.cancel();
     _stateSubscription?.cancel();
     _eventsSubscription?.cancel();
+    _killsSubscription?.cancel();
     super.dispose();
   }
 
@@ -94,6 +102,7 @@ class _State extends State<LoggedWidget> {
     final pauseMsg = pause?.message;
     final raid = _raid;
     final sub = _sub;
+    final kill = _kill;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -174,10 +183,23 @@ class _State extends State<LoggedWidget> {
               ),
             ],
             if (sub != null) ...[_createSubsWidget(sub, constraints)],
+            if (kill != null) ...[
+              _createKillWidget(context, kill: kill, constraints: constraints),
+            ],
           ],
         );
       },
     );
+  }
+
+  Widget _createKillWidget(BuildContext context, {
+    required KillInfo kill,
+    required BoxConstraints constraints,
+  }) {
+    return KillWidget(text: kill.text,
+        constraints: constraints,
+        key: ValueKey(kill),
+        streak: kill.inMatch);
   }
 
   Widget _createSubsWidget(_Sub sub, BoxConstraints constraints) {
@@ -268,6 +290,28 @@ class _State extends State<LoggedWidget> {
         text: context.localizations.subscription_subscribe_description(tier),
       ),
     );
+  }
+
+  KillInfo? _kill;
+
+  Completer<KillInfo>? _killCompleter;
+
+  void _handleKill(KillInfo kill) async {
+    await _killCompleter?.future;
+
+    _killCompleter = Completer();
+
+    setState(() {
+      _kill = kill;
+    });
+
+    await Future.delayed(Duration(seconds: 3));
+
+    setState(() {
+      _kill = null;
+    });
+
+    _killCompleter?.complete(kill);
   }
 
   void _pushSubscription(_Sub sub) async {
@@ -703,7 +747,7 @@ class _State extends State<LoggedWidget> {
 
   Raid? _raid;
 
-  void _simulateRaid() async {
+  void _simulateRaid({int raiders = 5}) async {
     _playRaidAudio();
 
     final from = UserDto.dealnotedev;
@@ -715,7 +759,7 @@ class _State extends State<LoggedWidget> {
             : null;
 
     setState(() {
-      _raid = Raid(who: from, avatar: avatar, raiders: 5, id: from.id);
+      _raid = Raid(who: from, avatar: avatar, raiders: raiders, id: from.id);
     });
   }
 

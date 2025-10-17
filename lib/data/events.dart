@@ -15,6 +15,17 @@ class UserFollowEvent {
   });
 }
 
+class KillInfo {
+  final int inMatch;
+  final int inMatchStreak;
+  final int totalStreak;
+
+  final String text;
+
+  KillInfo(
+      {required this.inMatch, required this.inMatchStreak, required this.totalStreak, required this.text});
+}
+
 class Pause {
   final img.Image image;
   final Duration duration;
