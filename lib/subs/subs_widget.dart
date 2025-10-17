@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:obssource/generated/assets.dart';
+import 'package:obssource/graffity.dart';
 import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/pixels/pixel_rain_letters.dart';
@@ -29,12 +30,12 @@ class _State extends State<SubsWidget> {
 
   static const _pixelSize = 10.0;
 
-  _Graffity _name = _Graffity.empty;
-  _Graffity _heart = _Graffity.empty;
-  _Graffity _description = _Graffity.empty;
-  _Graffity _heartBackground = _Graffity.empty;
+  Graffity _name = Graffity.empty;
+  Graffity _heart = Graffity.empty;
+  Graffity _description = Graffity.empty;
+  Graffity _heartBackground = Graffity.empty;
 
-  static _Graffity _createDescription({
+  static Graffity _createDescription({
     required String text,
     required BoxConstraints constraints,
   }) {
@@ -71,11 +72,11 @@ class _State extends State<SubsWidget> {
       );
     }
 
-    return _Graffity(size: size, pixels: pixels, start: start);
+    return Graffity(size: size, pixels: pixels, start: start);
   }
 
-  static _Graffity _createHeartBackground({
-    required _Graffity description,
+  static Graffity _createHeartBackground({
+    required Graffity description,
     required BoxConstraints constraints,
     required img.Image image,
   }) {
@@ -122,12 +123,12 @@ class _State extends State<SubsWidget> {
       }
     }
 
-    return _Graffity(size: size, pixels: pixels, start: start);
+    return Graffity(size: size, pixels: pixels, start: start);
   }
 
-  static _Graffity _createName({
+  static Graffity _createName({
     required String name,
-    required _Graffity description,
+    required Graffity description,
     required BoxConstraints constraints,
   }) {
     final size = PixelUtil.calculatePixelTextSize(
@@ -151,12 +152,12 @@ class _State extends State<SubsWidget> {
       startOffset: start,
     );
 
-    return _Graffity(size: size, pixels: pixels, start: start);
+    return Graffity(size: size, pixels: pixels, start: start);
   }
 
-  static _Graffity _createHeart({
+  static Graffity _createHeart({
     required BoxConstraints constraints,
-    required _Graffity name,
+    required Graffity name,
     required img.Image image,
   }) {
     final matrix = PixelUtil.generateMatrixFromImage(image: image);
@@ -199,7 +200,7 @@ class _State extends State<SubsWidget> {
       }
     }
 
-    return _Graffity(size: size, pixels: pixels, start: start);
+    return Graffity(size: size, pixels: pixels, start: start);
   }
 
   @override
@@ -336,18 +337,4 @@ class _State extends State<SubsWidget> {
       ],
     );
   }
-}
-
-class _Graffity {
-  final Size size;
-  final Offset start;
-  final List<Pixel> pixels;
-
-  _Graffity({required this.size, required this.pixels, required this.start});
-
-  static _Graffity empty = _Graffity(
-    size: Size.zero,
-    pixels: [],
-    start: Offset.zero,
-  );
 }

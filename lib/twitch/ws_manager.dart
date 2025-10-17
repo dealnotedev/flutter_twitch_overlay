@@ -87,7 +87,7 @@ class WebSocketManager {
     WsStateEvent(_state, _state),
   ).concatWith([_stateSubject.stream]);
 
-  Stream<WsState> get stateShanges =>
+  Stream<WsState> get stateChanges =>
       _stateSubject.stream.map((event) => event.current);
 
   void _connectInternal() async {
@@ -205,9 +205,9 @@ class WebSocketManager {
 
     try {
       final cleaned = await api.cleanupInactiveEventSubs();
-      print('Deleting inactive subscription: $cleaned');
+      debugPrint('Deleting inactive subscription: $cleaned');
     } on DioException catch (e) {
-      print('Api Error ${e.response?.statusCode} with message ${e.message}');
+      debugPrint('Api Error ${e.response?.statusCode} with message ${e.message}');
     } catch (_) {}
 
     try {
