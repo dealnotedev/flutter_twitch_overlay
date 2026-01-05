@@ -6,15 +6,10 @@ class Assets {
   static const String assetsBear = 'assets/bear.json';
   static const String assetsBee = 'assets/bee.json';
   static const String assetsBoomWhite = 'assets/boom_white.json';
-  static const String assetsCat = 'assets/cat.json';
-  static const String assetsFollowAnimation = 'assets/follow_animation.json';
   static const String assetsFollowSound = 'assets/follow_sound.mp3';
-  static const String assetsFox = 'assets/fox.json';
   static const String assetsGiraffe = 'assets/giraffe.json';
   static const String assetsHeart = 'assets/heart.png';
-  static const String assetsHeartBackground = 'assets/heart_background.png';
-  static const String assetsHeartBackgroundFilled =
-      'assets/heart_background_filled.png';
+  static const String assetsHeartBackgroundFilled = 'assets/heart_background_filled.png';
   static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
   static const String assetsIcDulya = 'assets/ic_dulya.png';
   static const String assetsIcTwitchChannelPosints32dp = 'assets/ic_twitch_channel_posints_32dp.png';
@@ -30,21 +25,14 @@ class Assets {
   static const String assetsImgSticker7 = 'assets/img_sticker_7.webp';
   static const String assetsImgSticker8 = 'assets/img_sticker_8.webp';
   static const String assetsImgSticker9 = 'assets/img_sticker_9.webp';
-  static const String assetsLama = 'assets/lama.json';
   static const String assetsLion = 'assets/lion.json';
-  static const String assetsMavpa1 = 'assets/mavpa1.json';
-  static const String assetsMavpa2 = 'assets/mavpa2.json';
-  static const String assetsMavpa3 = 'assets/mavpa3.json';
-  static const String assetsMavpa4 = 'assets/mavpa4.json';
   static const String assetsRaid = 'assets/raid.mp3';
-  static const String assetsRaidDaria = 'assets/raid_daria.mp3';
   static const String assetsRooster = 'assets/rooster.json';
   static const String assetsRunningDogBlue = 'assets/running_dog_blue.json';
   static const String assetsRunningDogBrown = 'assets/running_dog_brown.json';
   static const String assetsRunningDogOrange = 'assets/running_dog_orange.json';
   static const String assetsRunningSomething = 'assets/running_something.json';
   static const String assetsSub = 'assets/sub.mp3';
-  static const String assetsSubDaria = 'assets/sub_daria.wav';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
 
 }

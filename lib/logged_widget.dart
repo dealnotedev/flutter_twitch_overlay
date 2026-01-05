@@ -9,7 +9,6 @@ import 'package:intl/intl.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
-import 'package:obssource/constants.dart';
 import 'package:obssource/data/events.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
@@ -25,7 +24,6 @@ import 'package:obssource/screen_attack_game.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/span_util.dart';
 import 'package:obssource/srt_off.dart';
-import 'package:obssource/subs/lama_subs_widget.dart';
 import 'package:obssource/subs/subs_widget.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
@@ -203,20 +201,11 @@ class _State extends State<LoggedWidget> {
   }
 
   Widget _createSubsWidget(_Sub sub, BoxConstraints constraints) {
-    switch (Constants.broadcaster) {
-      case Broadcaster.daria:
-        return LamaSubsWidget(
-          who: sub.who,
-          constraints: constraints,
-          description: sub.text,
-        );
-      case Broadcaster.dealnotedev:
-        return SubsWidget(
-          who: sub.who,
-          constraints: constraints,
-          description: sub.text,
-        );
-    }
+    return SubsWidget(
+      who: sub.who,
+      constraints: constraints,
+      description: sub.text,
+    );
   }
 
   void _handleSubscriptionMessage(WsMessage message) {
@@ -320,18 +309,7 @@ class _State extends State<LoggedWidget> {
 
     await previous?.future;
 
-    final String audio;
-
-    switch (Constants.broadcaster) {
-      case Broadcaster.daria:
-        audio = Assets.assetsSubDaria;
-        break;
-      case Broadcaster.dealnotedev:
-        audio = Assets.assetsSub;
-        break;
-    }
-
-    ObsAudio.loadAsset(audio).then((id) {
+    ObsAudio.loadAsset(Assets.assetsSub).then((id) {
       ObsAudio.play(id);
     });
 
@@ -764,18 +742,7 @@ class _State extends State<LoggedWidget> {
   }
 
   static void _playRaidAudio() {
-    final String audio;
-
-    switch (Constants.broadcaster) {
-      case Broadcaster.daria:
-        audio = Assets.assetsRaidDaria;
-        break;
-      case Broadcaster.dealnotedev:
-        audio = Assets.assetsRaid;
-        break;
-    }
-
-    ObsAudio.loadAsset(audio).then((id) {
+    ObsAudio.loadAsset(Assets.assetsRaid).then((id) {
       ObsAudio.play(id);
     });
   }

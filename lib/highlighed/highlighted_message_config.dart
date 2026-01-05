@@ -1,4 +1,5 @@
-import 'package:obssource/constants.dart';
+import 'dart:math';
+
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/highlighed/highlighted_message.dart';
 
@@ -20,30 +21,31 @@ class HighlightedMessageConfig {
     required this.height,
   });
 
-  static HighlightedMessageConfig get(HighlightedMessage message) {
-    switch (Constants.broadcaster) {
-      case Broadcaster.daria:
-        if (message.firstMessage) {
-          return HighlightedMessageConfig(
-            lottie: Assets.assetsGiraffe,
-            bottomOffset: -54,
-            msgLeft: 300,
-            msgBottom: 320,
-            width: 400,
-            height: 400,
-          );
-        } else {
-          return HighlightedMessageConfig(
-            lottie: Assets.assetsBear,
-            bottomOffset: -54,
-            msgLeft: 256,
-            msgBottom: 280,
-            width: 400,
-            height: 400,
-          );
-        }
+  static final _random = Random();
 
-      case Broadcaster.dealnotedev:
+  static HighlightedMessageConfig get(HighlightedMessage message) {
+    switch (_random.nextInt(3)) {
+      case 1:
+        return HighlightedMessageConfig(
+          lottie: Assets.assetsGiraffe,
+          bottomOffset: -54,
+          msgLeft: 300,
+          msgBottom: 320,
+          width: 400,
+          height: 400,
+        );
+      case 2:
+        return HighlightedMessageConfig(
+          lottie: Assets.assetsBear,
+          bottomOffset: -54,
+          msgLeft: 256,
+          msgBottom: 280,
+          width: 400,
+          height: 400,
+        );
+
+      case 0:
+      default:
         return HighlightedMessageConfig(
           lottie: Assets.assetsRooster,
           bottomOffset: -84,

@@ -1,4 +1,3 @@
-import 'package:obssource/constants.dart';
 import 'package:obssource/generated/assets.dart';
 
 class FollowBallonsConfig {
@@ -19,24 +18,12 @@ class FollowBallonsConfig {
   });
 
   static FollowBallonsConfig get() {
-    switch (Constants.broadcaster) {
-      case Broadcaster.daria:
-        return FollowBallonsConfig(
-          width: 400,
-          height: 400,
-          lottie: Assets.assetsFox,
-          msgTop: 48,
-          msgLeft: 280,
-        );
-
-      case Broadcaster.dealnotedev:
-        return FollowBallonsConfig(
-          width: 280,
-          height: 280,
-          lottie: Assets.assetsBallons,
-          msgTop: 48,
-          msgLeft: 180,
-        );
-    }
+    return FollowBallonsConfig(
+      width: 280,
+      height: 280,
+      lottie: Assets.assetsBallons,
+      msgTop: 48,
+      msgLeft: 180,
+    );
   }
 }
