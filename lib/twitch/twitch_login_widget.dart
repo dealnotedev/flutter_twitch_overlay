@@ -13,11 +13,11 @@ class TwitchLoginWidget extends StatefulWidget {
 }
 
 class _State extends State<TwitchLoginWidget> {
-
   final _authenticator = TwitchAuthenticator(
-      clientId: twitchClientId,
-      clientSecret: twitchClientSecret,
-      oauthRedirectUrl: twitchOauthRedirectUrl);
+    clientId: twitchClientId,
+    clientSecret: twitchClientSecret,
+    oauthRedirectUrl: twitchOauthRedirectUrl,
+  );
 
   @override
   void initState() {
@@ -32,7 +32,10 @@ class _State extends State<TwitchLoginWidget> {
       height: double.infinity,
       padding: const EdgeInsets.all(32),
       child: Center(
-        child: Text('Please, Login to Twitch via browser', style: TextStyle(color: Colors.white),),
+        child: Text(
+          'Please, Login to Twitch via browser',
+          style: TextStyle(color: Colors.white),
+        ),
       ),
     );
   }

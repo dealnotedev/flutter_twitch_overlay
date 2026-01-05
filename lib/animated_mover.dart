@@ -14,7 +14,8 @@ class AnimatedHorizontalMover extends StatefulWidget {
     this.duration = const Duration(seconds: 10),
     required this.size,
     this.bottomOffset = 0,
-    required this.constraints, required this.alreadyInsideStack,
+    required this.constraints,
+    required this.alreadyInsideStack,
   });
 
   @override
@@ -48,18 +49,18 @@ class _AnimatedHorizontalMoverState extends State<AnimatedHorizontalMover>
       animation: _controller,
       builder: (context, _) {
         final x = startX + ((endX - startX).toDouble() * _controller.value);
-        return Positioned(left: x, bottom: widget.bottomOffset, child: widget.child);
+        return Positioned(
+          left: x,
+          bottom: widget.bottomOffset,
+          child: widget.child,
+        );
       },
     );
 
     if (widget.alreadyInsideStack) {
       return child;
     } else {
-      return Stack(
-        children: [
-          child
-        ],
-      );
+      return Stack(children: [child]);
     }
   }
 }
@@ -76,7 +77,8 @@ class AnimatedVerticalMover extends StatefulWidget {
     required this.child,
     this.duration = const Duration(seconds: 10),
     required this.size,
-    required this.constraints, required this.alreadyInsideStack,
+    required this.constraints,
+    required this.alreadyInsideStack,
   });
 
   @override
@@ -109,8 +111,8 @@ class _AnimatedVerticalMoverState extends State<AnimatedVerticalMover>
       animation: _controller,
       builder: (context, _) {
         final y = startY + ((endY - startY).toDouble() * _controller.value);
-        final x = (widget.constraints.maxWidth / 2.0) -
-            (widget.size.width / 2.0);
+        final x =
+            (widget.constraints.maxWidth / 2.0) - (widget.size.width / 2.0);
         return Positioned(top: y, left: x, child: widget.child);
       },
     );
@@ -118,11 +120,7 @@ class _AnimatedVerticalMoverState extends State<AnimatedVerticalMover>
     if (widget.alreadyInsideStack) {
       return child;
     } else {
-      return Stack(
-        children: [
-          child
-        ],
-      );
+      return Stack(children: [child]);
     }
   }
 }

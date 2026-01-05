@@ -40,13 +40,13 @@ class WebSocketManager {
 
   Stream<WsMessage> get messages => _messagesSubject.stream;
 
-  WebSocketManager(this._url,
-      this._settings, {
-        required bool listenChat,
-        required bool listenSubs,
-      })
-      : _listenChat = listenChat,
-        _listenSubs = listenSubs {
+  WebSocketManager(
+    this._url,
+    this._settings, {
+    required bool listenChat,
+    required bool listenSubs,
+  }) : _listenChat = listenChat,
+       _listenSubs = listenSubs {
     _settings.twitchAuthStream.listen(_handleAuth);
   }
 
@@ -207,7 +207,9 @@ class WebSocketManager {
       final cleaned = await api.cleanupInactiveEventSubs();
       debugPrint('Deleting inactive subscription: $cleaned');
     } on DioException catch (e) {
-      debugPrint('Api Error ${e.response?.statusCode} with message ${e.message}');
+      debugPrint(
+        'Api Error ${e.response?.statusCode} with message ${e.message}',
+      );
     } catch (_) {}
 
     try {
@@ -359,7 +361,7 @@ enum _RegistrationType {
   raid,
   subs,
   subGifts,
-  subMessages
+  subMessages,
 }
 
 class _Registration {

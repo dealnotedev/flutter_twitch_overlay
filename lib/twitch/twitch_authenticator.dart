@@ -14,10 +14,11 @@ class TwitchAuthenticator {
   static const _scopeEncoded =
       'channel%3Aread%3Aredemptions+moderator%3Aread%3Afollowers+user%3Aread%3Achat+channel%3Aread%3Asubscriptions';
 
-  TwitchAuthenticator(
-      {required this.clientId,
-      required this.clientSecret,
-      required this.oauthRedirectUrl});
+  TwitchAuthenticator({
+    required this.clientId,
+    required this.clientSecret,
+    required this.oauthRedirectUrl,
+  });
 
   Future<TwitchCreds?> login() async {
     final authorizationCode = await _startOauth();
@@ -30,31 +31,38 @@ class TwitchAuthenticator {
       'client_id': clientId,
       'client_secret': clientSecret,
       'grant_type': 'authorization_code',
-      'code': authorizationCode
+      'code': authorizationCode,
     };
 
     final dio = Dio();
 
-    final response = await dio.post('https://id.twitch.tv/oauth2/token',
-        data: FormData.fromMap(body),
-        options: Options(contentType: "application/x-www-form-urlencoded"));
+    final response = await dio.post(
+      'https://id.twitch.tv/oauth2/token',
+      data: FormData.fromMap(body),
+      options: Options(contentType: "application/x-www-form-urlencoded"),
+    );
     final json = response.data;
     final accessToken = json['access_token'] as String;
 
     final userId = await dio
-        .get('https://api.twitch.tv/helix/users',
-            options: Options(headers: {
+        .get(
+          'https://api.twitch.tv/helix/users',
+          options: Options(
+            headers: {
               'Authorization': 'Bearer $accessToken',
-              'Client-Id': clientId
-            }))
+              'Client-Id': clientId,
+            },
+          ),
+        )
         .then((value) => value.data['data'] as List<dynamic>)
         .then((array) => array[0]['id']);
 
     return TwitchCreds(
-        refreshToken: json['refresh_token'] as String,
-        accessToken: accessToken,
-        clientId: clientId,
-        broadcasterId: userId);
+      refreshToken: json['refresh_token'] as String,
+      accessToken: accessToken,
+      clientId: clientId,
+      broadcasterId: userId,
+    );
   }
 
   Future<String?> _startOauth() async {
@@ -87,8 +95,7 @@ class TwitchAuthenticator {
     request.response
       ..statusCode = 200
       ..headers.set('content-type', 'text/html; charset=UTF-8')
-      ..write(
-        '''
+      ..write('''
 <!DOCTYPE html>
 
 <html>
@@ -101,7 +108,6 @@ class TwitchAuthenticator {
     <h2 style="text-align: center">Dealnote Rewards App is ready</h2>
     <p style="text-align: center">This window can be closed now.</p>
   </body>
-</html>''',
-      );
+</html>''');
   }
 }

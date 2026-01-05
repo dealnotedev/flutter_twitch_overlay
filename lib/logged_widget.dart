@@ -190,14 +190,17 @@ class _State extends State<LoggedWidget> {
     );
   }
 
-  Widget _createKillWidget(BuildContext context, {
+  Widget _createKillWidget(
+    BuildContext context, {
     required KillInfo kill,
     required BoxConstraints constraints,
   }) {
-    return KillWidget(text: kill.text,
-        constraints: constraints,
-        key: ValueKey(kill),
-        streak: kill.inMatch);
+    return KillWidget(
+      text: kill.text,
+      constraints: constraints,
+      key: ValueKey(kill),
+      streak: kill.inMatch,
+    );
   }
 
   Widget _createSubsWidget(_Sub sub, BoxConstraints constraints) {

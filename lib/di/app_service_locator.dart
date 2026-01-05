@@ -7,8 +7,11 @@ import 'package:obssource/twitch/ws_manager.dart';
 class AppServiceLocator extends ServiceLocator {
   static late final AppServiceLocator instance;
 
-  static AppServiceLocator init(Settings settings, ObsConfig config,
-      LocalServer localServer) {
+  static AppServiceLocator init(
+    Settings settings,
+    ObsConfig config,
+    LocalServer localServer,
+  ) {
     instance = AppServiceLocator._(settings, config, localServer);
     return instance;
   }

@@ -5,18 +5,21 @@ import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
 
 class TwitchCredsInterceptor extends Fresh<TwitchCreds> {
-  TwitchCredsInterceptor(
-      {required Settings settings, required String clientSecret})
-      : super(
-            refreshToken: (t, _) => _refreshToken(t, clientSecret),
-            tokenHeader: (token) => {
-                  'Authorization': 'Bearer ${token.accessToken}',
-                  'Client-Id': token.clientId
-                },
-            tokenStorage: _SettingTokenStorage(settings: settings));
+  TwitchCredsInterceptor({
+    required Settings settings,
+    required String clientSecret,
+  }) : super(
+         refreshToken: (t, _) => _refreshToken(t, clientSecret),
+         tokenHeader:
+             (token) => {
+               'Authorization': 'Bearer ${token.accessToken}',
+               'Client-Id': token.clientId,
+             },
+         tokenStorage: _SettingTokenStorage(settings: settings),
+       );
 
-  static Future<TwitchCreds> _refreshToken(
-      TwitchCreds? token, String clientSecret) {
+  static Future<TwitchCreds> _refreshToken(TwitchCreds? token,
+      String clientSecret,) {
     if (token == null) {
       throw StateError('No token found');
     }
@@ -31,13 +34,18 @@ class TwitchCredsInterceptor extends Fresh<TwitchCreds> {
     };
 
     return Dio()
-        .post('https://id.twitch.tv/oauth2/token',
-            data: FormData.fromMap(body),
-            options: Options(contentType: "application/x-www-form-urlencoded"))
+        .post(
+          'https://id.twitch.tv/oauth2/token',
+          data: FormData.fromMap(body),
+          options: Options(contentType: "application/x-www-form-urlencoded"),
+        )
         .then((value) => value.data)
-        .then((json) => token.copy(
+        .then(
+          (json) => token.copy(
             accessToken: json['access_token'] as String,
-            refreshToken: json['refresh_token'] as String));
+            refreshToken: json['refresh_token'] as String,
+          ),
+        );
   }
 }
 

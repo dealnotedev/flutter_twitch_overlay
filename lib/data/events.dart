@@ -22,8 +22,12 @@ class KillInfo {
 
   final String text;
 
-  KillInfo(
-      {required this.inMatch, required this.inMatchStreak, required this.totalStreak, required this.text});
+  KillInfo({
+    required this.inMatch,
+    required this.inMatchStreak,
+    required this.totalStreak,
+    required this.text,
+  });
 }
 
 class Pause {
@@ -36,7 +40,7 @@ class Pause {
     required this.image,
     required this.duration,
     required this.fallDuration,
-    required this.message
+    required this.message,
   });
 }
 

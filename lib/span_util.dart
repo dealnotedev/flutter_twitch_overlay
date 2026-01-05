@@ -1,8 +1,11 @@
 import 'package:flutter/widgets.dart';
 
 class SpanUtil {
-  static List<InlineSpan> createSpans(String text, String highlighted,
-      InlineSpan Function(String highlighted) f) {
+  static List<InlineSpan> createSpans(
+    String text,
+    String highlighted,
+    InlineSpan Function(String highlighted) f,
+  ) {
     final index = text.indexOf(highlighted);
 
     if (index != -1) {
@@ -10,16 +13,19 @@ class SpanUtil {
         if (index > 0) ...{TextSpan(text: text.substring(0, index))},
         f.call(highlighted),
         if (index < text.length) ...{
-          TextSpan(text: text.substring(index + highlighted.length))
-        }
+          TextSpan(text: text.substring(index + highlighted.length)),
+        },
       ];
     } else {
       return [TextSpan(text: text)];
     }
   }
 
-  static List<InlineSpan> createSpansAdvanced(String text,
-      List<String> highlighted, InlineSpan Function(String highlighted) f) {
+  static List<InlineSpan> createSpansAdvanced(
+    String text,
+    List<String> highlighted,
+    InlineSpan Function(String highlighted) f,
+  ) {
     final entries = _parseText(text, highlighted);
     final spans = <InlineSpan>[];
 
@@ -41,10 +47,11 @@ class SpanUtil {
       final int index = text.indexOf(part);
       if (index != -1) {
         final entry = _Entry(
-            from: index,
-            to: index + part.length,
-            part: part,
-            highlighted: true);
+          from: index,
+          to: index + part.length,
+          part: part,
+          highlighted: true,
+        );
         entries.add(entry);
       }
     }
@@ -56,22 +63,28 @@ class SpanUtil {
     int offset = 0;
     for (var entry in entries) {
       if (entry.from > offset) {
-        result.add(_Entry(
+        result.add(
+          _Entry(
             from: offset,
             to: entry.from,
             part: text.substring(offset, entry.from),
-            highlighted: false));
+            highlighted: false,
+          ),
+        );
       }
       result.add(entry);
       offset = entry.to;
     }
 
     if (offset < text.length) {
-      result.add(_Entry(
+      result.add(
+        _Entry(
           from: offset,
           to: text.length,
           part: text.substring(offset),
-          highlighted: false));
+          highlighted: false,
+        ),
+      );
     }
 
     return result;
@@ -95,8 +108,10 @@ class SpanUtil {
     }
   }
 
-  static List<InlineSpan> createPlayfieldDescriptionSpans(String description,
-      {double iconSize = 16}) {
+  static List<InlineSpan> createPlayfieldDescriptionSpans(
+    String description, {
+    double iconSize = 16,
+  }) {
     final parts = _parsePlayfiedDescription(description);
     return parts.map((e) {
       final icon = e.icon;
@@ -104,7 +119,8 @@ class SpanUtil {
         final asset = _findAssetIcon(icon);
         return asset != null
             ? WidgetSpan(
-                child: Image.asset(asset, height: iconSize, width: iconSize))
+              child: Image.asset(asset, height: iconSize, width: iconSize),
+            )
             : const TextSpan(text: '');
       }
       return TextSpan(text: (e.text ?? e.icon) ?? '');
@@ -145,11 +161,12 @@ class _Entry {
   final String part;
   final bool highlighted;
 
-  _Entry(
-      {required this.from,
-      required this.to,
-      required this.part,
-      required this.highlighted});
+  _Entry({
+    required this.from,
+    required this.to,
+    required this.part,
+    required this.highlighted,
+  });
 
   @override
   String toString() => '[[$from - $to]$part]';

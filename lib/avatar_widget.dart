@@ -9,8 +9,13 @@ class Avatar extends StatelessWidget {
   final String? asset;
   final double size;
 
-  const Avatar(
-      {super.key, this.url, required this.size, this.bytes, this.asset});
+  const Avatar({
+    super.key,
+    this.url,
+    required this.size,
+    this.bytes,
+    this.asset,
+  });
 
   @override
   Widget build(BuildContext context) {

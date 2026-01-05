@@ -23,8 +23,11 @@ extension HexColor on Color {
 }
 
 extension TextStyleExt on TextStyle {
-  Size calculateMaxSingleLineTextSize(Iterable<String> texts,
-      {required TextScaler scaler, TextDirection? direction}) {
+  Size calculateMaxSingleLineTextSize(
+    Iterable<String> texts, {
+    required TextScaler scaler,
+    TextDirection? direction,
+  }) {
     double width = 0;
     double height = 0;
 

@@ -7,30 +7,34 @@ class TwitchCreds {
 
   final String broadcasterId;
 
-  TwitchCreds(
-      {required this.accessToken,
-      required this.refreshToken,
-      required this.broadcasterId,
-      required this.clientId});
+  TwitchCreds({
+    required this.accessToken,
+    required this.refreshToken,
+    required this.broadcasterId,
+    required this.clientId,
+  });
 
-  TwitchCreds copy(
-      {String? accessToken,
-      String? refreshToken,
-      String? clientId,
-      String? broadcasterId}) {
+  TwitchCreds copy({
+    String? accessToken,
+    String? refreshToken,
+    String? clientId,
+    String? broadcasterId,
+  }) {
     return TwitchCreds(
-        accessToken: accessToken ?? this.accessToken,
-        refreshToken: refreshToken ?? this.refreshToken,
-        broadcasterId: broadcasterId ?? this.broadcasterId,
-        clientId: clientId ?? this.clientId);
+      accessToken: accessToken ?? this.accessToken,
+      refreshToken: refreshToken ?? this.refreshToken,
+      broadcasterId: broadcasterId ?? this.broadcasterId,
+      clientId: clientId ?? this.clientId,
+    );
   }
 
   static TwitchCreds fromJson(dynamic json) {
     return TwitchCreds(
-        clientId: json['client_id'] as String,
-        broadcasterId: json['broadcasterId'] as String,
-        accessToken: json['accessToken'] as String,
-        refreshToken: json['refreshToken'] as String);
+      clientId: json['client_id'] as String,
+      broadcasterId: json['broadcasterId'] as String,
+      accessToken: json['accessToken'] as String,
+      refreshToken: json['refreshToken'] as String,
+    );
   }
 
   Map<String, dynamic> toJson() {
@@ -38,7 +42,7 @@ class TwitchCreds {
       'broadcasterId': broadcasterId,
       'accessToken': accessToken,
       'refreshToken': refreshToken,
-      'client_id': clientId
+      'client_id': clientId,
     };
   }
 }

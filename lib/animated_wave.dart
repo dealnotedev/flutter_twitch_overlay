@@ -10,29 +10,31 @@ class AnimatedWave extends StatelessWidget {
   final Color color;
   final int alpha;
 
-  const AnimatedWave(
-      {required this.height,
-      required this.speed,
-      this.offset = 0.0,
-      this.color = Colors.white,
-      this.alpha = 15,
-      super.key});
+  const AnimatedWave({
+    required this.height,
+    required this.speed,
+    this.offset = 0.0,
+    this.color = Colors.white,
+    this.alpha = 15,
+    super.key,
+  });
 
   @override
   Widget build(BuildContext context) => LayoutBuilder(
-        builder: (context, constraints) => SizedBox(
+    builder:
+        (context, constraints) => SizedBox(
           height: height,
           width: constraints.biggest.width,
           child: LoopAnimationBuilder(
             duration: Duration(milliseconds: (5000 / speed).round()),
             tween: Tween(begin: 0.0, end: 2 * pi),
-            builder: (context, value, _) => CustomPaint(
-              foregroundPainter:
-                  CurvePainter(value + offset, color, alpha),
-            ),
+            builder:
+                (context, value, _) => CustomPaint(
+                  foregroundPainter: CurvePainter(value + offset, color, alpha),
+                ),
           ),
         ),
-      );
+  );
 }
 
 class CurvePainter extends CustomPainter {
@@ -61,7 +63,11 @@ class CurvePainter extends CustomPainter {
 
     _path.moveTo(size.width * 0, startPointY);
     _path.quadraticBezierTo(
-        size.width * 0.5, controlPointY, size.width, endPointY);
+      size.width * 0.5,
+      controlPointY,
+      size.width,
+      endPointY,
+    );
     _path.lineTo(size.width, size.height);
     _path.lineTo(0, size.height);
     _path.close();

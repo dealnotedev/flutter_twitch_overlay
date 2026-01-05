@@ -45,7 +45,7 @@ class Raid {
 class _State extends State<RaidWidget> {
   static const _avatarDuration = Duration(seconds: 10);
 
-  static const  _duration = Duration(seconds: 6);
+  static const _duration = Duration(seconds: 6);
 
   @override
   Widget build(BuildContext context) {

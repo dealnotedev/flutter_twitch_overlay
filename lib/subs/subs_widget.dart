@@ -82,10 +82,7 @@ class _State extends State<SubsWidget> {
   }) {
     final maxtrix = PixelUtil.generateMatrixFromImage(image: image);
 
-    final size = PixelUtil.calculateSize(
-      mask: maxtrix,
-      pixelSize: _pixelSize,
-    );
+    final size = PixelUtil.calculateSize(mask: maxtrix, pixelSize: _pixelSize);
 
     final start = Offset(
       constraints.maxWidth / 2.0 - size.width / 2.0,
@@ -162,10 +159,7 @@ class _State extends State<SubsWidget> {
   }) {
     final matrix = PixelUtil.generateMatrixFromImage(image: image);
 
-    final size = PixelUtil.calculateSize(
-      mask: matrix,
-      pixelSize: _pixelSize,
-    );
+    final size = PixelUtil.calculateSize(mask: matrix, pixelSize: _pixelSize);
 
     final start = Offset(
       constraints.maxWidth / 2.0 - size.width / 2.0,
@@ -217,9 +211,9 @@ class _State extends State<SubsWidget> {
   void _startAnimation() async {
     final heart = (await RainyAvatar.loadImageFromAssets(Assets.assetsHeart))!;
     final bg =
-    (await RainyAvatar.loadImageFromAssets(
-      Assets.assetsHeartBackgroundFilled,
-    ))!;
+        (await RainyAvatar.loadImageFromAssets(
+          Assets.assetsHeartBackgroundFilled,
+        ))!;
 
     setState(() {
       _description = _createDescription(
