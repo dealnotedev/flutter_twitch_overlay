@@ -694,7 +694,10 @@ class _State extends State<LoggedWidget> {
         }
       });
 
+      final config = HighlightedMessageConfig.get();
+
       final highlightedMessage = HighlightedMessage(
+        config: config,
         firstMessage: firstMessage,
         color: color,
         title: title,
