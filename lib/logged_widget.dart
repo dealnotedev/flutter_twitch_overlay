@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:cached_network_image/cached_network_image.dart';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
@@ -463,10 +462,30 @@ class _State extends State<LoggedWidget> {
 
     if ('Пауза' == reward.reward) {
       final args = (reward.input?.trim() ?? '').split(' ');
-      final mins = int.parse(args.firstOrNull ?? '0');
+
+      final int seconds;
+
+      if (args.isNotEmpty && args.first.isNotEmpty) {
+        final time = args.first;
+
+        if (time.contains(':')) {
+          final ms = time.split(':');
+
+          final m = int.tryParse(ms[0]) ?? 0;
+          final s = ms.length > 1 ? int.tryParse(ms[1]) ?? 0 : 0;
+
+          seconds = m * 60 + s;
+        } else {
+          final minutes = int.tryParse(time) ?? 0;
+          seconds = minutes * 60;
+        }
+      } else {
+        seconds = 0;
+      }
+
       final message = args.length > 1 ? args.sublist(1).join(' ') : null;
 
-      if (mins == 0) {
+      if (seconds == 0) {
         setState(() {
           _pause = null;
         });
@@ -480,7 +499,7 @@ class _State extends State<LoggedWidget> {
         _pause = Pause(
           message: message,
           image: image!,
-          duration: Duration(minutes: mins),
+          duration: Duration(seconds: seconds),
           fallDuration: Duration(milliseconds: 1500),
         );
       });
