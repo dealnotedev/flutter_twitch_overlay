@@ -81,7 +81,7 @@ class _State extends State<KillWidget> {
 
     final start = Offset(
       constraints.maxWidth / 2.0 - size.width / 2.0,
-      constraints.maxHeight / 2.0 - size.height / 2.0,
+      constraints.maxHeight / 4.0 - size.height / 2.0,
     );
 
     final pixels = PixelUtil.generateTextPixels(
@@ -117,6 +117,7 @@ class _State extends State<KillWidget> {
         Positioned(
           left: 0,
           right: 0,
+          top: _graffity.start.dy - 32,
           child: Container(
             height: _graffity.size.height + 32.0 + 32.0,
             width: double.infinity,
