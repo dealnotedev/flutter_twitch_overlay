@@ -46,28 +46,33 @@ class _State extends State<FlashbangWidget>
   Future<void> _startAnimation() async {
     _controller.repeat();
 
-    await Future.delayed(Duration(milliseconds: 500));
+    if (!await _sleep(500)) return;
 
     ObsAudio.loadAsset(Assets.assetsWavFlashbang).then((id) {
       ObsAudio.play(id);
     });
 
-    await Future.delayed(Duration(milliseconds: 250));
+    if (!await _sleep(250)) return;
 
     _animateToAngle(270);
 
-    await Future.delayed(Duration(milliseconds: 250));
+    if (!await _sleep(250)) return;
 
     setState(() {
       _flashed = true;
       _alpha = 1.0;
     });
 
-    await Future.delayed(Duration(milliseconds: 2000));
+    if (!await _sleep(2000)) return;
 
     setState(() {
       _alpha = 0.0;
     });
+  }
+
+  Future<bool> _sleep(int millis) async {
+    await Future.delayed(Duration(milliseconds: millis));
+    return mounted;
   }
 
   Future<void> _animateToAngle(
