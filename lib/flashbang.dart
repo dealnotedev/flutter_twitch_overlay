@@ -46,13 +46,15 @@ class _State extends State<FlashbangWidget>
   Future<void> _startAnimation() async {
     _controller.repeat();
 
-    if (!await _sleep(500)) return;
+    if (!await _sleep(350)) return;
+
+    //ObsAudio.playWavAssetsDebug(Assets.assetsWavFlashbang);
 
     ObsAudio.loadAsset(Assets.assetsWavFlashbang).then((id) {
       ObsAudio.play(id);
     });
 
-    if (!await _sleep(250)) return;
+    if (!await _sleep(400)) return;
 
     _animateToAngle(270);
 

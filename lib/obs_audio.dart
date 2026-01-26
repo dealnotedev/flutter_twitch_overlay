@@ -1,8 +1,17 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/services.dart';
+import 'package:win32/win32.dart';
 
 class ObsAudio {
+  static void playWavAssetsDebug(String asset) {
+    final file =
+        '${File(Platform.resolvedExecutable).parent.path}\\data\\flutter_assets\\$asset';
+
+    PlaySound(TEXT(file), NULL, SND_FILENAME | SND_ASYNC);
+  }
+
   static const _ch = BasicMessageChannel<String>('obs_audio', StringCodec());
 
   static final _slots = <String, int>{};

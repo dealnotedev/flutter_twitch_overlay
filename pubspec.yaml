@@ -64,6 +64,8 @@ dependencies:
 
   http: ^1.4.0
 
+  win32: ^5.15.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter
