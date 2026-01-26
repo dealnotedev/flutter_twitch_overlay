@@ -36,8 +36,6 @@ dependencies:
 
   open_url: ^2.0.1
 
-  simple_animations: ^5.0.2
-
   shared_preferences: ^2.5.3
 
   dio: ^5.8.0+1
