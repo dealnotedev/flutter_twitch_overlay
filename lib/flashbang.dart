@@ -81,7 +81,9 @@ class _State extends State<FlashbangWidget>
     double delta = target - current;
     if (delta < 0) delta += 1.0;
 
-    if (delta < 0.0001) {
+    const epsilon = 1e-4;
+
+    if (delta < epsilon) {
       _controller
         ..stop()
         ..value = target;
