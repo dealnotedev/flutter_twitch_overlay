@@ -68,12 +68,12 @@ class _State extends State<LoggedWidget> {
 
     //_simulateRaid(raiders: 20);
 
-    /*WidgetsBinding.instance.addPostFrameCallback((_) {
-      _pushSubscription(
-        _Sub(who: 'dealnotedev',
-            text: context.localizations.subscription_gift_description('1', 5)),
-      );
-    });*/
+    //WidgetsBinding.instance.addPostFrameCallback((_) {
+    //  _pushSubscription(
+    //    _Sub(who: 'dealnotedev',
+    //        text: context.localizations.subscription_gift_description('1', 5)),
+    //  );
+    //});
 
     _killsSubscription = _localServer.kills.listen(_handleKill);
     super.initState();
@@ -454,7 +454,9 @@ class _State extends State<LoggedWidget> {
 
   Future<void> _handleFlashbang(UserRedeemedEvent reward) async {
     final flashbang = Flashbang(
-        id: reward.id, pro: Random().nextInt(100) <= 10);
+      id: reward.id,
+      pro: Random().nextInt(100) <= 10,
+    );
     setState(() {
       _flashbang = flashbang;
     });
@@ -469,6 +471,10 @@ class _State extends State<LoggedWidget> {
   }
 
   Future<void> _handleReward(UserRedeemedEvent reward) async {
+    setState(() {
+      _rewards.add(reward);
+    });
+
     if ('Флешбенг' == reward.reward) {
       _handleFlashbang(reward);
       return;
@@ -584,20 +590,22 @@ class _State extends State<LoggedWidget> {
       return;
     }
 
+    final subscriptionsHandlingEnabled = _obsConfig.getBool('subscriptions');
+
     if (message.payload.subscription?.type == 'channel.subscription.gift' &&
-        _obsConfig.getBool('subscriptions')) {
+        subscriptionsHandlingEnabled) {
       _handleSubscriptionGift(message);
       return;
     }
 
     if (message.payload.subscription?.type == 'channel.subscription.message' &&
-        _obsConfig.getBool('subscriptions')) {
+        subscriptionsHandlingEnabled) {
       _handleSubscriptionMessage(message);
       return;
     }
 
     if (message.payload.subscription?.type == 'channel.subscribe' &&
-        _obsConfig.getBool('subscriptions')) {
+        subscriptionsHandlingEnabled) {
       _handleSubscription(message);
       return;
     }
@@ -644,10 +652,6 @@ class _State extends State<LoggedWidget> {
       );
 
       _handleReward(event);
-
-      setState(() {
-        _rewards.add(event);
-      });
     }
   }
 

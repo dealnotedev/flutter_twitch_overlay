@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
@@ -25,8 +23,6 @@ void main() async {
   final locator = AppServiceLocator.init(settings, obsConfig, localServer);
 
   runApp(MyApp(locator: locator));
-
-  print('APP STARTED ${Platform.resolvedExecutable}');
 }
 
 class MyApp extends StatelessWidget {

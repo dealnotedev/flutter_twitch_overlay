@@ -9,7 +9,9 @@ class Settings {
   static const _kTwitchAuth = 'twitch_credentials';
 
   Future<void> init() async {
-    await initTwitchCreds();
+    final prefs = await SharedPreferences.getInstance();
+
+    _initTwitchCreds(prefs);
   }
 
   Future<void> saveTwitchAuth(TwitchCreds? creds) async {
@@ -30,14 +32,12 @@ class Settings {
 
   Stream<TwitchCreds?> get twitchAuthChanges => _twitchAuthSubject.stream;
 
-  late TwitchCreds? twitchAuth;
+  TwitchCreds? twitchAuth;
 
   final _twitchAuthSubject = StreamController<TwitchCreds?>.broadcast();
 
-  Future<void> initTwitchCreds() async {
-    final prefs = await SharedPreferences.getInstance();
+  void _initTwitchCreds(SharedPreferences prefs) {
     final json = prefs.getString(_kTwitchAuth);
-
     twitchAuth = json != null ? TwitchCreds.fromJson(jsonDecode(json)) : null;
   }
 }
