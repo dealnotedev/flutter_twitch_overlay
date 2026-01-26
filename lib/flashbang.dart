@@ -54,7 +54,7 @@ class _State extends State<FlashbangWidget>
 
     await Future.delayed(Duration(milliseconds: 250));
 
-    _animateToAngle(270, duration: const Duration(milliseconds: 100));
+    _animateToAngle(270);
 
     await Future.delayed(Duration(milliseconds: 250));
 
@@ -70,22 +70,39 @@ class _State extends State<FlashbangWidget>
     });
   }
 
-  Future<void> _animateToAngle(double degrees,
-      {required Duration duration}) async {
+  Future<void> _animateToAngle(
+    double degrees, {
+    Curve curve = Curves.easeOut,
+  }) async {
     final target = (degrees % 360) / 360.0;
 
-    final current = _controller.value;
-    double delta = target - current;
+    final current = _controller.value % 1.0;
 
+    double delta = target - current;
     if (delta < 0) delta += 1.0;
 
-    await _controller.animateTo(
-      current + delta,
-      duration: duration,
-      curve: Curves.linear,
+    if (delta < 0.0001) {
+      _controller
+        ..stop()
+        ..value = target;
+      return;
+    }
+
+    final full = _controller.duration ?? const Duration(milliseconds: 500);
+
+    final adaptive = Duration(
+      milliseconds: (full.inMilliseconds * delta).round().clamp(
+        1,
+        full.inMilliseconds,
+      ),
     );
 
-    _controller.stop();
+    await _controller.animateTo(
+      _controller.value + delta,
+      duration: adaptive,
+      curve: curve,
+    );
+
     _controller.value = target;
   }
 
@@ -96,13 +113,6 @@ class _State extends State<FlashbangWidget>
   void dispose() {
     _controller.dispose();
     super.dispose();
-  }
-
-  void _stopAtAngle(double degrees) {
-    final turns = (degrees % 360) / 360.0;
-    _controller
-      ..stop()
-      ..value = turns;
   }
 
   @override
