@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -452,7 +453,7 @@ class _State extends State<LoggedWidget> {
   }
 
   Future<void> _handleFlashbang(UserRedeemedEvent reward) async {
-    final flashbang = Flashbang(id: reward.id);
+    final flashbang = Flashbang(id: reward.id, pro: Random().nextBool());
     setState(() {
       _flashbang = flashbang;
     });

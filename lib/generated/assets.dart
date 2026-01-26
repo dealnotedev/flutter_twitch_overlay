@@ -7,16 +7,14 @@ class Assets {
   static const String assetsBee = 'assets/bee.json';
   static const String assetsBoomWhite = 'assets/boom_white.json';
   static const String assetsFlashBomb = 'assets/flash_bomb.png';
+  static const String assetsFlashBombPro = 'assets/flash_bomb_pro.png';
   static const String assetsFollowSound = 'assets/follow_sound.mp3';
   static const String assetsGiraffe = 'assets/giraffe.json';
   static const String assetsHeart = 'assets/heart.png';
-  static const String assetsHeartBackgroundFilled =
-      'assets/heart_background_filled.png';
-  static const String assetsIcDefaultAvatar96dp =
-      'assets/ic_default_avatar_96dp.png';
+  static const String assetsHeartBackgroundFilled = 'assets/heart_background_filled.png';
+  static const String assetsIcDefaultAvatar96dp = 'assets/ic_default_avatar_96dp.png';
   static const String assetsIcDulya = 'assets/ic_dulya.png';
-  static const String assetsIcTwitchChannelPosints32dp =
-      'assets/ic_twitch_channel_posints_32dp.png';
+  static const String assetsIcTwitchChannelPosints32dp = 'assets/ic_twitch_channel_posints_32dp.png';
   static const String assetsImgPause1 = 'assets/img_pause_1.png';
   static const String assetsImgSticker1 = 'assets/img_sticker_1.webp';
   static const String assetsImgSticker10 = 'assets/img_sticker_10.webp';
@@ -39,4 +37,5 @@ class Assets {
   static const String assetsSub = 'assets/sub.mp3';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
   static const String assetsWavFlashbang = 'assets/wav_flashbang.wav';
+
 }
