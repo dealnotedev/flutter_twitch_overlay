@@ -188,7 +188,11 @@ class _State extends State<LoggedWidget> {
               _createKillWidget(context, kill: kill, constraints: constraints),
             ],
             if (flashbang != null) ...[
-              FlashbangWidget(constraints: constraints, flashbang: flashbang),
+              FlashbangWidget(
+                constraints: constraints,
+                flashbang: flashbang,
+                key: ValueKey(flashbang.id),
+              ),
             ],
           ],
         );
