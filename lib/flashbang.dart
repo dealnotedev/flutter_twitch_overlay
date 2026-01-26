@@ -36,7 +36,7 @@ class _State extends State<FlashbangWidget>
     _controller = AnimationController(
       vsync: this,
       duration: Duration(milliseconds: 500),
-    )..repeat();
+    );
 
     _turns = CurvedAnimation(parent: _controller, curve: Curves.linear);
 
@@ -44,6 +44,8 @@ class _State extends State<FlashbangWidget>
   }
 
   Future<void> _startAnimation() async {
+    _controller.repeat();
+
     await Future.delayed(Duration(milliseconds: 500));
 
     ObsAudio.loadAsset(Assets.assetsWavFlashbang).then((id) {
