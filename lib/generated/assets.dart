@@ -6,6 +6,7 @@ class Assets {
   static const String assetsBear = 'assets/bear.json';
   static const String assetsBee = 'assets/bee.json';
   static const String assetsBoomWhite = 'assets/boom_white.json';
+  static const String assetsFlashBomb = 'assets/flash_bomb.png';
   static const String assetsFollowSound = 'assets/follow_sound.mp3';
   static const String assetsGiraffe = 'assets/giraffe.json';
   static const String assetsHeart = 'assets/heart.png';
@@ -37,4 +38,5 @@ class Assets {
   static const String assetsRunningSomething = 'assets/running_something.json';
   static const String assetsSub = 'assets/sub.mp3';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
+  static const String assetsWavFlashbang = 'assets/wav_flashbang.wav';
 }

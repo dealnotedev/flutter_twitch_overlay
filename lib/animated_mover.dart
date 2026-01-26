@@ -72,6 +72,9 @@ class AnimatedVerticalMover extends StatefulWidget {
   final bool alreadyInsideStack;
   final BoxConstraints constraints;
 
+  final double toOffset;
+  final Curve curve;
+
   const AnimatedVerticalMover({
     super.key,
     required this.child,
@@ -79,7 +82,8 @@ class AnimatedVerticalMover extends StatefulWidget {
     required this.size,
     required this.constraints,
     required this.alreadyInsideStack,
-  });
+    this.curve = Curves.linear,
+    this.toOffset = 0});
 
   @override
   State<AnimatedVerticalMover> createState() => _AnimatedVerticalMoverState();
@@ -87,13 +91,17 @@ class AnimatedVerticalMover extends StatefulWidget {
 
 class _AnimatedVerticalMoverState extends State<AnimatedVerticalMover>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-
-  @override
+  late AnimationController _controller;;
+  late final Animation<double> _progress@override
   void initState() {
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this)
       ..forward();
+
+    _progress = CurvedAnimation(
+      parent: _controller,
+      curve: widget.curve,
+    );
   }
 
   @override
@@ -105,14 +113,17 @@ class _AnimatedVerticalMoverState extends State<AnimatedVerticalMover>
   @override
   Widget build(BuildContext context) {
     final startY = -widget.size.height;
-    final endY = widget.constraints.maxHeight;
+    final endY = widget.constraints.maxHeight + widget.toOffset;
 
     final child = AnimatedBuilder(
-      animation: _controller,
+      animation: _progress,
       builder: (context, _) {
-        final y = startY + ((endY - startY).toDouble() * _controller.value);
+        final t = _progress.value;
+
+        final y = startY + ((endY - startY) * t);
         final x =
             (widget.constraints.maxWidth / 2.0) - (widget.size.width / 2.0);
+
         return Positioned(top: y, left: x, child: widget.child);
       },
     );

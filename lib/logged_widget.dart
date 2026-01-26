@@ -11,6 +11,7 @@ import 'package:obssource/config/settings.dart';
 import 'package:obssource/data/events.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/flashbang.dart';
 import 'package:obssource/follow/follow_ballons.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/highlighed/highlighted_message.dart';
@@ -92,6 +93,8 @@ class _State extends State<LoggedWidget> {
     super.dispose();
   }
 
+  Flashbang? _flashbang;
+
   @override
   Widget build(BuildContext context) {
     final offTv = _offTv;
@@ -100,6 +103,7 @@ class _State extends State<LoggedWidget> {
     final raid = _raid;
     final sub = _sub;
     final kill = _kill;
+    final flashbang = _flashbang;
 
     return LayoutBuilder(
       builder: (context, constraints) {
@@ -182,6 +186,9 @@ class _State extends State<LoggedWidget> {
             if (sub != null) ...[_createSubsWidget(sub, constraints)],
             if (kill != null) ...[
               _createKillWidget(context, kill: kill, constraints: constraints),
+            ],
+            if (flashbang != null) ...[
+              FlashbangWidget(constraints: constraints, flashbang: flashbang),
             ],
           ],
         );
@@ -440,7 +447,27 @@ class _State extends State<LoggedWidget> {
     return off != null && off.time.add(_offTvDuration).isAfter(DateTime.now());
   }
 
+  Future<void> _handleFlashbang(UserRedeemedEvent reward) async {
+    final flashbang = Flashbang(id: reward.id);
+    setState(() {
+      _flashbang = flashbang;
+    });
+
+    await Future.delayed(Duration(seconds: 5));
+
+    if (_flashbang != flashbang) return;
+
+    setState(() {
+      _flashbang = null;
+    });
+  }
+
   Future<void> _handleReward(UserRedeemedEvent reward) async {
+    if ('Флешбенг' == reward.reward) {
+      _handleFlashbang(reward);
+      return;
+    }
+
     if ('Дуля (30с)' == reward.reward) {
       ObsAudio.loadAsset(Assets.assetsTvOffSound).then((id) {
         ObsAudio.play(id);
