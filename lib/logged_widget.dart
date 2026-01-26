@@ -453,7 +453,8 @@ class _State extends State<LoggedWidget> {
   }
 
   Future<void> _handleFlashbang(UserRedeemedEvent reward) async {
-    final flashbang = Flashbang(id: reward.id, pro: Random().nextBool());
+    final flashbang = Flashbang(
+        id: reward.id, pro: Random().nextInt(100) <= 10);
     setState(() {
       _flashbang = flashbang;
     });
