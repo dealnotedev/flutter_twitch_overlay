@@ -84,7 +84,9 @@ class AnimatedVerticalMover extends StatefulWidget {
     required this.alreadyInsideStack,
     this.curve = Curves.linear,
     this.toOffset = 0,
-  })@override
+  });
+
+  @override
   State<AnimatedVerticalMover> createState() => _AnimatedVerticalMoverState();
 }
 
@@ -99,10 +101,7 @@ class _AnimatedVerticalMoverState extends State<AnimatedVerticalMover>
     _controller = AnimationController(duration: widget.duration, vsync: this)
       ..forward();
 
-    _progress = CurvedAnimation(
-      parent: _controller,
-      curve: widget.curve,
-    );
+    _progress = CurvedAnimation(parent: _controller, curve: widget.curve);
   }
 
   @override
