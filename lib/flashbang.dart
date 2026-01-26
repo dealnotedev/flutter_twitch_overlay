@@ -4,14 +4,12 @@ import 'package:obssource/generated/assets.dart';
 import 'package:obssource/obs_audio.dart';
 
 class FlashbangWidget extends StatefulWidget {
+
   final Flashbang flashbang;
   final BoxConstraints constraints;
 
-  const FlashbangWidget({
-    super.key,
-    required this.constraints,
-    required this.flashbang,
-  });
+  const FlashbangWidget(
+      {super.key, required this.constraints, required this.flashbang});
 
   @override
   State<StatefulWidget> createState() => _State();
@@ -25,6 +23,7 @@ class Flashbang {
 
 class _State extends State<FlashbangWidget>
     with SingleTickerProviderStateMixin {
+
   late final AnimationController _controller;
   late final Animation<double> _turns;
 
@@ -32,10 +31,9 @@ class _State extends State<FlashbangWidget>
   void initState() {
     super.initState();
 
-    _controller = AnimationController(
-      vsync: this,
-      duration: Duration(milliseconds: 500),
-    )..repeat();
+    _controller =
+    AnimationController(vsync: this, duration: Duration(milliseconds: 500))
+      ..repeat();
 
     _turns = CurvedAnimation(parent: _controller, curve: Curves.linear);
 
@@ -86,15 +84,13 @@ class _State extends State<FlashbangWidget>
   @override
   Widget build(BuildContext context) {
     if (_flashed) {
-      return AnimatedOpacity(
-        opacity: _alpha,
-        duration: Duration(milliseconds: 1000),
-        child: Container(
-          width: double.infinity,
-          height: double.infinity,
-          color: Colors.white,
-        ),
-      );
+      return AnimatedOpacity(opacity: _alpha,
+          duration: Duration(milliseconds: 1000),
+          child: Container(
+            width: double.infinity,
+            height: double.infinity,
+            color: Colors.white,
+          ));
     }
     return AnimatedVerticalMover(
       toOffset: -100,
@@ -103,10 +99,8 @@ class _State extends State<FlashbangWidget>
       size: Size(128, 128),
       constraints: widget.constraints,
       alreadyInsideStack: true,
-      child: RotationTransition(
-        turns: _turns,
-        child: Image.asset(Assets.assetsFlashBomb, width: 128, height: 128),
-      ),
+      child: RotationTransition(turns: _turns,
+        child: Image.asset(Assets.assetsFlashBomb, width: 128, height: 128),),
     );
   }
 }

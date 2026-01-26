@@ -83,16 +83,17 @@ class AnimatedVerticalMover extends StatefulWidget {
     required this.constraints,
     required this.alreadyInsideStack,
     this.curve = Curves.linear,
-    this.toOffset = 0});
-
-  @override
+    this.toOffset = 0,
+  })@override
   State<AnimatedVerticalMover> createState() => _AnimatedVerticalMoverState();
 }
 
 class _AnimatedVerticalMoverState extends State<AnimatedVerticalMover>
     with SingleTickerProviderStateMixin {
-  late AnimationController _controller;;
-  late final Animation<double> _progress@override
+  late AnimationController _controller;
+  late final Animation<double> _progress;
+
+  @override
   void initState() {
     super.initState();
     _controller = AnimationController(duration: widget.duration, vsync: this)
