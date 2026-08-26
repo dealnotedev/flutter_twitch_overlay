@@ -1,5 +1,6 @@
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
+
 import 'app_localizations.dart';
 
 // ignore_for_file: type=lint
@@ -27,6 +28,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String user_now_following_title(String user_avatar, String user) {
     return '$user_avatar $user just followed!';
   }
+
+  @override
+  String get follow_thanks => 'Thanks for the follow!';
 
   @override
   String get chat_message_first => 'First message';

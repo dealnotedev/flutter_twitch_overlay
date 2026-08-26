@@ -46,6 +46,7 @@
       }
     }
   },
+  "follow_thanks": "Дякую за фолов!",
   "chat_message_first": "Перше",
   "chat_message_highlighted": "Важливе",
   "config_invalid": "Неправильна конфігурація OBS",

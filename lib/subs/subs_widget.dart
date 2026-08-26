@@ -9,15 +9,20 @@ import 'package:obssource/pixels/pixel_rain_text.dart';
 import 'package:obssource/pixels/pixel_util.dart';
 
 class SubsWidget extends StatefulWidget {
+  static const double bottomTextBackplatesHeight =
+      (_State._pixelSize * 7.0 + 64.0) * 2.0;
+
   final String description;
   final String who;
   final BoxConstraints constraints;
+  final VoidCallback? onLeaving;
 
   const SubsWidget({
     super.key,
     required this.who,
     required this.constraints,
     required this.description,
+    this.onLeaving,
   });
 
   @override
@@ -215,6 +220,8 @@ class _State extends State<SubsWidget> {
           Assets.assetsHeartBackgroundFilled,
         ))!;
 
+    if (!mounted) return;
+
     setState(() {
       _description = _createDescription(
         text: widget.description,
@@ -240,16 +247,21 @@ class _State extends State<SubsWidget> {
 
     await Future.delayed(Duration(seconds: 1));
 
+    if (!mounted) return;
+
     setState(() {
       _opacity = 1.0;
     });
 
     await Future.delayed(Duration(seconds: 10));
 
+    if (!mounted) return;
+
     setState(() {
       _opacity = 0.0;
       _leaving = true;
     });
+    widget.onLeaving?.call();
   }
 
   double _opacity = 0.0;

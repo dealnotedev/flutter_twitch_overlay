@@ -172,6 +172,14 @@ class UserDto {
         'https://static-cdn.jtvnw.net/jtv_user_pictures/b49bedc2-8fbb-4485-9a1b-b5cb6e52e864-profile_image-300x300.png',
   );
 
+  static const freydisIn = UserDto(
+    id: '230027101',
+    login: 'freydis_in',
+    displayName: 'freydis_in',
+    profileImageUrl:
+        'https://static-cdn.jtvnw.net/jtv_user_pictures/7abf3efd-de61-42ce-8155-aa655a68c616-profile_image-300x300.png',
+  );
+
   const UserDto({
     required this.id,
     required this.login,

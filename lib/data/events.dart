@@ -6,10 +6,12 @@ class UserFollowEvent {
   final DateTime end;
   final String userName;
   final UserDto? user;
+  final img.Image? avatar;
 
   UserFollowEvent({
     required this.userName,
     required this.user,
+    this.avatar,
     required this.time,
     required this.end,
   });

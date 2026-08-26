@@ -1,7 +1,10 @@
+import 'dart:math';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:obssource/pixels/pixel.dart';
+
+enum AvatarPixelMotion { linear, horizontalWaves }
 
 class AvatarPixelRain extends StatelessWidget {
   final List<Pixel> pixels;
@@ -15,6 +18,7 @@ class AvatarPixelRain extends StatelessWidget {
 
   final double pixelPadding;
   final Radius pixelRadius;
+  final AvatarPixelMotion motion;
 
   const AvatarPixelRain({
     super.key,
@@ -27,6 +31,7 @@ class AvatarPixelRain extends StatelessWidget {
     required this.fallDurationMs,
     this.pixelRadius = const Radius.circular(2),
     this.pixelPadding = 0.25,
+    this.motion = AvatarPixelMotion.linear,
   });
 
   @override
@@ -42,6 +47,7 @@ class AvatarPixelRain extends StatelessWidget {
             pixelSize,
             durationMs,
             fallDurationMs,
+            motion: motion,
             pixelRadius: pixelRadius,
             pixelPadding: pixelPadding,
           ),
@@ -57,6 +63,7 @@ class _AvatarRainPainter extends CustomPainter {
   final double pixelSize;
   final int durationMs;
   final int fallDurationMs;
+  final AvatarPixelMotion motion;
 
   final double pixelPadding;
   final double dualPixelPadding;
@@ -68,6 +75,7 @@ class _AvatarRainPainter extends CustomPainter {
     this.pixelSize,
     this.durationMs,
     this.fallDurationMs, {
+    this.motion = AvatarPixelMotion.linear,
     required this.pixelRadius,
     required this.pixelPadding,
   }) : dualPixelPadding = pixelPadding * 2.0;
@@ -75,29 +83,56 @@ class _AvatarRainPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final currentMs = progress * durationMs;
+    final verticalWaveFactors = <int, double>{};
+    final squarePixels = pixelRadius == Radius.zero;
+    _paint.isAntiAlias = !squarePixels;
 
     for (final p in pixels) {
       final startMs = p.delayMs;
       final endMs = startMs + fallDurationMs;
 
-      double pixelProgress;
+      final double rawPixelProgress;
 
       if (currentMs < startMs) {
-        pixelProgress = 0.0;
+        rawPixelProgress = 0.0;
       } else if (currentMs >= endMs) {
-        pixelProgress = 1.0;
+        rawPixelProgress = 1.0;
       } else {
-        pixelProgress = (currentMs - startMs) / fallDurationMs;
-        pixelProgress = Curves.easeOut.transform(pixelProgress.clamp(0.0, 1.0));
+        rawPixelProgress = (currentMs - startMs) / fallDurationMs;
       }
+      final normalizedProgress = rawPixelProgress.clamp(0.0, 1.0);
+      final pixelProgress = switch (motion) {
+        AvatarPixelMotion.linear => Curves.easeOut.transform(
+          normalizedProgress,
+        ),
+        AvatarPixelMotion.horizontalWaves => Curves.easeInOutSine.transform(
+          normalizedProgress,
+        ),
+      };
 
       final yTarget = p.y;
       final xTarget = p.x;
       final yStart = p.startY;
       final xStart = p.startX;
 
-      final y = lerpDouble(yStart, yTarget, pixelProgress)!;
-      final x = lerpDouble(xStart, xTarget, pixelProgress)!;
+      final double x;
+      final double y;
+      switch (motion) {
+        case AvatarPixelMotion.linear:
+          y = lerpDouble(yStart, yTarget, pixelProgress)!;
+          x = lerpDouble(xStart, xTarget, pixelProgress)!;
+          break;
+        case AvatarPixelMotion.horizontalWaves:
+          final verticalWaveFactor = verticalWaveFactors.putIfAbsent(
+            p.delayMs,
+            () =>
+                sin(normalizedProgress * pi * 4.0) *
+                sin(normalizedProgress * pi),
+          );
+          y = yStart + (yTarget - yStart) * verticalWaveFactor;
+          x = lerpDouble(xStart, xTarget, pixelProgress)!;
+          break;
+      }
 
       final rect = Rect.fromLTWH(
         x + pixelPadding,
@@ -106,13 +141,18 @@ class _AvatarRainPainter extends CustomPainter {
         pixelSize - dualPixelPadding,
       );
 
-      final rrect = RRect.fromRectAndRadius(rect, pixelRadius);
-
       //_paint.maskFilter = MaskFilter.blur(BlurStyle.normal, 16);
       //canvas.drawRRect(rrect, _paint..color = p.color);
       //_paint.maskFilter = null;
 
-      canvas.drawRRect(rrect, _paint..color = p.color);
+      if (squarePixels) {
+        canvas.drawRect(rect, _paint..color = p.color);
+      } else {
+        canvas.drawRRect(
+          RRect.fromRectAndRadius(rect, pixelRadius),
+          _paint..color = p.color,
+        );
+      }
     }
   }
 

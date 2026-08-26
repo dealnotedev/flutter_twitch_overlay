@@ -121,6 +121,12 @@ abstract class AppLocalizations {
   /// **'{user_avatar} {user} just followed!'**
   String user_now_following_title(String user_avatar, String user);
 
+  /// No description provided for @follow_thanks.
+  ///
+  /// In en, this message translates to:
+  /// **'Thanks for the follow!'**
+  String get follow_thanks;
+
   /// No description provided for @chat_message_first.
   ///
   /// In en, this message translates to:

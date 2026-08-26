@@ -5,6 +5,7 @@ import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/config/obs_config.dart';
@@ -13,7 +14,7 @@ import 'package:obssource/data/events.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/flashbang.dart';
-import 'package:obssource/follow/follow_ballons.dart';
+import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/highlighed/highlighted_message.dart';
 import 'package:obssource/kill_widget.dart';
@@ -34,8 +35,14 @@ import 'package:obssource/twitch/ws_manager.dart';
 class LoggedWidget extends StatefulWidget {
   final ServiceLocator locator;
   final TwitchCreds creds;
+  final Future<img.Image?> Function(String url)? avatarLoader;
 
-  const LoggedWidget({super.key, required this.locator, required this.creds});
+  const LoggedWidget({
+    super.key,
+    required this.locator,
+    required this.creds,
+    this.avatarLoader,
+  });
 
   @override
   State<StatefulWidget> createState() => _State();
@@ -48,6 +55,7 @@ class _State extends State<LoggedWidget> {
 
   late WsState _state;
   late Timer _timer;
+  late Timer _simulatedFollowTimer;
   late Settings _settings;
   late ObsConfig _obsConfig;
   late LocalServer _localServer;
@@ -65,6 +73,7 @@ class _State extends State<LoggedWidget> {
     _stateSubscription = ws.state.listen(_handleWebsocketState);
 
     _timer = Timer.periodic(Duration(seconds: 1), _handleTimerTick);
+    _simulatedFollowTimer = Timer(const Duration(seconds: 5), _simulateFollow);
 
     //_simulateRaid(raiders: 20);
 
@@ -88,6 +97,7 @@ class _State extends State<LoggedWidget> {
   @override
   void dispose() {
     _timer.cancel();
+    _simulatedFollowTimer.cancel();
     _stateSubscription?.cancel();
     _eventsSubscription?.cancel();
     _killsSubscription?.cancel();
@@ -159,10 +169,9 @@ class _State extends State<LoggedWidget> {
               ),
             ],
             ..._follows.map((f) {
-              return FollowBallonsWidget(
+              return FollowWidget(
                 event: f,
                 constraints: constraints,
-                duration: _followDuration,
                 key: ValueKey(f),
               );
             }),
@@ -546,39 +555,81 @@ class _State extends State<LoggedWidget> {
   }
 
   static const _highlightedMessageDuration = Duration(seconds: 10);
-  static const _followDuration = Duration(seconds: 10);
+  static const _followDuration = Duration(seconds: 20);
 
   Pause? _pause;
 
   final _highlightedMessages = <HighlightedMessage>{};
   final _follows = <UserFollowEvent>{};
 
+  void _simulateFollow() {
+    final user = UserDto.freydisIn;
+    _users[user.id] = user;
+
+    _handleWebsocketMessage(
+      WsMessage.fromJson({
+        'payload': {
+          'subscription': {'type': 'channel.follow'},
+          'event': {
+            'user_id': user.id,
+            'user_login': user.login,
+            'user_name': user.displayName ?? user.login,
+          },
+        },
+      }),
+    );
+  }
+
   void _handleUserFollow(WsMessageEvent event) async {
     final user = await _getUser(event.user?.id);
     final userName = event.user?.name;
 
     if (userName != null) {
-      final follow = UserFollowEvent(
-        time: DateTime.now(),
-        end: DateTime.now().add(_followDuration),
-        userName: userName,
-        user: user,
-      );
-
-      setState(() {
-        _follows.add(follow);
-      });
-
-      ObsAudio.loadAsset(Assets.assetsFollowSound).then((id) {
-        ObsAudio.play(id);
-      });
-
-      await Future.delayed(_followDuration);
-
-      setState(() {
-        _follows.remove(follow);
-      });
+      await _showUserFollow(userName: userName, user: user);
     }
+  }
+
+  Future<void> _showUserFollow({
+    required String userName,
+    required UserDto? user,
+  }) async {
+    if (!mounted) return;
+
+    img.Image? avatar;
+    final avatarUrl = user?.profileImageUrl;
+
+    if (avatarUrl != null) {
+      try {
+        final loader = widget.avatarLoader ?? RainyAvatar.loadImageFromUrl;
+        avatar = await loader(avatarUrl);
+      } catch (_) {
+        // The follow animation can still run without an avatar.
+      }
+    }
+
+    if (!mounted) return;
+
+    final follow = UserFollowEvent(
+      time: DateTime.now(),
+      end: DateTime.now().add(_followDuration),
+      userName: userName,
+      user: user,
+      avatar: avatar,
+    );
+
+    setState(() {
+      _follows.add(follow);
+    });
+
+    ObsAudio.loadAsset(Assets.assetsFollowSound).then(ObsAudio.play);
+
+    await Future.delayed(_followDuration);
+
+    if (!mounted) return;
+
+    setState(() {
+      _follows.remove(follow);
+    });
   }
 
   void _handleWebsocketMessage(WsMessage message) async {

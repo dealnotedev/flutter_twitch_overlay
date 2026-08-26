@@ -21,11 +21,17 @@ class ObsConfig {
   final config = ObservableValue(current: Config(valid: false, json: {}));
 
   bool getBool(String name, {bool fallback = false}) {
+    final current = config.current;
+
+    if (!current.valid) {
+      return true;
+    }
+
     try {
-      final value = config.current.json[name];
+      final value = current.json[name];
       return value ?? fallback;
     } catch (_) {
-      return false;
+      return fallback;
     }
   }
 
