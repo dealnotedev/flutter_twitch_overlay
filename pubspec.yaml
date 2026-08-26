@@ -122,3 +122,12 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_assets_generator:
+  output_dir: generated/
+  output_filename: assets
+  class_name: Assets
+  auto_detection: false
+  # Options: robust (default), legacy (old style)
+  style: legacy
+  path_ignore: [ ]
