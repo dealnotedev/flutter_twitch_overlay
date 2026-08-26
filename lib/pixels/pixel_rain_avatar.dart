@@ -26,6 +26,7 @@ class RainyAvatar extends StatefulWidget {
   final RainyPixelOrigin origin;
   final RainyPixelDirection direction;
   final AvatarPixelMotion motion;
+  final AvatarPixelRenderer renderer;
   final List<Pixel>? preparedPixels;
 
   const RainyAvatar({
@@ -39,6 +40,7 @@ class RainyAvatar extends StatefulWidget {
     this.origin = RainyPixelOrigin.inside,
     this.direction = RainyPixelDirection.entering,
     this.motion = AvatarPixelMotion.linear,
+    this.renderer = AvatarPixelRenderer.rawAtlas,
     this.preparedPixels,
     this.randomBackground = true,
     this.scaleWhenStart = true,
@@ -570,6 +572,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
                   pixels: pixels,
                   animation: animation,
                   motion: widget.motion,
+                  renderer: widget.renderer,
                   pixelPadding: widget.pixelPadding,
                   pixelRadius: widget.pixelRadius,
                 ),

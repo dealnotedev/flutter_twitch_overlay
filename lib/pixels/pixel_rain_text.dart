@@ -11,6 +11,7 @@ class PixelRainText extends StatefulWidget {
   final Duration fallDuration;
   final double pixelPadding;
   final Radius pixelRadius;
+  final AvatarPixelRenderer renderer;
 
   const PixelRainText({
     super.key,
@@ -21,6 +22,7 @@ class PixelRainText extends StatefulWidget {
     required this.fallDuration,
     required this.pixelSize,
     this.pixelPadding = 1.0,
+    this.renderer = AvatarPixelRenderer.rawAtlas,
   });
 
   @override
@@ -61,6 +63,7 @@ class _State extends State<PixelRainText> with SingleTickerProviderStateMixin {
         fallDurationMs: widget.fallDuration.inMilliseconds,
         pixels: pixels,
         animation: animation,
+        renderer: widget.renderer,
         pixelPadding: widget.pixelPadding,
         pixelRadius: widget.pixelRadius,
       ),
