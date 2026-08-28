@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
@@ -6,107 +8,201 @@ import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/l10n/app_localizations.dart';
-import 'package:obssource/local_server.dart';
 import 'package:obssource/logged_widget.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
-import 'package:obssource/subs/subs_widget.dart';
 import 'package:obssource/twitch/twitch_api.dart';
-import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/twitch/ws_event.dart';
 import 'package:obssource/twitch/ws_manager.dart';
 
 void main() {
-  testWidgets('simulates a freydis_in follow after five seconds', (
-    tester,
-  ) async {
-    final settings = Settings();
-    final config = ObsConfig();
-    config.config.set(Config(valid: true, json: {'followers': true}));
+  late Settings settings;
+  late ObsConfig config;
+  late _FakeWebSocketManager websocket;
+  late ServiceLocator locator;
 
-    final websocket = _FakeWebSocketManager(settings);
-    final locator = _FakeLocator({
+  setUp(() {
+    settings = Settings();
+    config = ObsConfig();
+    config.config.set(Config(valid: true, json: {'followers': true}));
+    websocket = _FakeWebSocketManager(settings);
+    locator = _FakeLocator({
       Settings: settings,
       ObsConfig: config,
-      LocalServer: LocalServer(),
       WebSocketManager: websocket,
     });
+  });
 
-    final creds = TwitchCreds(
-      accessToken: 'unused',
-      refreshToken: 'unused',
-      broadcasterId: UserDto.dealnotedev.id,
-      clientId: 'unused',
-    );
+  tearDown(() async {
+    await websocket.close();
+  });
 
-    await tester.pumpWidget(
-      MaterialApp(
-        localizationsDelegates: AppLocalizations.localizationsDelegates,
-        supportedLocales: AppLocalizations.supportedLocales,
-        locale: const Locale('en'),
-        home: LoggedWidget(
-          locator: locator,
-          creds: creds,
-          avatarLoader: (_) async => img.Image(width: 64, height: 64),
-        ),
+  testWidgets('shows follow events without injecting a debug follow', (
+    tester,
+  ) async {
+    await _pumpLoggedWidget(tester, locator);
+
+    expect(find.byKey(const ValueKey('connection_indicator')), findsOneWidget);
+
+    await tester.pump(const Duration(seconds: 5));
+    expect(find.byType(FollowWidget), findsNothing);
+
+    websocket.add(
+      _message(
+        type: 'channel.follow',
+        event: {
+          'user_id': 'follower-id',
+          'user_login': 'follower_login',
+          'user_name': 'Follower',
+        },
       ),
     );
+    await tester.pump();
+    await tester.pump();
 
-    expect(find.byType(FollowWidget), findsNothing);
-
-    await tester.pump(const Duration(seconds: 4));
-    expect(find.byType(FollowWidget), findsNothing);
-
-    await tester.pump(const Duration(seconds: 1));
     expect(find.byType(FollowWidget), findsOneWidget);
     expect(
-      tester.widget<FollowWidget>(find.byType(FollowWidget)).leavingMotion,
-      AvatarPixelMotion.horizontalWaves,
+      tester.widget<FollowWidget>(find.byType(FollowWidget)).event.userName,
+      'Follower',
     );
     expect(
-      find.byKey(const ValueKey('follow_avatar_entering')),
-      findsOneWidget,
+      tester.widget<FollowWidget>(find.byType(FollowWidget)).renderer,
+      AvatarPixelRenderer.rawAtlas,
     );
-    final avatar = tester.widget<RainyAvatar>(
-      find.byKey(const ValueKey('follow_avatar_entering')),
+    expect(
+      tester.widget<FollowWidget>(find.byType(FollowWidget)).avatarResolution,
+      48,
     );
-    expect(avatar.pixelPadding, 0);
-    expect(avatar.pixelRadius, const Radius.circular(1));
+    expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).resolution, 48);
+    expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).pixelSize, 8);
 
-    final follow = tester.widget<SubsWidget>(find.byType(SubsWidget));
-    expect(follow.who, UserDto.freydisIn.displayName);
-    expect(follow.description, 'Thanks for the follow!');
+    config.config.set(
+      Config(
+        valid: true,
+        json: {
+          'followers': true,
+          'follow_animation_renderer': 'legacy',
+          'follow_avatar_resolution': 40,
+        },
+      ),
+    );
+    await tester.pump();
 
-    for (var i = 0; i < 10; i++) {
-      await tester.pump(const Duration(milliseconds: 10));
-      if (find.byKey(const ValueKey('description')).evaluate().isNotEmpty) {
-        break;
-      }
-    }
-    expect(find.byKey(const ValueKey('description')), findsOneWidget);
+    expect(
+      tester.widget<FollowWidget>(find.byType(FollowWidget)).renderer,
+      AvatarPixelRenderer.legacyCanvas,
+    );
+    expect(
+      tester.widget<FollowWidget>(find.byType(FollowWidget)).avatarResolution,
+      40,
+    );
+    expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).resolution, 40);
+    expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).pixelSize, 8);
 
-    await tester.pump(const Duration(seconds: 11));
-    expect(find.byKey(const ValueKey('heart')), findsOneWidget);
-    expect(find.byKey(const ValueKey('heart_background')), findsOneWidget);
-    expect(find.byKey(const ValueKey('follow_avatar_leaving')), findsOneWidget);
+    await tester.pump(const Duration(seconds: 20));
+    expect(find.byType(FollowWidget), findsNothing);
 
-    await tester.pump(const Duration(seconds: 9));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('shows any custom reward and ignores removed event types', (
+    tester,
+  ) async {
+    await _pumpLoggedWidget(tester, locator);
+
+    websocket.add(
+      _message(
+        type: 'channel.channel_points_custom_reward_redemption.add',
+        event: {
+          'id': 'reward-id',
+          'user_id': 'redeemer-id',
+          'user_login': 'redeemer_login',
+          'user_name': 'Redeemer',
+          'reward': {'title': 'Any reward', 'cost': 1000},
+        },
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('reward-id')), findsOneWidget);
+
+    websocket.add(
+      _message(
+        type: 'channel.subscribe',
+        event: {
+          'id': 'removed-event-id',
+          'user_id': 'subscriber-id',
+          'user_login': 'subscriber_login',
+          'user_name': 'Subscriber',
+          'reward': {'title': 'Must not render', 'cost': 1},
+        },
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('removed-event-id')), findsNothing);
+    expect(find.byType(FollowWidget), findsNothing);
+
+    await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpWidget(const SizedBox.shrink());
   });
 }
 
+Future<void> _pumpLoggedWidget(
+  WidgetTester tester,
+  ServiceLocator locator,
+) async {
+  const user = UserDto(
+    id: 'user-id',
+    login: 'user_login',
+    displayName: 'User',
+    profileImageUrl: 'https://example.test/avatar.png',
+  );
+
+  await tester.pumpWidget(
+    MaterialApp(
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
+      locale: const Locale('en'),
+      home: LoggedWidget(
+        locator: locator,
+        userLoader:
+            (id) async => UserDto(
+              id: id,
+              login: user.login,
+              displayName: user.displayName,
+              profileImageUrl:
+                  id == 'follower-id' ? user.profileImageUrl : null,
+            ),
+        avatarLoader: (_) async => img.Image(width: 64, height: 64),
+      ),
+    ),
+  );
+}
+
+WsMessage _message({required String type, required Map<String, Object> event}) {
+  return WsMessage.fromJson({
+    'payload': {
+      'subscription': {'type': type},
+      'event': event,
+    },
+  });
+}
+
 class _FakeWebSocketManager extends WebSocketManager {
-  _FakeWebSocketManager(Settings settings)
-    : super('ws://unused', settings, listenChat: false, listenSubs: false);
+  final _messages = StreamController<WsMessage>.broadcast();
+
+  _FakeWebSocketManager(Settings settings) : super('ws://unused', settings);
+
+  void add(WsMessage message) {
+    _messages.add(message);
+  }
+
+  Future<void> close() => _messages.close();
 
   @override
-  WsState get currentState => WsState.connected;
-
-  @override
-  Stream<WsMessage> get messages => const Stream.empty();
-
-  @override
-  Stream<WsStateEvent> get state => const Stream.empty();
+  Stream<WsMessage> get messages => _messages.stream;
 }
 
 class _FakeLocator implements ServiceLocator {

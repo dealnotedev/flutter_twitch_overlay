@@ -35,6 +35,36 @@ class ObsConfig {
     }
   }
 
+  String getString(String name, {required String fallback}) {
+    final current = config.current;
+
+    if (!current.valid) {
+      return fallback;
+    }
+
+    try {
+      final value = current.json[name];
+      return value is String ? value : fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
+  int getInt(String name, {required int fallback}) {
+    final current = config.current;
+
+    if (!current.valid) {
+      return fallback;
+    }
+
+    try {
+      final value = current.json[name];
+      return value is int ? value : fallback;
+    } catch (_) {
+      return fallback;
+    }
+  }
+
   Future<void> init() async {
     final json = await _configCh.send('get_dart_config');
     _updateConfig(json);

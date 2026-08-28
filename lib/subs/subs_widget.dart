@@ -3,6 +3,7 @@ import 'package:image/image.dart' as img;
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/graffity.dart';
 import 'package:obssource/pixels/pixel.dart';
+import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/pixels/pixel_rain_letters.dart';
 import 'package:obssource/pixels/pixel_rain_text.dart';
@@ -16,6 +17,7 @@ class SubsWidget extends StatefulWidget {
   final String who;
   final BoxConstraints constraints;
   final VoidCallback? onLeaving;
+  final AvatarPixelRenderer renderer;
 
   const SubsWidget({
     super.key,
@@ -23,6 +25,7 @@ class SubsWidget extends StatefulWidget {
     required this.constraints,
     required this.description,
     this.onLeaving,
+    this.renderer = AvatarPixelRenderer.rawAtlas,
   });
 
   @override
@@ -310,6 +313,7 @@ class _State extends State<SubsWidget> {
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
             pixelPadding: 0.25,
+            renderer: widget.renderer,
           ),
           PixelRainText(
             key: ValueKey('heart'),
@@ -319,6 +323,7 @@ class _State extends State<SubsWidget> {
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
             pixelPadding: 0.25,
+            renderer: widget.renderer,
           ),
         ] else ...[
           PixelRainText(
@@ -329,6 +334,7 @@ class _State extends State<SubsWidget> {
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
             pixelPadding: 0.5,
+            renderer: widget.renderer,
           ),
           PixelRainText(
             key: ValueKey('name'),
@@ -338,6 +344,7 @@ class _State extends State<SubsWidget> {
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
             pixelPadding: 0.5,
+            renderer: widget.renderer,
           ),
         ],
       ],

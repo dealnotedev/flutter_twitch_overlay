@@ -2,13 +2,6 @@ import 'package:dio/dio.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_creds_interceptor.dart';
 
-class Statuses {
-  static const resolved = 'RESOLVED';
-  static const active = 'ACTIVE';
-  static const locked = 'LOCKED';
-  static const canceled = 'CANCELED';
-}
-
 class TwitchApi {
   late final Dio dio;
 
@@ -43,48 +36,6 @@ class TwitchApi {
     return count;
   }
 
-  Future<void> subscribeSubGifts({
-    required String? broadcasterUserId,
-    required String sessionId,
-  }) {
-    final data = {
-      'version': '1',
-      'type': 'channel.subscription.gift',
-      'condition': {'broadcaster_user_id': broadcasterUserId},
-      'transport': {'session_id': sessionId, 'method': 'websocket'},
-    };
-
-    return dio.post('/eventsub/subscriptions', data: data);
-  }
-
-  Future<void> subscribeSubMessages({
-    required String? broadcasterUserId,
-    required String sessionId,
-  }) {
-    final data = {
-      'version': '1',
-      'type': 'channel.subscription.message',
-      'condition': {'broadcaster_user_id': broadcasterUserId},
-      'transport': {'session_id': sessionId, 'method': 'websocket'},
-    };
-
-    return dio.post('/eventsub/subscriptions', data: data);
-  }
-
-  Future<void> subscribeSubs({
-    required String? broadcasterUserId,
-    required String sessionId,
-  }) {
-    final data = {
-      'version': '1',
-      'type': 'channel.subscribe',
-      'condition': {'broadcaster_user_id': broadcasterUserId},
-      'transport': {'session_id': sessionId, 'method': 'websocket'},
-    };
-
-    return dio.post('/eventsub/subscriptions', data: data);
-  }
-
   Future<void> subscribeCustomRewards({
     required String? broadcasterUserId,
     required String sessionId,
@@ -93,38 +44,6 @@ class TwitchApi {
       'version': '1',
       'type': 'channel.channel_points_custom_reward_redemption.add',
       'condition': {'broadcaster_user_id': broadcasterUserId},
-      'transport': {'session_id': sessionId, 'method': 'websocket'},
-    };
-
-    return dio.post('/eventsub/subscriptions', data: data);
-  }
-
-  Future<void> subscribeRaid({
-    required String toBroadcasterId,
-    required String sessionId,
-  }) {
-    return dio.post(
-      '/eventsub/subscriptions',
-      data: {
-        "type": "channel.raid",
-        "version": "1",
-        "condition": {"to_broadcaster_user_id": toBroadcasterId},
-        'transport': {'session_id': sessionId, 'method': 'websocket'},
-      },
-    );
-  }
-
-  Future<void> subscribeChat({
-    required String? broadcasterUserId,
-    required String sessionId,
-  }) {
-    final data = {
-      'version': '1',
-      'type': 'channel.chat.message',
-      'condition': {
-        'broadcaster_user_id': broadcasterUserId,
-        'user_id': broadcasterUserId,
-      },
       'transport': {'session_id': sessionId, 'method': 'websocket'},
     };
 
@@ -163,22 +82,6 @@ class UserDto {
   final String login;
   final String? displayName;
   final String? profileImageUrl;
-
-  static const dealnotedev = UserDto(
-    id: '215541934',
-    login: 'dealnotedev',
-    displayName: 'DealnoteDev',
-    profileImageUrl:
-        'https://static-cdn.jtvnw.net/jtv_user_pictures/b49bedc2-8fbb-4485-9a1b-b5cb6e52e864-profile_image-300x300.png',
-  );
-
-  static const freydisIn = UserDto(
-    id: '230027101',
-    login: 'freydis_in',
-    displayName: 'freydis_in',
-    profileImageUrl:
-        'https://static-cdn.jtvnw.net/jtv_user_pictures/7abf3efd-de61-42ce-8155-aa655a68c616-profile_image-300x300.png',
-  );
 
   const UserDto({
     required this.id,

@@ -10,12 +10,16 @@ class FollowWidget extends StatefulWidget {
   final UserFollowEvent event;
   final BoxConstraints constraints;
   final AvatarPixelMotion leavingMotion;
+  final AvatarPixelRenderer renderer;
+  final int avatarResolution;
 
   const FollowWidget({
     super.key,
     required this.event,
     required this.constraints,
     this.leavingMotion = AvatarPixelMotion.horizontalWaves,
+    this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.avatarResolution = 48,
   });
 
   @override
@@ -25,7 +29,6 @@ class FollowWidget extends StatefulWidget {
 class _FollowWidgetState extends State<FollowWidget> {
   static const _avatarVerticalOffset =
       -SubsWidget.bottomTextBackplatesHeight / 2.0;
-  static const _avatarResolution = 64;
   static const _avatarPixelSize = 8.0;
   static const _enteringDuration = Duration(seconds: 5);
   static const _enteringFallDuration = Duration(seconds: 3);
@@ -50,6 +53,17 @@ class _FollowWidgetState extends State<FollowWidget> {
     _prepareAvatarPixels();
   }
 
+  @override
+  void didUpdateWidget(covariant FollowWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.avatarResolution != widget.avatarResolution ||
+        oldWidget.event.avatar != widget.event.avatar ||
+        oldWidget.constraints != widget.constraints) {
+      _prepareAvatarPixels();
+    }
+  }
+
   void _prepareAvatarPixels() {
     final avatar = widget.event.avatar;
     if (avatar == null) return;
@@ -59,7 +73,7 @@ class _FollowWidgetState extends State<FollowWidget> {
       constraints: widget.constraints,
       duration: _enteringDuration,
       fallDuration: _enteringFallDuration,
-      resolution: _avatarResolution,
+      resolution: widget.avatarResolution,
       pixelSize: _avatarPixelSize,
       verticalOffset: _avatarVerticalOffset,
       origin: RainyPixelOrigin.outside,
@@ -70,7 +84,7 @@ class _FollowWidgetState extends State<FollowWidget> {
       constraints: widget.constraints,
       duration: _leavingDuration,
       fallDuration: _leavingFallDuration,
-      resolution: _avatarResolution,
+      resolution: widget.avatarResolution,
       pixelSize: _avatarPixelSize,
       verticalOffset: _avatarVerticalOffset,
       origin: RainyPixelOrigin.outside,
@@ -99,18 +113,20 @@ class _FollowWidgetState extends State<FollowWidget> {
           description: context.localizations.follow_thanks,
           constraints: widget.constraints,
           onLeaving: _handleLeaving,
+          renderer: widget.renderer,
         ),
         if (avatar != null)
           RainyAvatar(
-            key: ValueKey(
+            key: ValueKey((
               _leaving ? 'follow_avatar_leaving' : 'follow_avatar_entering',
-            ),
+              widget.avatarResolution,
+            )),
             image: avatar,
             constraints: widget.constraints,
             duration: _leaving ? _leavingDuration : _enteringDuration,
             fallDuration:
                 _leaving ? _leavingFallDuration : _enteringFallDuration,
-            resolution: _avatarResolution,
+            resolution: widget.avatarResolution,
             pixelSize: _avatarPixelSize,
             pixelPadding: 0,
             pixelRadius: Radius.circular(1),
@@ -123,6 +139,7 @@ class _FollowWidgetState extends State<FollowWidget> {
                     ? RainyPixelDirection.leaving
                     : RainyPixelDirection.entering,
             motion: _leaving ? _leavingMotion : AvatarPixelMotion.linear,
+            renderer: widget.renderer,
             preparedPixels:
                 _leaving ? _leavingAvatarPixels : _enteringAvatarPixels,
           ),

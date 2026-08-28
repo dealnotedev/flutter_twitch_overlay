@@ -8,7 +8,7 @@
       },
       "reward": {
         "type": "String",
-        "example": "вздріст"
+        "example": "Stretch"
       },
       "currency_icon": {
         "type": "String",
@@ -20,83 +20,5 @@
       }
     }
   },
-  "by_user": "by {user_avatar} {user}",
-  "@by_user": {
-    "placeholders": {
-      "user_avatar": {
-        "type": "String",
-        "example": "url"
-      },
-      "user": {
-        "type": "String",
-        "example": "kekotopko"
-      }
-    }
-  },
-  "user_now_following_title": "{user_avatar} {user} just followed!",
-  "@user_now_following_title": {
-    "placeholders": {
-      "user_avatar": {
-        "type": "String",
-        "example": "url"
-      },
-      "user": {
-        "type": "String",
-        "example": "kekotopko"
-      }
-    }
-  },
-  "follow_thanks": "Thanks for the follow!",
-  "chat_message_first": "First message",
-  "chat_message_highlighted": "Highlighted",
-  "config_invalid": "Invalid OBS config",
-  "raid_text": "{broadcaster} is raiding with a party of {raiders}",
-  "@raid_text": {
-    "placeholders": {
-      "broadcaster": {
-        "type": "String",
-        "example": "kekotopko"
-      },
-      "raiders": {
-        "type": "int",
-        "example": "5"
-      }
-    }
-  },
-  "subscription_subscribe_description": "is now Tier {tier} subscriber",
-  "@subscription_subscribe_description": {
-    "placeholders": {
-      "tier": {
-        "type": "String",
-        "example": "3"
-      }
-    }
-  },
-  "subscription_gift_description": "is gifting {count} Tier {tier} Subs",
-  "@subscription_gift_description": {
-    "placeholders": {
-      "tier": {
-        "type": "String",
-        "example": "3"
-      },
-      "count": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "subscription_message_description": "subscribed at Tier {tier} for {months} months",
-  "@subscription_message_description": {
-    "placeholders": {
-      "tier": {
-        "type": "String",
-        "example": "3"
-      },
-      "months": {
-        "type": "int",
-        "example": "3"
-      }
-    }
-  },
-  "subscription_anonymous": "Anonymous"
+  "follow_thanks": "Thanks for the follow!"
 }

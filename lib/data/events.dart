@@ -17,35 +17,6 @@ class UserFollowEvent {
   });
 }
 
-class KillInfo {
-  final int inMatch;
-  final int inMatchStreak;
-  final int totalStreak;
-
-  final String text;
-
-  KillInfo({
-    required this.inMatch,
-    required this.inMatchStreak,
-    required this.totalStreak,
-    required this.text,
-  });
-}
-
-class Pause {
-  final img.Image image;
-  final Duration duration;
-  final Duration fallDuration;
-  final String? message;
-
-  Pause({
-    required this.image,
-    required this.duration,
-    required this.fallDuration,
-    required this.message,
-  });
-}
-
 class UserRedeemedEvent {
   final String id;
   final DateTime time;
@@ -53,7 +24,6 @@ class UserRedeemedEvent {
   final String reward;
   final String? avatar;
   final int cost;
-  final String? input;
 
   UserRedeemedEvent(
     this.id, {
@@ -62,6 +32,5 @@ class UserRedeemedEvent {
     required this.avatar,
     required this.cost,
     required this.time,
-    required this.input,
   });
 }

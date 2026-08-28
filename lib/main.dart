@@ -4,7 +4,6 @@ import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/l10n/app_localizations.dart';
-import 'package:obssource/local_server.dart';
 import 'package:obssource/logged_widget.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
 
@@ -17,10 +16,7 @@ void main() async {
   final obsConfig = ObsConfig();
   await obsConfig.init();
 
-  final localServer = LocalServer();
-  localServer.run();
-
-  final locator = AppServiceLocator.init(settings, obsConfig, localServer);
+  final locator = AppServiceLocator.init(settings, obsConfig);
 
   runApp(MyApp(locator: locator));
 }
@@ -74,7 +70,7 @@ class _MyHomePageState extends State<MyHomePage> {
       builder: (cntx, snapshot) {
         final data = snapshot.data;
         if (data != null) {
-          return LoggedWidget(creds: data, locator: widget.locator);
+          return LoggedWidget(locator: widget.locator);
         } else {
           return Center(child: TwitchLoginWidget(settings: _settings));
         }
