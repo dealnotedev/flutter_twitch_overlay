@@ -86,5 +86,17 @@
   },
   "music_control_disconnected": "Оверлей OBS недоступний",
   "music_control_incompatible": "Версії контролера та оверлею несумісні",
-  "music_control_closed": "Підключення закрито"
+  "music_control_closed": "Підключення закрито",
+  "overlay_settings_title": "Налаштування оверлею",
+  "overlay_settings_sections": "Розділи",
+  "overlay_settings_player": "Плеєр",
+  "overlay_settings_player_description": "Налаштуйте замовлення музики глядачами за бали каналу.",
+  "overlay_settings_reward_title": "Кнопка винагороди",
+  "overlay_settings_reward_description": "Оберіть винагороду Twitch, якою керує застосунок. Оновіть список після змін у Twitch.",
+  "overlay_settings_create_reward": "Створити",
+  "overlay_settings_refresh_rewards": "Оновити",
+  "overlay_settings_loading_rewards": "Завантажуємо винагороди Twitch…",
+  "overlay_settings_no_rewards_title": "Керованих винагород ще немає",
+  "overlay_settings_no_rewards_body": "Створіть стандартну винагороду для музики, налаштуйте її у Twitch та оновіть список.",
+  "overlay_settings_load_error": "Не вдалося завантажити винагороди Twitch"
 }

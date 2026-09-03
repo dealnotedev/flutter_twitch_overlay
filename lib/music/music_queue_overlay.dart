@@ -717,7 +717,7 @@ class _NowPlayingCard extends StatelessWidget {
                       ),
                     ),
                   ),
-                  _NeonControlButton(
+                  NeonMusicIconButton(
                     icon:
                         playing.paused
                             ? Icons.play_arrow_rounded
@@ -725,7 +725,7 @@ class _NowPlayingCard extends StatelessWidget {
                     onPressed: () => onPausedChanged(!playing.paused),
                   ),
                   const Gap(6),
-                  _NeonControlButton(
+                  NeonMusicIconButton(
                     key: const ValueKey('music_skip_button'),
                     icon: Icons.skip_next_rounded,
                     onPressed: onSkip,
@@ -778,45 +778,6 @@ class _NowPlayingCard extends StatelessWidget {
           ),
         ),
       ],
-    );
-  }
-}
-
-class _NeonControlButton extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  const _NeonControlButton({
-    super.key,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      width: 32,
-      height: 32,
-      decoration: BoxDecoration(
-        color: MusicPlayerPalette.neonPink.withValues(alpha: 0.12),
-        shape: BoxShape.circle,
-        border: Border.all(
-          color: MusicPlayerPalette.neonPink.withValues(alpha: 0.62),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: MusicPlayerPalette.neonPink.withValues(alpha: 0.24),
-            blurRadius: 10,
-          ),
-        ],
-      ),
-      child: IconButton(
-        padding: EdgeInsets.zero,
-        color: MusicPlayerPalette.neonPinkBright,
-        iconSize: 20,
-        onPressed: onPressed,
-        icon: Icon(icon),
-      ),
     );
   }
 }

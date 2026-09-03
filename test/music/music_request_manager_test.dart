@@ -25,27 +25,70 @@ void main() {
     if (await cache.exists()) await cache.delete(recursive: true);
   });
 
-  MusicRequestManager createManager() {
+  MusicRequestManager createManager({
+    String? rewardId = 'reward-1',
+    Stream<String?>? rewardIdChanges,
+  }) {
     return manager = MusicRequestManager(
       events: events.stream,
       fetcher: fetcher,
       player: player,
-      rewardTitle: 'Play Music',
       enabled: true,
       maxQueueLength: 10,
       maxDuration: const Duration(minutes: 10),
+      rewardId: rewardId,
+      rewardIdChanges: rewardIdChanges,
     );
   }
 
   test('ignores redemptions for a different reward', () async {
-    final subject = createManager();
+    final subject = createManager(rewardId: 'reward-1');
 
-    events.add(_redemption(id: 'one', title: 'Hydrate'));
+    events.add(_redemption(id: 'one', rewardId: 'reward-2'));
     await _flushEvents();
 
     expect(fetcher.inspected, isEmpty);
     expect(subject.current.queue, isEmpty);
     expect(subject.current.nowPlaying, isNull);
+  });
+
+  test('ignores all redemptions when no reward is selected', () async {
+    final subject = createManager(rewardId: null);
+
+    events.add(_redemption(id: 'one'));
+    await _flushEvents();
+
+    expect(fetcher.inspected, isEmpty);
+    expect(subject.current.queue, isEmpty);
+    expect(subject.current.nowPlaying, isNull);
+  });
+
+  test('switches to the selected reward id without restarting', () async {
+    final rewardIds = StreamController<String?>.broadcast();
+    addTearDown(rewardIds.close);
+    final subject = createManager(
+      rewardId: 'reward-1',
+      rewardIdChanges: rewardIds.stream,
+    );
+
+    events.add(
+      _redemption(id: 'wrong', rewardId: 'reward-2', title: 'Play Music'),
+    );
+    await _flushEvents();
+    expect(fetcher.inspected, isEmpty);
+
+    rewardIds.add('reward-2');
+    await _flushEvents();
+    events.add(
+      _redemption(
+        id: 'accepted',
+        rewardId: 'reward-2',
+        title: 'Renamed on Twitch',
+      ),
+    );
+    await _waitUntil(() => subject.current.nowPlaying?.item.id == 'accepted');
+
+    expect(subject.current.nowPlaying?.item.id, 'accepted');
   });
 
   test('rejects an invalid YouTube URL without invoking yt-dlp', () async {
@@ -158,6 +201,7 @@ void main() {
 
 WsMessage _redemption({
   required String id,
+  String rewardId = 'reward-1',
   String title = 'Play Music',
   String input = 'https://youtu.be/default',
 }) {
@@ -173,7 +217,7 @@ WsMessage _redemption({
         'user_name': 'Viewer $id',
         'user_input': input,
         'redeemed_at': '2026-09-03T12:30:00Z',
-        'reward': {'id': 'reward-1', 'title': title, 'cost': 100},
+        'reward': {'id': rewardId, 'title': title, 'cost': 100},
       },
     },
   });

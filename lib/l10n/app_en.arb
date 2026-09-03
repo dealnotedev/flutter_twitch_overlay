@@ -86,5 +86,17 @@
   },
   "music_control_disconnected": "OBS overlay is unavailable",
   "music_control_incompatible": "Controller and overlay versions are incompatible",
-  "music_control_closed": "Connection closed"
+  "music_control_closed": "Connection closed",
+  "overlay_settings_title": "Overlay settings",
+  "overlay_settings_sections": "Sections",
+  "overlay_settings_player": "Player",
+  "overlay_settings_player_description": "Configure how viewers request music with Channel Points.",
+  "overlay_settings_reward_title": "Reward button",
+  "overlay_settings_reward_description": "Choose an app-managed Twitch reward. Refresh after editing rewards on Twitch.",
+  "overlay_settings_create_reward": "Create New",
+  "overlay_settings_refresh_rewards": "Refresh",
+  "overlay_settings_loading_rewards": "Loading Twitch rewards…",
+  "overlay_settings_no_rewards_title": "No app-managed rewards yet",
+  "overlay_settings_no_rewards_body": "Create a default music request reward, then customize it on Twitch and refresh this list.",
+  "overlay_settings_load_error": "Could not load Twitch rewards"
 }

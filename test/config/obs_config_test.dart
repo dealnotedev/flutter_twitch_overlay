@@ -21,10 +21,6 @@ void main() {
     await config.init();
 
     expect(config.config.current.valid, isFalse);
-    expect(
-      config.getString('music_reward_title', fallback: 'Other'),
-      'Play Music',
-    );
     expect(config.getInt('music_max_queue', fallback: 1), 10);
     expect(config.getInt('music_cache_max_mb', fallback: 1), 2048);
     expect(config.getInt('music_control_server_port', fallback: 1), 47821);
@@ -78,10 +74,6 @@ void main() {
       expect(
         config.getString('follow_animation_renderer', fallback: 'legacy'),
         'optimized',
-      );
-      expect(
-        config.getString('music_reward_title', fallback: 'Other'),
-        'Play Music',
       );
     });
 

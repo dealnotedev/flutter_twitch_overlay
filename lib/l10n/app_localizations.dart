@@ -270,6 +270,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Connection closed'**
   String get music_control_closed;
+
+  /// No description provided for @overlay_settings_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay settings'**
+  String get overlay_settings_title;
+
+  /// No description provided for @overlay_settings_sections.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections'**
+  String get overlay_settings_sections;
+
+  /// No description provided for @overlay_settings_player.
+  ///
+  /// In en, this message translates to:
+  /// **'Player'**
+  String get overlay_settings_player;
+
+  /// No description provided for @overlay_settings_player_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Configure how viewers request music with Channel Points.'**
+  String get overlay_settings_player_description;
+
+  /// No description provided for @overlay_settings_reward_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward button'**
+  String get overlay_settings_reward_title;
+
+  /// No description provided for @overlay_settings_reward_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an app-managed Twitch reward. Refresh after editing rewards on Twitch.'**
+  String get overlay_settings_reward_description;
+
+  /// No description provided for @overlay_settings_create_reward.
+  ///
+  /// In en, this message translates to:
+  /// **'Create New'**
+  String get overlay_settings_create_reward;
+
+  /// No description provided for @overlay_settings_refresh_rewards.
+  ///
+  /// In en, this message translates to:
+  /// **'Refresh'**
+  String get overlay_settings_refresh_rewards;
+
+  /// No description provided for @overlay_settings_loading_rewards.
+  ///
+  /// In en, this message translates to:
+  /// **'Loading Twitch rewards…'**
+  String get overlay_settings_loading_rewards;
+
+  /// No description provided for @overlay_settings_no_rewards_title.
+  ///
+  /// In en, this message translates to:
+  /// **'No app-managed rewards yet'**
+  String get overlay_settings_no_rewards_title;
+
+  /// No description provided for @overlay_settings_no_rewards_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a default music request reward, then customize it on Twitch and refresh this list.'**
+  String get overlay_settings_no_rewards_body;
+
+  /// No description provided for @overlay_settings_load_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load Twitch rewards'**
+  String get overlay_settings_load_error;
 }
 
 class _AppLocalizationsDelegate

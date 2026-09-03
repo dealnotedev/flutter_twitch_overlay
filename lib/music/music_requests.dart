@@ -181,7 +181,6 @@ class MusicRequestManager implements MusicRequests {
 
   final MusicTrackFetcher _fetcher;
   final MusicTrackPlayer _player;
-  final String _rewardTitle;
   final int _maxQueueLength;
   final Duration _maxDuration;
   final bool _enabled;
@@ -191,30 +190,37 @@ class MusicRequestManager implements MusicRequests {
   final _queue = <_PendingMusicRequest>[];
 
   late final StreamSubscription<WsMessage> _eventSubscription;
+  StreamSubscription<String?>? _rewardIdSubscription;
 
   MusicQueueSnapshot _current = MusicQueueSnapshot.empty;
+  String? _rewardId;
   _PendingMusicRequest? _nowPlaying;
   bool _preparing = false;
   bool _playbackRunning = false;
   bool _closed = false;
   _PendingMusicRequest? _preparingRequest;
+  Future<void>? _preparationFuture;
   MusicQueueError? _lastError;
 
   MusicRequestManager({
     required Stream<WsMessage> events,
     required MusicTrackFetcher fetcher,
     required MusicTrackPlayer player,
-    required String rewardTitle,
     required bool enabled,
     required int maxQueueLength,
     required Duration maxDuration,
+    String? rewardId,
+    Stream<String?>? rewardIdChanges,
   }) : _fetcher = fetcher,
        _player = player,
-       _rewardTitle = rewardTitle,
+       _rewardId = _normalizeRewardId(rewardId),
        _enabled = enabled,
        _maxQueueLength = maxQueueLength,
        _maxDuration = maxDuration {
     _eventSubscription = events.listen(_handleMessage);
+    _rewardIdSubscription = rewardIdChanges?.listen((rewardId) {
+      _rewardId = _normalizeRewardId(rewardId);
+    });
   }
 
   @override
@@ -233,10 +239,10 @@ class MusicRequestManager implements MusicRequests {
     final event = message.payload.event;
     final id = event?.id;
     final requester = event?.user?.name;
-    final rewardTitle = event?.reward?.title;
+    final reward = event?.reward;
     final input = event?.userInput?.trim();
 
-    if (rewardTitle?.toLowerCase() != _rewardTitle.toLowerCase()) return;
+    if (!_matchesReward(reward)) return;
     if (id == null || requester == null) return;
     if (!_processedRedemptionIds.add(id)) return;
 
@@ -284,6 +290,16 @@ class MusicRequestManager implements MusicRequests {
     _ensurePreparing();
   }
 
+  bool _matchesReward(WsReward? reward) {
+    final rewardId = _rewardId;
+    return rewardId != null && reward?.id == rewardId;
+  }
+
+  static String? _normalizeRewardId(String? rewardId) {
+    final normalized = rewardId?.trim();
+    return normalized == null || normalized.isEmpty ? null : normalized;
+  }
+
   static bool _isYouTubeUrl(Uri uri) {
     if (uri.scheme != 'https' && uri.scheme != 'http') return false;
 
@@ -296,7 +312,9 @@ class MusicRequestManager implements MusicRequests {
   void _ensurePreparing() {
     if (_preparing || _closed) return;
     _preparing = true;
-    unawaited(_prepareLoop());
+    final preparation = _prepareLoop();
+    _preparationFuture = preparation;
+    unawaited(preparation);
   }
 
   Future<void> _prepareLoop() async {
@@ -534,7 +552,9 @@ class MusicRequestManager implements MusicRequests {
     if (_closed) return;
     _closed = true;
     await _eventSubscription.cancel();
+    await _rewardIdSubscription?.cancel();
     await _fetcher.cancel();
+    await _preparationFuture;
     await _player.stop();
 
     await _stateController.close();

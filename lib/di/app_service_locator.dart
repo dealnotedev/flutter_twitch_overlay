@@ -75,15 +75,13 @@ class AppServiceLocator extends ServiceLocator {
       events: wsManager.messages,
       fetcher: trackFetcher,
       player: musicPlayer,
-      rewardTitle: config.getString(
-        'music_reward_title',
-        fallback: 'Play Music',
-      ),
       enabled: config.getBool('music_enabled', fallback: true),
       maxQueueLength: maxQueue > 0 ? maxQueue : 10,
       maxDuration: Duration(
         seconds: maxDurationSeconds > 0 ? maxDurationSeconds : 600,
       ),
+      rewardId: settings.musicRewardId,
+      rewardIdChanges: settings.musicRewardIdChanges,
     );
 
     map[Settings] = settings;

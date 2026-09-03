@@ -113,4 +113,46 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get music_control_closed => 'Підключення закрито';
+
+  @override
+  String get overlay_settings_title => 'Налаштування оверлею';
+
+  @override
+  String get overlay_settings_sections => 'Розділи';
+
+  @override
+  String get overlay_settings_player => 'Плеєр';
+
+  @override
+  String get overlay_settings_player_description =>
+      'Налаштуйте замовлення музики глядачами за бали каналу.';
+
+  @override
+  String get overlay_settings_reward_title => 'Кнопка винагороди';
+
+  @override
+  String get overlay_settings_reward_description =>
+      'Оберіть винагороду Twitch, якою керує застосунок. Оновіть список після змін у Twitch.';
+
+  @override
+  String get overlay_settings_create_reward => 'Створити';
+
+  @override
+  String get overlay_settings_refresh_rewards => 'Оновити';
+
+  @override
+  String get overlay_settings_loading_rewards =>
+      'Завантажуємо винагороди Twitch…';
+
+  @override
+  String get overlay_settings_no_rewards_title =>
+      'Керованих винагород ще немає';
+
+  @override
+  String get overlay_settings_no_rewards_body =>
+      'Створіть стандартну винагороду для музики, налаштуйте її у Twitch та оновіть список.';
+
+  @override
+  String get overlay_settings_load_error =>
+      'Не вдалося завантажити винагороди Twitch';
 }

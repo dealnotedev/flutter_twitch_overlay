@@ -113,4 +113,43 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_control_closed => 'Connection closed';
+
+  @override
+  String get overlay_settings_title => 'Overlay settings';
+
+  @override
+  String get overlay_settings_sections => 'Sections';
+
+  @override
+  String get overlay_settings_player => 'Player';
+
+  @override
+  String get overlay_settings_player_description =>
+      'Configure how viewers request music with Channel Points.';
+
+  @override
+  String get overlay_settings_reward_title => 'Reward button';
+
+  @override
+  String get overlay_settings_reward_description =>
+      'Choose an app-managed Twitch reward. Refresh after editing rewards on Twitch.';
+
+  @override
+  String get overlay_settings_create_reward => 'Create New';
+
+  @override
+  String get overlay_settings_refresh_rewards => 'Refresh';
+
+  @override
+  String get overlay_settings_loading_rewards => 'Loading Twitch rewards…';
+
+  @override
+  String get overlay_settings_no_rewards_title => 'No app-managed rewards yet';
+
+  @override
+  String get overlay_settings_no_rewards_body =>
+      'Create a default music request reward, then customize it on Twitch and refresh this list.';
+
+  @override
+  String get overlay_settings_load_error => 'Could not load Twitch rewards';
 }

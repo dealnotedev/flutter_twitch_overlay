@@ -60,7 +60,6 @@ are required in the OBS source JSON:
 ```json
 {
   "music_enabled": true,
-  "music_reward_title": "Play Music",
   "music_max_queue": 10,
   "music_max_duration_seconds": 600,
   "music_cache_max_mb": 2048,

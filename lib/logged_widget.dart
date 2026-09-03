@@ -14,11 +14,13 @@ import 'package:obssource/extensions.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/music/music_queue_overlay.dart';
+import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/secrets.dart';
+import 'package:obssource/settings/overlay_settings_dialog.dart';
 import 'package:obssource/span_util.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/ws_event.dart';
@@ -28,12 +30,14 @@ class LoggedWidget extends StatefulWidget {
   final ServiceLocator locator;
   final Future<img.Image?> Function(String url)? avatarLoader;
   final Future<UserDto?> Function(String id)? userLoader;
+  final TwitchRewardCatalog? rewardCatalog;
 
   const LoggedWidget({
     super.key,
     required this.locator,
     this.avatarLoader,
     this.userLoader,
+    this.rewardCatalog,
   });
 
   @override
@@ -55,6 +59,7 @@ class _State extends State<LoggedWidget> {
   late int _followAvatarResolution;
   MusicRequests? _musicRequests;
   final _musicOverlayController = MusicQueueOverlayController();
+  bool _overlayControlsHovered = false;
 
   final _rewards = <UserRedeemedEvent>[];
   final _receivedEventIds = <String>{};
@@ -130,29 +135,86 @@ class _State extends State<LoggedWidget> {
                   ),
                 ),
               ),
-            _createConnectionIndicator(),
+            _createOverlayControls(context),
           ],
         );
       },
     );
   }
 
-  Widget _createConnectionIndicator() {
+  Widget _createOverlayControls(BuildContext context) {
     return Positioned(
-      top: 16,
+      top: 6,
       right: 16,
-      child: Container(
-        key: const ValueKey('connection_indicator'),
-        width: 8,
-        height: 8,
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(4),
-          color:
-              _wsState == WsState.connected
-                  ? const Color(0xFF51FD0B)
-                  : const Color(0xFFCD0017),
+      child: MouseRegion(
+        opaque: true,
+        onEnter: (_) => setState(() => _overlayControlsHovered = true),
+        onExit: (_) => setState(() => _overlayControlsHovered = false),
+        child: SizedBox(
+          width: 56,
+          height: 40,
+          child: Stack(
+            alignment: Alignment.centerRight,
+            children: [
+              Positioned(
+                left: 0,
+                child: IgnorePointer(
+                  ignoring: !_overlayControlsHovered,
+                  child: AnimatedOpacity(
+                    key: const ValueKey('overlay_settings_button_reveal'),
+                    opacity: _overlayControlsHovered ? 1 : 0,
+                    duration: const Duration(milliseconds: 160),
+                    child: NeonMusicIconButton(
+                      key: const ValueKey('overlay_settings_button'),
+                      icon: Icons.settings_rounded,
+                      onPressed: _showOverlaySettings,
+                    ),
+                  ),
+                ),
+              ),
+              Container(
+                key: const ValueKey('connection_indicator'),
+                width: 8,
+                height: 8,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(4),
+                  color:
+                      _wsState == WsState.connected
+                          ? const Color(0xFF51FD0B)
+                          : const Color(0xFFCD0017),
+                  boxShadow: [
+                    BoxShadow(
+                      color: (_wsState == WsState.connected
+                              ? const Color(0xFF51FD0B)
+                              : const Color(0xFFCD0017))
+                          .withValues(alpha: 0.55),
+                      blurRadius: 8,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
+    );
+  }
+
+  void _showOverlaySettings() {
+    final rewardCatalog =
+        widget.rewardCatalog ??
+        TwitchApiRewardCatalog(
+          api: TwitchApi(settings: _settings, clientSecret: twitchClientSecret),
+          settings: _settings,
+        );
+    showDialog<void>(
+      context: context,
+      barrierColor: MusicPlayerPalette.voidBlack.withValues(alpha: 0.82),
+      builder:
+          (_) => OverlaySettingsDialog(
+            settings: _settings,
+            rewardCatalog: rewardCatalog,
+          ),
     );
   }
 

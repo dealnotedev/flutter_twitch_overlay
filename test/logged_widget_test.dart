@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
@@ -15,6 +16,7 @@ import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/ws_event.dart';
 import 'package:obssource/twitch/ws_manager.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   late Settings settings;
@@ -22,8 +24,10 @@ void main() {
   late _FakeWebSocketManager websocket;
   late ServiceLocator locator;
 
-  setUp(() {
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
     settings = Settings();
+    await settings.init();
     config = ObsConfig();
     config.config.set(Config(valid: true, json: {'followers': true}));
     websocket = _FakeWebSocketManager(settings);
@@ -59,6 +63,102 @@ void main() {
       findsNothing,
     );
 
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('reveals overlay settings and selects a Twitch reward', (
+    tester,
+  ) async {
+    final catalog = _FakeRewardCatalog([_reward(id: 'reward-1')]);
+    await _pumpLoggedWidget(tester, locator, rewardCatalog: catalog);
+
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.byKey(const ValueKey('overlay_settings_button_reveal')),
+          )
+          .opacity,
+      0,
+    );
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(
+      tester.getCenter(find.byKey(const ValueKey('connection_indicator'))),
+    );
+    await tester.pump(const Duration(milliseconds: 180));
+
+    expect(
+      tester
+          .widget<AnimatedOpacity>(
+            find.byKey(const ValueKey('overlay_settings_button_reveal')),
+          )
+          .opacity,
+      1,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('overlay_settings_button')));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.text('Overlay settings'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('overlay_settings_reward_wrap')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('twitch_reward_reward-1')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byKey(const ValueKey('twitch_reward_reward-1')));
+    await tester.pump();
+    expect(settings.musicRewardId, 'reward-1');
+
+    await tester.tap(
+      find.byKey(const ValueKey('overlay_settings_refresh_rewards')),
+    );
+    await tester.pump();
+    await tester.pump();
+    expect(catalog.loadCount, 2);
+
+    await mouse.removePointer();
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('creates and automatically selects a default Twitch reward', (
+    tester,
+  ) async {
+    final catalog = _FakeRewardCatalog(
+      const [],
+      createdReward: _reward(id: 'created-reward'),
+    );
+    await _pumpLoggedWidget(tester, locator, rewardCatalog: catalog);
+
+    final mouse = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    await mouse.addPointer(location: Offset.zero);
+    await mouse.moveTo(
+      tester.getCenter(find.byKey(const ValueKey('connection_indicator'))),
+    );
+    await tester.pump(const Duration(milliseconds: 180));
+    await tester.tap(find.byKey(const ValueKey('overlay_settings_button')));
+    await tester.pump();
+    await tester.pump();
+
+    await tester.tap(
+      find.byKey(const ValueKey('overlay_settings_create_reward')),
+    );
+    await tester.pump();
+    await tester.pump();
+
+    expect(catalog.createCount, 1);
+    expect(settings.musicRewardId, 'created-reward');
+    expect(
+      find.byKey(const ValueKey('twitch_reward_created-reward')),
+      findsOneWidget,
+    );
+
+    await mouse.removePointer();
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
@@ -186,7 +286,7 @@ void main() {
     });
 
     await _pumpLoggedWidget(tester, locator);
-    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(seconds: 5));
     await tester.pump(const Duration(milliseconds: 421));
 
     expect(find.byKey(const ValueKey('music_player_compact')), findsOneWidget);
@@ -237,8 +337,9 @@ MusicQueueSnapshot _musicSnapshot() {
 
 Future<void> _pumpLoggedWidget(
   WidgetTester tester,
-  ServiceLocator locator,
-) async {
+  ServiceLocator locator, {
+  TwitchRewardCatalog? rewardCatalog,
+}) async {
   const user = UserDto(
     id: 'user-id',
     login: 'user_login',
@@ -262,9 +363,45 @@ Future<void> _pumpLoggedWidget(
                   id == 'follower-id' ? user.profileImageUrl : null,
             ),
         avatarLoader: (_) async => img.Image(width: 64, height: 64),
+        rewardCatalog: rewardCatalog,
       ),
     ),
   );
+}
+
+TwitchCustomReward _reward({required String id}) => TwitchCustomReward(
+  id: id,
+  title: 'Play Music',
+  prompt: 'Paste a URL',
+  cost: 1000,
+  backgroundColor: '#9147FF',
+  image: null,
+  isEnabled: true,
+  isPaused: false,
+  isInStock: true,
+  isUserInputRequired: true,
+  shouldRedemptionsSkipRequestQueue: false,
+);
+
+class _FakeRewardCatalog implements TwitchRewardCatalog {
+  final List<TwitchCustomReward> rewards;
+  final TwitchCustomReward? createdReward;
+  int loadCount = 0;
+  int createCount = 0;
+
+  _FakeRewardCatalog(this.rewards, {this.createdReward});
+
+  @override
+  Future<List<TwitchCustomReward>> load() async {
+    loadCount++;
+    return List.unmodifiable(rewards);
+  }
+
+  @override
+  Future<TwitchCustomReward> createDefault() async {
+    createCount++;
+    return createdReward!;
+  }
 }
 
 WsMessage _message({required String type, required Map<String, Object> event}) {

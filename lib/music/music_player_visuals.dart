@@ -24,6 +24,73 @@ abstract final class MusicPlayerPalette {
   ];
 }
 
+class NeonMusicIconButton extends StatefulWidget {
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final double size;
+  final double iconSize;
+
+  const NeonMusicIconButton({
+    super.key,
+    required this.icon,
+    required this.onPressed,
+    this.size = 32,
+    this.iconSize = 20,
+  });
+
+  @override
+  State<NeonMusicIconButton> createState() => _NeonMusicIconButtonState();
+}
+
+class _NeonMusicIconButtonState extends State<NeonMusicIconButton> {
+  bool _hovered = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null;
+    final glow = enabled ? (_hovered ? 0.48 : 0.24) : 0.08;
+    final button = MouseRegion(
+      cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
+      onEnter: enabled ? (_) => setState(() => _hovered = true) : null,
+      onExit: enabled ? (_) => setState(() => _hovered = false) : null,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 140),
+        width: widget.size,
+        height: widget.size,
+        decoration: BoxDecoration(
+          color: MusicPlayerPalette.neonPink.withValues(
+            alpha: enabled ? (_hovered ? 0.24 : 0.12) : 0.05,
+          ),
+          shape: BoxShape.circle,
+          border: Border.all(
+            color: MusicPlayerPalette.neonPink.withValues(
+              alpha: enabled ? (_hovered ? 0.92 : 0.62) : 0.18,
+            ),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: MusicPlayerPalette.neonPink.withValues(alpha: glow),
+              blurRadius: _hovered ? 16 : 10,
+              spreadRadius: _hovered ? 1 : 0,
+            ),
+          ],
+        ),
+        child: IconButton(
+          padding: EdgeInsets.zero,
+          color: MusicPlayerPalette.neonPinkBright.withValues(
+            alpha: enabled ? 1 : 0.35,
+          ),
+          iconSize: widget.iconSize,
+          onPressed: widget.onPressed,
+          icon: Icon(widget.icon),
+        ),
+      ),
+    );
+
+    return button;
+  }
+}
+
 class CosmicMusicSurface extends StatefulWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
@@ -194,7 +261,8 @@ class CosmicMusicMotion extends ChangeNotifier {
 
     // A suspended window must resume without particles jumping across the card.
     final clampedDelta = delta > _maximumTick ? _maximumTick : delta;
-    final seconds = clampedDelta.inMicroseconds / Duration.microsecondsPerSecond;
+    final seconds =
+        clampedDelta.inMicroseconds / Duration.microsecondsPerSecond;
     _elapsedSeconds += seconds;
 
     for (final particle in _particles) {
@@ -238,10 +306,7 @@ class CosmicMusicMotion extends ChangeNotifier {
     _randomizeParticle(particle, fadeIn: true);
   }
 
-  void _randomizeParticle(
-    _CosmicParticle particle, {
-    required bool fadeIn,
-  }) {
+  void _randomizeParticle(_CosmicParticle particle, {required bool fadeIn}) {
     particle
       ..position = Offset(
         0.03 + _random.nextDouble() * 0.94,
@@ -302,10 +367,8 @@ class CosmicMusicBackgroundPainter extends CustomPainter {
   final bool compact;
   final CosmicMusicMotion motion;
 
-  CosmicMusicBackgroundPainter({
-    required this.motion,
-    this.compact = false,
-  }) : super(repaint: compact ? null : motion);
+  CosmicMusicBackgroundPainter({required this.motion, this.compact = false})
+    : super(repaint: compact ? null : motion);
 
   double get elapsedSeconds => motion.elapsedSeconds;
 
@@ -403,8 +466,7 @@ class CosmicMusicBackgroundPainter extends CustomPainter {
       (particle.age / 1.4).clamp(0.0, 1.0),
     );
     final pulse =
-        1 +
-        math.sin(elapsed * particle.pulseRate + particle.pulsePhase) * 0.10;
+        1 + math.sin(elapsed * particle.pulseRate + particle.pulsePhase) * 0.10;
     final radius = particle.radius * pulse;
     final color = switch (particle.colorIndex) {
       0 || 3 => MusicPlayerPalette.neonPink,
