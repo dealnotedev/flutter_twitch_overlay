@@ -27,7 +27,7 @@ void main() {
 
     expect(find.byKey(const ValueKey('music_player_expanded')), findsOneWidget);
     expect(find.text('Зараз грає'), findsOneWidget);
-    expect(find.byTooltip('Пауза'), findsOneWidget);
+    expect(find.byType(Tooltip), findsNothing);
     expect(
       find.byKey(const ValueKey('music_cosmic_expanded_background')),
       findsOneWidget,
@@ -184,7 +184,7 @@ void main() {
     expect(find.text('1:10'), findsOneWidget);
   });
 
-  testWidgets('localizes playback controls and every queue phase', (
+  testWidgets('localizes playback state and every queue phase', (
     tester,
   ) async {
     final requests = _FakeMusicRequests(_snapshot(paused: true));
@@ -200,8 +200,7 @@ void main() {
     );
 
     expect(find.text('Paused'), findsOneWidget);
-    expect(find.byTooltip('Resume'), findsOneWidget);
-    expect(find.byTooltip('Next track'), findsOneWidget);
+    expect(find.byType(Tooltip), findsNothing);
 
     requests.emit(
       MusicQueueSnapshot(

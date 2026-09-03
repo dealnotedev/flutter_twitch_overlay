@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
+
 import 'package:obssource/music/music_requests.dart';
 
 enum MusicQueuePresentation { floatingOverlay, controllerCanvas }
@@ -702,17 +703,12 @@ class _NowPlayingCard extends StatelessWidget {
                             ? Icons.play_arrow_rounded
                             : Icons.pause_rounded,
                     onPressed: () => onPausedChanged(!playing.paused),
-                    tooltip:
-                        playing.paused
-                            ? context.localizations.music_action_resume
-                            : context.localizations.music_action_pause,
                   ),
                   const Gap(6),
                   _NeonControlButton(
                     key: const ValueKey('music_skip_button'),
                     icon: Icons.skip_next_rounded,
                     onPressed: onSkip,
-                    tooltip: context.localizations.music_action_next,
                   ),
                 ],
               ),
@@ -769,13 +765,11 @@ class _NowPlayingCard extends StatelessWidget {
 class _NeonControlButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
-  final String tooltip;
 
   const _NeonControlButton({
     super.key,
     required this.icon,
     required this.onPressed,
-    required this.tooltip,
   });
 
   @override
@@ -801,7 +795,6 @@ class _NeonControlButton extends StatelessWidget {
         color: MusicPlayerPalette.neonPinkBright,
         iconSize: 20,
         onPressed: onPressed,
-        tooltip: tooltip,
         icon: Icon(icon),
       ),
     );
