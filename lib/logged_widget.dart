@@ -125,6 +125,7 @@ class _State extends State<LoggedWidget> {
                 ),
               ),
             _createConnectionIndicator(),
+            _createConfigInfo(context),
           ],
         );
       },
@@ -147,6 +148,39 @@ class _State extends State<LoggedWidget> {
                   : const Color(0xFFCD0017),
         ),
       ),
+    );
+  }
+
+  Widget _createConfigInfo(BuildContext context) {
+    return StreamBuilder<Config>(
+      stream: _obsConfig.config.changes,
+      initialData: _obsConfig.config.current,
+      builder: (context, snapshot) {
+        if (snapshot.requireData.valid) {
+          return const SizedBox.shrink();
+        }
+
+        return Positioned(
+          bottom: 16,
+          right: 16,
+          child: Container(
+            key: const ValueKey('invalid_obs_config_indicator'),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              color: Colors.red,
+            ),
+            child: Text(
+              context.localizations.config_invalid,
+              style: const TextStyle(
+                fontSize: 14,
+                color: Colors.white,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 

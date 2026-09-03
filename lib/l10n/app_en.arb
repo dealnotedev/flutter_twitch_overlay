@@ -21,6 +21,7 @@
     }
   },
   "follow_thanks": "Thanks for the follow!",
+  "config_invalid": "Invalid OBS config",
   "music_queue_next": "UP NEXT",
   "music_queue_more": "+{count} in queue",
   "@music_queue_more": {

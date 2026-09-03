@@ -37,6 +37,30 @@ void main() {
     await websocket.close();
   });
 
+  testWidgets('shows the invalid OBS config indicator only while invalid', (
+    tester,
+  ) async {
+    config.config.set(Config(valid: false, json: const {}));
+
+    await _pumpLoggedWidget(tester, locator);
+
+    expect(
+      find.byKey(const ValueKey('invalid_obs_config_indicator')),
+      findsOneWidget,
+    );
+    expect(find.text('Invalid OBS config'), findsOneWidget);
+
+    config.config.set(Config(valid: true, json: const {}));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('invalid_obs_config_indicator')),
+      findsNothing,
+    );
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('shows follow events without injecting a debug follow', (
     tester,
   ) async {

@@ -21,6 +21,7 @@
     }
   },
   "follow_thanks": "Дякую за фолов!",
+  "config_invalid": "Неправильна конфігурація OBS",
   "music_queue_next": "ДАЛІ",
   "music_queue_more": "+{count} у черзі",
   "@music_queue_more": {
