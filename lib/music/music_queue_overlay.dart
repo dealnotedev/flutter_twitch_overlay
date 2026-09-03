@@ -330,6 +330,7 @@ class _ExpandedMusicPlayer extends StatelessWidget {
         width: double.infinity,
         height: double.infinity,
         borderRadius: 0,
+        animate: false,
         drawBorder: false,
         drawShadow: false,
         child: Scrollbar(

@@ -31,6 +31,7 @@ class CosmicMusicSurface extends StatefulWidget {
   final double? height;
   final double borderRadius;
   final bool compact;
+  final bool animate;
   final bool drawBorder;
   final bool drawShadow;
   final Key? surfaceKey;
@@ -44,6 +45,7 @@ class CosmicMusicSurface extends StatefulWidget {
     this.padding = EdgeInsets.zero,
     this.borderRadius = 18,
     this.compact = false,
+    this.animate = true,
     this.drawBorder = true,
     this.drawShadow = true,
     this.surfaceKey,
@@ -65,19 +67,21 @@ class _CosmicMusicSurfaceState extends State<CosmicMusicSurface>
     super.initState();
     _motion = CosmicMusicMotion();
     _ticker = createTicker(_handleTick);
-    if (!widget.compact) _ticker.start();
+    if (widget.animate && !widget.compact) _ticker.start();
   }
 
   @override
   void didUpdateWidget(covariant CosmicMusicSurface oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.compact == widget.compact) return;
+    final wasAnimating = oldWidget.animate && !oldWidget.compact;
+    final shouldAnimate = widget.animate && !widget.compact;
+    if (wasAnimating == shouldAnimate) return;
 
     _previousElapsed = Duration.zero;
-    if (widget.compact) {
-      _ticker.stop();
-    } else {
+    if (shouldAnimate) {
       _ticker.start();
+    } else {
+      _ticker.stop();
     }
   }
 

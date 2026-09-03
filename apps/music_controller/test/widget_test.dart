@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/music/control/remote_music_requests.dart';
+import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource_music_controller/main.dart';
 
 void main() {
@@ -41,5 +42,17 @@ void main() {
     expect(decoration.border, isNull);
     expect(decoration.borderRadius, BorderRadius.zero);
     expect(decoration.boxShadow, isNull);
+
+    final background = find.byKey(
+      const ValueKey('music_cosmic_expanded_background'),
+    );
+    final backgroundPainter =
+        tester.widget<CustomPaint>(background).painter!
+            as CosmicMusicBackgroundPainter;
+    final elapsed = backgroundPainter.elapsedSeconds;
+
+    await tester.pump(const Duration(seconds: 1));
+
+    expect(backgroundPainter.elapsedSeconds, elapsed);
   });
 }
