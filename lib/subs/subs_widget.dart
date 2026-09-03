@@ -36,7 +36,7 @@ class _State extends State<SubsWidget> {
   static const _descriptionColor = Colors.white;
   static const _twitchColor = Color(0xFF8829FF);
 
-  static const _pixelSize = 10.0;
+  static const _pixelSize = 8.0;
 
   Graffity _name = Graffity.empty;
   Graffity _heart = Graffity.empty;
