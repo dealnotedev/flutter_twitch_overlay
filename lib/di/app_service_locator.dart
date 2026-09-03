@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:obssource/config/obs_config.dart';
@@ -20,6 +21,7 @@ class AppServiceLocator extends ServiceLocator {
   final Settings settings;
   final ObsConfig config;
   final Map<Type, Object> map = {};
+  late final StreamSubscription<Config> _musicVolumeSubscription;
 
   AppServiceLocator._(this.settings, this.config) {
     final wsManager = WebSocketManager(
@@ -31,7 +33,6 @@ class AppServiceLocator extends ServiceLocator {
       'music_max_duration_seconds',
       fallback: 600,
     );
-    final volumePercent = config.getInt('music_volume_percent', fallback: 70);
     final tools = MusicToolPaths.resolve(
       executableDirectory: File(Platform.resolvedExecutable).parent,
       ytDlpOverride: config.getString('music_ytdlp_path', fallback: ''),
@@ -47,12 +48,11 @@ class AppServiceLocator extends ServiceLocator {
       denoPath: tools.denoPath,
       cacheDirectory: cacheDirectory,
     );
+    final musicPlayer = ObsAudioMusicTrackPlayer(volume: _musicVolume(config));
     final musicRequests = MusicRequestManager(
       events: wsManager.messages,
       fetcher: trackFetcher,
-      player: ObsAudioMusicTrackPlayer(
-        volume: (volumePercent / 100).clamp(0.0, 1.0).toDouble(),
-      ),
+      player: musicPlayer,
       rewardTitle: config.getString(
         'music_reward_title',
         fallback: 'Play Music',
@@ -68,9 +68,24 @@ class AppServiceLocator extends ServiceLocator {
     map[ObsConfig] = config;
     map[ServiceLocator] = this;
     map[WebSocketManager] = wsManager;
+    map[ObsAudioMusicTrackPlayer] = musicPlayer;
     map[MusicRequests] = musicRequests;
+
+    _musicVolumeSubscription = config.config.changes.listen((_) {
+      unawaited(musicPlayer.setVolume(_musicVolume(config)));
+    });
   }
 
   @override
   T provide<T>() => map[T] as T;
+
+  Future<void> close() async {
+    await _musicVolumeSubscription.cancel();
+    await (map[MusicRequests]! as MusicRequests).close();
+  }
+}
+
+double _musicVolume(ObsConfig config) {
+  final percent = config.getInt('music_volume_percent', fallback: 70);
+  return (percent / 100).clamp(0.0, 1.0).toDouble();
 }

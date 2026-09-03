@@ -20,5 +20,56 @@
       }
     }
   },
-  "follow_thanks": "Дякую за фолов!"
+  "follow_thanks": "Дякую за фолов!",
+  "music_queue_next": "ДАЛІ",
+  "music_queue_more": "+{count} у черзі",
+  "@music_queue_more": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "music_playback_paused": "Пауза",
+  "music_playback_now_playing": "Зараз грає",
+  "music_action_resume": "Продовжити",
+  "music_action_pause": "Пауза",
+  "music_action_next": "Наступний трек",
+  "music_source_youtube": "YouTube",
+  "music_preparing": "ГОТУЄМО МУЗИКУ",
+  "music_queue_status_resolving": "пошук",
+  "music_queue_status_downloading": "завантаження",
+  "music_queue_status_ready": "готово",
+  "music_error_missing_youtube_url": "{requester}: додайте URL YouTube",
+  "@music_error_missing_youtube_url": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_invalid_youtube_url": "{requester}: некоректний URL YouTube",
+  "@music_error_invalid_youtube_url": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_queue_full": "{requester}: черга музики заповнена",
+  "@music_error_queue_full": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_track_too_long_or_live": "{requester}: трек задовгий або це пряма трансляція",
+  "@music_error_track_too_long_or_live": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_operation_failed": "{requester}: {details}",
+  "@music_error_operation_failed": {
+    "placeholders": {
+      "requester": { "type": "String" },
+      "details": { "type": "String" }
+    }
+  }
 }

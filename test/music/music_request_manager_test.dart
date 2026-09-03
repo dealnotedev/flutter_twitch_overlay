@@ -56,7 +56,11 @@ void main() {
     );
     await _waitUntil(() => subject.current.lastError != null);
 
-    expect(subject.current.lastError, contains('invalid YouTube URL'));
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.invalidYoutubeUrl,
+    );
+    expect(subject.current.lastError?.requester, 'Viewer one');
     expect(fetcher.inspected, isEmpty);
     expect(player.played, isEmpty);
   });

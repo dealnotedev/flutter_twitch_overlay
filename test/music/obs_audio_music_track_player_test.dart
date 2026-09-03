@@ -3,6 +3,9 @@ import 'dart:convert';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:obssource/config/obs_config.dart';
+import 'package:obssource/config/settings.dart';
+import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
 
@@ -90,6 +93,76 @@ void main() {
 
     final seek = commands.singleWhere((item) => item['cmd'] == 'seek');
     expect(seek['position_ms'], 900);
+  });
+
+  test('updates the active music volume in real time', () async {
+    final player = ObsAudioMusicTrackPlayer(
+      volume: 0.7,
+      completionGrace: Duration.zero,
+    );
+    final playback = player.play(
+      DownloadedMusicTrack(
+        itemId: 'track-volume',
+        requestedBy: 'viewer',
+        metadata: MusicTrackMetadata(
+          videoId: 'video-volume',
+          title: 'Track',
+          author: 'Artist',
+          duration: const Duration(seconds: 30),
+          thumbnail: null,
+          sourceUrl: Uri.parse('https://youtu.be/video-volume'),
+        ),
+        filePath: r'C:\music\track-volume.mp3',
+      ),
+    );
+
+    await _waitUntil(() => commands.any((item) => item['cmd'] == 'play'));
+    final play = commands.singleWhere((item) => item['cmd'] == 'play');
+    expect(play['volume'], 0.7);
+
+    await player.setVolume(0.35);
+
+    final volume = commands.singleWhere((item) => item['cmd'] == 'volume');
+    expect(volume['volume'], 0.35);
+
+    await player.stop();
+    await playback;
+  });
+
+  test('music_volume_percent updates active music in real time', () async {
+    final config = ObsConfig();
+    config.config.set(Config(valid: true, json: {'music_volume_percent': 70}));
+    final locator = AppServiceLocator.init(Settings(), config);
+    final player = locator.provide<ObsAudioMusicTrackPlayer>();
+    final playback = player.play(
+      DownloadedMusicTrack(
+        itemId: 'configured-volume',
+        requestedBy: 'viewer',
+        metadata: MusicTrackMetadata(
+          videoId: 'configured-volume',
+          title: 'Track',
+          author: 'Artist',
+          duration: const Duration(seconds: 30),
+          thumbnail: null,
+          sourceUrl: Uri.parse('https://youtu.be/configured-volume'),
+        ),
+        filePath: r'C:\music\configured-volume.mp3',
+      ),
+    );
+    addTearDown(() async {
+      await locator.close();
+      await playback;
+    });
+
+    await _waitUntil(() => commands.any((item) => item['cmd'] == 'play'));
+    final play = commands.singleWhere((item) => item['cmd'] == 'play');
+    expect(play['volume'], 0.7);
+
+    config.config.set(Config(valid: true, json: {'music_volume_percent': 25}));
+
+    await _waitUntil(() => commands.any((item) => item['cmd'] == 'volume'));
+    final volume = commands.singleWhere((item) => item['cmd'] == 'volume');
+    expect(volume['volume'], 0.25);
   });
 }
 

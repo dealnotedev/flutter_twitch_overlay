@@ -72,6 +72,9 @@ For development, `music_ytdlp_path`, `music_ffmpeg_location`, and
 override, the OBS plugin-local `flutter_obs_tools` directory, standalone
 `tools`, and finally `PATH`. Downloaded tracks live in the system temporary
 directory under `obssource_music` and are removed after playback.
+`music_volume_percent` is clamped to `0..100`, applies only to music tracks,
+and updates the active track immediately when the OBS source configuration is
+changed.
 
 For precise queue advancement, the native audio host can publish JSON messages
 on `obs_audio_events` with `event` set to `started`, `progress`, `ended`, or

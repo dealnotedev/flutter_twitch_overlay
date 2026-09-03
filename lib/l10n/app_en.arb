@@ -20,5 +20,56 @@
       }
     }
   },
-  "follow_thanks": "Thanks for the follow!"
+  "follow_thanks": "Thanks for the follow!",
+  "music_queue_next": "UP NEXT",
+  "music_queue_more": "+{count} in queue",
+  "@music_queue_more": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "music_playback_paused": "Paused",
+  "music_playback_now_playing": "Now playing",
+  "music_action_resume": "Resume",
+  "music_action_pause": "Pause",
+  "music_action_next": "Next track",
+  "music_source_youtube": "YouTube",
+  "music_preparing": "PREPARING MUSIC",
+  "music_queue_status_resolving": "searching",
+  "music_queue_status_downloading": "downloading",
+  "music_queue_status_ready": "ready",
+  "music_error_missing_youtube_url": "{requester}: add a YouTube URL",
+  "@music_error_missing_youtube_url": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_invalid_youtube_url": "{requester}: invalid YouTube URL",
+  "@music_error_invalid_youtube_url": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_queue_full": "{requester}: the music queue is full",
+  "@music_error_queue_full": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_track_too_long_or_live": "{requester}: the track is too long or is a live stream",
+  "@music_error_track_too_long_or_live": {
+    "placeholders": {
+      "requester": { "type": "String" }
+    }
+  },
+  "music_error_operation_failed": "{requester}: {details}",
+  "@music_error_operation_failed": {
+    "placeholders": {
+      "requester": { "type": "String" },
+      "details": { "type": "String" }
+    }
+  }
 }

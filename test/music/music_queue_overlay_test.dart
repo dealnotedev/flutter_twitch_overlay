@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:obssource/music/music_requests.dart';
 
@@ -25,6 +26,8 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('music_player_expanded')), findsOneWidget);
+    expect(find.text('Зараз грає'), findsOneWidget);
+    expect(find.byTooltip('Пауза'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('music_cosmic_expanded_background')),
       findsOneWidget,
@@ -151,6 +154,56 @@ void main() {
     expect(requests.removedItemIds, ['queued-track']);
     expect(requests.seekPositions.single.inSeconds, 135);
   });
+
+  testWidgets('localizes playback controls and every queue phase', (
+    tester,
+  ) async {
+    final requests = _FakeMusicRequests(_snapshot(paused: true));
+    addTearDown(requests.dispose);
+
+    await tester.pumpWidget(
+      _TestSurface(
+        requests: requests,
+        collapseDelay: collapseDelay,
+        animationDuration: animationDuration,
+        locale: const Locale('en'),
+      ),
+    );
+
+    expect(find.text('Paused'), findsOneWidget);
+    expect(find.byTooltip('Resume'), findsOneWidget);
+    expect(find.byTooltip('Next track'), findsOneWidget);
+
+    requests.emit(
+      MusicQueueSnapshot(
+        revision: 2,
+        nowPlaying: null,
+        queue: [
+          _queueItem('resolving', phase: MusicQueueItemPhase.resolving),
+          _queueItem(
+            'downloading',
+            phase: MusicQueueItemPhase.downloading,
+            downloadProgress: null,
+          ),
+          _queueItem('ready'),
+          _queueItem('overflow'),
+        ],
+        lastError: const MusicQueueError(
+          requester: 'Viewer',
+          type: MusicQueueErrorType.invalidYoutubeUrl,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('PREPARING MUSIC'), findsOneWidget);
+    expect(find.text('UP NEXT'), findsOneWidget);
+    expect(find.text('+1 in queue'), findsOneWidget);
+    expect(find.text('Viewer · searching'), findsOneWidget);
+    expect(find.text('Viewer · downloading'), findsOneWidget);
+    expect(find.text('Viewer · ready'), findsOneWidget);
+    expect(find.text('Viewer: invalid YouTube URL'), findsOneWidget);
+  });
 }
 
 Future<void> _collapse(
@@ -187,6 +240,7 @@ MusicQueueSnapshot _snapshot({
 MusicQueueItem _queueItem(
   String id, {
   MusicQueueItemPhase phase = MusicQueueItemPhase.ready,
+  double? downloadProgress = 1,
 }) {
   return MusicQueueItem(
     id: id,
@@ -197,7 +251,7 @@ MusicQueueItem _queueItem(
     author: 'Artist',
     duration: const Duration(minutes: 3),
     thumbnail: null,
-    downloadProgress: 1,
+    downloadProgress: downloadProgress,
   );
 }
 
@@ -205,16 +259,21 @@ class _TestSurface extends StatelessWidget {
   final MusicRequests requests;
   final Duration collapseDelay;
   final Duration animationDuration;
+  final Locale locale;
 
   const _TestSurface({
     required this.requests,
     required this.collapseDelay,
     required this.animationDuration,
+    this.locale = const Locale('uk'),
   });
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      locale: locale,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       home: Scaffold(
         body: Stack(
           children: [

@@ -5,6 +5,28 @@ import 'package:obssource/twitch/ws_event.dart';
 
 enum MusicQueueItemPhase { resolving, downloading, ready }
 
+enum MusicQueueErrorType {
+  missingYoutubeUrl,
+  invalidYoutubeUrl,
+  queueFull,
+  trackTooLongOrLive,
+  operationFailed,
+}
+
+class MusicQueueError {
+  final String requester;
+  final MusicQueueErrorType type;
+  final String? details;
+
+  const MusicQueueError({
+    required this.requester,
+    required this.type,
+    this.details,
+  });
+
+  String get signature => '$requester|$type|${details ?? ''}';
+}
+
 class MusicTrackMetadata {
   final String videoId;
   final String title;
@@ -81,7 +103,7 @@ class MusicQueueSnapshot {
   final int revision;
   final MusicNowPlaying? nowPlaying;
   final List<MusicQueueItem> queue;
-  final String? lastError;
+  final MusicQueueError? lastError;
 
   const MusicQueueSnapshot({
     required this.revision,
@@ -177,7 +199,7 @@ class MusicRequestManager implements MusicRequests {
   bool _playbackRunning = false;
   bool _closed = false;
   _PendingMusicRequest? _preparingRequest;
-  String? _lastError;
+  MusicQueueError? _lastError;
 
   MusicRequestManager({
     required Stream<WsMessage> events,
@@ -220,19 +242,34 @@ class MusicRequestManager implements MusicRequests {
     if (!_processedRedemptionIds.add(id)) return;
 
     if (input == null || input.isEmpty) {
-      _setError('$requester: missing YouTube URL');
+      _setError(
+        MusicQueueError(
+          requester: requester,
+          type: MusicQueueErrorType.missingYoutubeUrl,
+        ),
+      );
       return;
     }
 
     final sourceUrl = Uri.tryParse(input);
     if (sourceUrl == null || !_isYouTubeUrl(sourceUrl)) {
-      _setError('$requester: invalid YouTube URL');
+      _setError(
+        MusicQueueError(
+          requester: requester,
+          type: MusicQueueErrorType.invalidYoutubeUrl,
+        ),
+      );
       return;
     }
 
     final activeCount = _queue.length + (_nowPlaying == null ? 0 : 1);
     if (activeCount >= _maxQueueLength) {
-      _setError('$requester: music queue is full');
+      _setError(
+        MusicQueueError(
+          requester: requester,
+          type: MusicQueueErrorType.queueFull,
+        ),
+      );
       return;
     }
 
@@ -277,7 +314,12 @@ class MusicRequestManager implements MusicRequests {
           if (metadata.duration <= Duration.zero ||
               metadata.duration > _maxDuration) {
             _queue.remove(request);
-            _setError('${request.requestedBy}: track is too long or is live');
+            _setError(
+              MusicQueueError(
+                requester: request.requestedBy,
+                type: MusicQueueErrorType.trackTooLongOrLive,
+              ),
+            );
             continue;
           }
 
@@ -309,7 +351,7 @@ class MusicRequestManager implements MusicRequests {
           _startIfPossible();
         } catch (error) {
           if (_queue.remove(request)) {
-            _setError('${request.requestedBy}: ${_describeError(error)}');
+            _setError(_operationError(request, error));
           }
         } finally {
           if (identical(_preparingRequest, request)) {
@@ -371,7 +413,7 @@ class MusicRequestManager implements MusicRequests {
     try {
       await _player.play(track);
     } catch (error) {
-      _lastError = '${request.requestedBy}: ${_describeError(error)}';
+      _lastError = _operationError(request, error);
     } finally {
       await _deleteFile(track.filePath);
       if (_nowPlaying == request) {
@@ -394,7 +436,7 @@ class MusicRequestManager implements MusicRequests {
     try {
       await _player.setPaused(paused);
     } catch (error) {
-      _setError('${request.requestedBy}: ${_describeError(error)}');
+      _setError(_operationError(request, error));
       return false;
     }
 
@@ -426,7 +468,7 @@ class MusicRequestManager implements MusicRequests {
     try {
       await _player.seek(target);
     } catch (error) {
-      _setError('${request.requestedBy}: ${_describeError(error)}');
+      _setError(_operationError(request, error));
       return false;
     }
 
@@ -462,9 +504,20 @@ class MusicRequestManager implements MusicRequests {
     return true;
   }
 
-  void _setError(String message) {
-    _lastError = message;
+  void _setError(MusicQueueError error) {
+    _lastError = error;
     _emit();
+  }
+
+  static MusicQueueError _operationError(
+    _PendingMusicRequest request,
+    Object error,
+  ) {
+    return MusicQueueError(
+      requester: request.requestedBy,
+      type: MusicQueueErrorType.operationFailed,
+      details: _describeError(error),
+    );
   }
 
   static String _describeError(Object error) {

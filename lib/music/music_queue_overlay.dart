@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_requests.dart';
 
@@ -220,9 +221,9 @@ class _ExpandedMusicPlayer extends StatelessWidget {
             const _WaitingForTrack(),
           if (state.queue.isNotEmpty) ...[
             const Gap(12),
-            const Text(
-              'ДАЛІ',
-              style: TextStyle(
+            Text(
+              context.localizations.music_queue_next,
+              style: const TextStyle(
                 color: MusicPlayerPalette.neonPinkBright,
                 fontSize: 11,
                 fontWeight: FontWeight.bold,
@@ -241,7 +242,9 @@ class _ExpandedMusicPlayer extends StatelessWidget {
               Padding(
                 padding: const EdgeInsets.only(top: 4),
                 child: Text(
-                  '+${state.queue.length - 3} у черзі',
+                  context.localizations.music_queue_more(
+                    state.queue.length - 3,
+                  ),
                   style: const TextStyle(
                     color: MusicPlayerPalette.textSecondary,
                     fontSize: 11,
@@ -261,7 +264,7 @@ class _ExpandedMusicPlayer extends StatelessWidget {
                 ),
               ),
               child: Text(
-                error,
+                _localizedMusicError(context, error),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -550,7 +553,24 @@ String _statusSignature(MusicQueueSnapshot snapshot) {
   final playback =
       playing == null ? 'stopped' : '${playing.item.id}:${playing.paused}';
   final queue = snapshot.queue.map((item) => item.id).join(',');
-  return '$playback|$queue|${snapshot.lastError ?? ''}';
+  return '$playback|$queue|${snapshot.lastError?.signature ?? ''}';
+}
+
+String _localizedMusicError(BuildContext context, MusicQueueError error) {
+  final localizations = context.localizations;
+  return switch (error.type) {
+    MusicQueueErrorType.missingYoutubeUrl => localizations
+        .music_error_missing_youtube_url(error.requester),
+    MusicQueueErrorType.invalidYoutubeUrl => localizations
+        .music_error_invalid_youtube_url(error.requester),
+    MusicQueueErrorType.queueFull => localizations.music_error_queue_full(
+      error.requester,
+    ),
+    MusicQueueErrorType.trackTooLongOrLive => localizations
+        .music_error_track_too_long_or_live(error.requester),
+    MusicQueueErrorType.operationFailed => localizations
+        .music_error_operation_failed(error.requester, error.details ?? ''),
+  };
 }
 
 double _progressFor(Duration position, Duration duration) {
@@ -610,7 +630,9 @@ class _NowPlayingCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      playing.paused ? 'Пауза' : 'Зараз грає',
+                      playing.paused
+                          ? context.localizations.music_playback_paused
+                          : context.localizations.music_playback_now_playing,
                       style: const TextStyle(
                         height: 1.05,
                         color: MusicPlayerPalette.neonPinkBright,
@@ -622,7 +644,10 @@ class _NowPlayingCard extends StatelessWidget {
                     ),
                   ),
                   _NeonControlButton(
-                    tooltip: playing.paused ? 'Продовжити' : 'Пауза',
+                    tooltip:
+                        playing.paused
+                            ? context.localizations.music_action_resume
+                            : context.localizations.music_action_pause,
                     icon:
                         playing.paused
                             ? Icons.play_arrow_rounded
@@ -632,7 +657,7 @@ class _NowPlayingCard extends StatelessWidget {
                   const Gap(6),
                   _NeonControlButton(
                     key: const ValueKey('music_skip_button'),
-                    tooltip: 'Наступний трек',
+                    tooltip: context.localizations.music_action_next,
                     icon: Icons.skip_next_rounded,
                     onPressed: onSkip,
                   ),
@@ -652,7 +677,8 @@ class _NowPlayingCard extends StatelessWidget {
               ),
               const Gap(3),
               Text(
-                '${item.author ?? 'YouTube'} · ${item.requestedBy}',
+                '${item.author ?? context.localizations.music_source_youtube}'
+                ' · ${item.requestedBy}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
@@ -868,9 +894,9 @@ class _WaitingForTrack extends StatelessWidget {
           color: MusicPlayerPalette.neonPink.withValues(alpha: 0.30),
         ),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          SizedBox(
+          const SizedBox(
             width: 18,
             height: 18,
             child: CircularProgressIndicator(
@@ -878,10 +904,10 @@ class _WaitingForTrack extends StatelessWidget {
               color: MusicPlayerPalette.neonPink,
             ),
           ),
-          Gap(10),
+          const Gap(10),
           Text(
-            'ГОТУЄМО МУЗИКУ',
-            style: TextStyle(
+            context.localizations.music_preparing,
+            style: const TextStyle(
               color: MusicPlayerPalette.neonPinkBright,
               fontSize: 12,
               fontWeight: FontWeight.bold,
@@ -904,12 +930,14 @@ class _QueueRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final status = switch (item.phase) {
-      MusicQueueItemPhase.resolving => 'пошук',
+      MusicQueueItemPhase.resolving =>
+        context.localizations.music_queue_status_resolving,
       MusicQueueItemPhase.downloading =>
         item.downloadProgress == null
-            ? 'завантаження'
+            ? context.localizations.music_queue_status_downloading
             : '${(item.downloadProgress! * 100).round()}%',
-      MusicQueueItemPhase.ready => 'готово',
+      MusicQueueItemPhase.ready =>
+        context.localizations.music_queue_status_ready,
     };
 
     return Container(

@@ -4,8 +4,9 @@ import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/obs_audio.dart';
 
 class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
-  final double volume;
   final Duration completionGrace;
+
+  double _volume;
 
   int _generation = 0;
   _ActivePlayback? _active;
@@ -13,9 +14,11 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
   Duration? _seekRequested;
 
   ObsAudioMusicTrackPlayer({
-    required this.volume,
+    required double volume,
     this.completionGrace = const Duration(seconds: 2),
-  });
+  }) : _volume = _normalizeVolume(volume);
+
+  double get volume => _volume;
 
   @override
   Future<void> play(DownloadedMusicTrack track) async {
@@ -63,7 +66,17 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
         });
 
     try {
-      await ObsAudio.play(audioId, volume: volume, sessionId: sessionId);
+      final startedVolume = _volume;
+      await ObsAudio.play(audioId, volume: startedVolume, sessionId: sessionId);
+      active.started = true;
+
+      var appliedVolume = startedVolume;
+      while (_volume != appliedVolume) {
+        final requestedVolume = _volume;
+        await ObsAudio.setVolume(audioId, requestedVolume);
+        appliedVolume = requestedVolume;
+      }
+
       Duration? appliedSeek;
       while (true) {
         final requested = _seekRequested;
@@ -72,7 +85,6 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
         active.seekCountdown(requested, paused: true);
         appliedSeek = requested;
       }
-      active.started = true;
       if (_pauseRequested) {
         await ObsAudio.pause(audioId);
       } else {
@@ -91,6 +103,17 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
       await ObsAudio.stop(audioId);
       await ObsAudio.release(audioId);
     }
+  }
+
+  Future<void> setVolume(double volume) async {
+    final normalized = _normalizeVolume(volume);
+    if (_volume == normalized) return;
+
+    _volume = normalized;
+    final active = _active;
+    if (active == null || !active.started) return;
+
+    await ObsAudio.setVolume(active.audioId, normalized);
   }
 
   @override
@@ -133,6 +156,11 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
       active.completer.complete();
     }
     await ObsAudio.stop(active.audioId);
+  }
+
+  static double _normalizeVolume(double volume) {
+    if (!volume.isFinite) return 1;
+    return volume.clamp(0.0, 1.0).toDouble();
   }
 }
 
