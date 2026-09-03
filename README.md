@@ -63,6 +63,7 @@ are required in the OBS source JSON:
   "music_reward_title": "Play Music",
   "music_max_queue": 10,
   "music_max_duration_seconds": 600,
+  "music_cache_max_mb": 2048,
   "music_volume_percent": 70
 }
 ```
@@ -70,8 +71,12 @@ are required in the OBS source JSON:
 For development, `music_ytdlp_path`, `music_ffmpeg_location`, and
 `music_deno_path` remain optional overrides. Resolution order is an explicit
 override, the OBS plugin-local `flutter_obs_tools` directory, standalone
-`tools`, and finally `PATH`. Downloaded tracks live in the system temporary
-directory under `obssource_music` and are removed after playback.
+`tools`, and finally `PATH`. Completed tracks are cached by YouTube video ID in
+the per-user `obssource/music-cache/youtube-mp3-q0-v1` directory. Cache entries
+survive playback, queue removal, and application restarts. Old entries are
+removed least-recently-used when the cache exceeds `music_cache_max_mb`; set it
+to `0` for no size limit. Incomplete downloads are kept in an isolated staging
+directory and never become cache hits.
 `music_volume_percent` is clamped to `0..100`, applies only to music tracks,
 and updates the active track immediately when the OBS source configuration is
 changed.

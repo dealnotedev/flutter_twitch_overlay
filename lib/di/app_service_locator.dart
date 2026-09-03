@@ -4,6 +4,7 @@ import 'dart:io';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
+import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_tool_paths.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
@@ -33,20 +34,26 @@ class AppServiceLocator extends ServiceLocator {
       'music_max_duration_seconds',
       fallback: 600,
     );
+    final configuredCacheMaxMb = config.getInt(
+      'music_cache_max_mb',
+      fallback: 2048,
+    );
+    final cacheMaxMb = configuredCacheMaxMb < 0 ? 2048 : configuredCacheMaxMb;
     final tools = MusicToolPaths.resolve(
       executableDirectory: File(Platform.resolvedExecutable).parent,
       ytDlpOverride: config.getString('music_ytdlp_path', fallback: ''),
       ffmpegOverride: config.getString('music_ffmpeg_location', fallback: ''),
       denoOverride: config.getString('music_deno_path', fallback: ''),
     );
-    final cacheDirectory = Directory(
-      '${Directory.systemTemp.path}${Platform.pathSeparator}obssource_music',
+    final musicCache = MusicFileCache(
+      rootDirectory: defaultMusicCacheDirectory(),
+      maxBytes: cacheMaxMb * 1024 * 1024,
     );
     final trackFetcher = YtDlpMusicTrackFetcher(
       executable: tools.ytDlpExecutable,
       ffmpegLocation: tools.ffmpegLocation,
       denoPath: tools.denoPath,
-      cacheDirectory: cacheDirectory,
+      cache: musicCache,
     );
     final musicPlayer = ObsAudioMusicTrackPlayer(volume: _musicVolume(config));
     final musicRequests = MusicRequestManager(

@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:io';
 
 import 'package:obssource/twitch/ws_event.dart';
 
@@ -141,9 +140,9 @@ class MusicDownloadProgress {
 abstract interface class MusicTrackFetcher {
   Future<MusicTrackMetadata> inspect(Uri sourceUrl);
 
-  Future<String> download({
-    required String itemId,
-    required Uri sourceUrl,
+  /// Returns a fetcher-owned local file. Callers must not delete it.
+  Future<String> obtain({
+    required MusicTrackMetadata metadata,
     required void Function(MusicDownloadProgress progress) onProgress,
   });
 
@@ -328,9 +327,8 @@ class MusicRequestManager implements MusicRequests {
             ..phase = MusicQueueItemPhase.downloading;
           _emit();
 
-          final filePath = await _fetcher.download(
-            itemId: request.id,
-            sourceUrl: request.sourceUrl,
+          final filePath = await _fetcher.obtain(
+            metadata: metadata,
             onProgress: (progress) {
               if (!_queue.contains(request) || _closed) return;
               request.downloadProgress = progress.fraction;
@@ -338,10 +336,7 @@ class MusicRequestManager implements MusicRequests {
             },
           );
 
-          if (!_queue.contains(request) || _closed) {
-            await _deleteFile(filePath);
-            continue;
-          }
+          if (!_queue.contains(request) || _closed) continue;
 
           request
             ..filePath = filePath
@@ -415,7 +410,6 @@ class MusicRequestManager implements MusicRequests {
     } catch (error) {
       _lastError = _operationError(request, error);
     } finally {
-      await _deleteFile(track.filePath);
       if (_nowPlaying == request) {
         _nowPlaying = null;
       }
@@ -498,8 +492,6 @@ class MusicRequestManager implements MusicRequests {
     if (cancelPreparation) {
       await _fetcher.cancel();
     }
-    final filePath = request.filePath;
-    if (filePath != null) await _deleteFile(filePath);
     _startIfPossible();
     return true;
   }
@@ -537,17 +529,6 @@ class MusicRequestManager implements MusicRequests {
     _stateController.add(_current);
   }
 
-  static Future<void> _deleteFile(String path) async {
-    try {
-      final file = File(path);
-      if (await file.exists()) {
-        await file.delete();
-      }
-    } catch (_) {
-      // Cache cleanup is best effort and must not stop the queue.
-    }
-  }
-
   @override
   Future<void> close() async {
     if (_closed) return;
@@ -555,11 +536,6 @@ class MusicRequestManager implements MusicRequests {
     await _eventSubscription.cancel();
     await _fetcher.cancel();
     await _player.stop();
-
-    for (final request in _queue) {
-      final path = request.filePath;
-      if (path != null) await _deleteFile(path);
-    }
 
     await _stateController.close();
   }

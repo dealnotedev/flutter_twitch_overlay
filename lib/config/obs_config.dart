@@ -14,6 +14,7 @@ class ObsConfig {
     'music_reward_title': 'Play Music',
     'music_max_queue': 10,
     'music_max_duration_seconds': 600,
+    'music_cache_max_mb': 2048,
     'music_volume_percent': 70,
     'followers': true,
     'follow_animation_renderer': 'optimized',

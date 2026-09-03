@@ -26,6 +26,7 @@ void main() {
       'Play Music',
     );
     expect(config.getInt('music_max_queue', fallback: 1), 10);
+    expect(config.getInt('music_cache_max_mb', fallback: 1), 2048);
   });
 
   group('ObsConfig.getBool', () {
@@ -110,6 +111,7 @@ void main() {
 
       expect(config.getInt('follow_avatar_resolution', fallback: 24), 48);
       expect(config.getInt('music_max_queue', fallback: 1), 10);
+      expect(config.getInt('music_cache_max_mb', fallback: 1), 2048);
     });
 
     test('returns a configured integer value', () {

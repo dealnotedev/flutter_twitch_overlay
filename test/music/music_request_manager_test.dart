@@ -84,6 +84,10 @@ void main() {
 
     expect(player.played.map((track) => track.itemId), ['one', 'two']);
     expect(subject.current.nowPlaying?.item.id, 'two');
+    expect(
+      await File('${cache.path}${Platform.pathSeparator}one.mp3').exists(),
+      isTrue,
+    );
   });
 
   test('pauses and resumes the current track without advancing', () async {
@@ -121,7 +125,7 @@ void main() {
     expect(subject.current.nowPlaying?.position.inSeconds, 120);
   });
 
-  test('removes a waiting track and deletes its downloaded file', () async {
+  test('removes a waiting track without deleting its cached file', () async {
     final subject = createManager();
     events
       ..add(_redemption(id: 'one', input: 'https://youtu.be/one'))
@@ -135,15 +139,15 @@ void main() {
     expect(await subject.remove('two'), isTrue);
 
     expect(subject.current.queue, isEmpty);
-    expect(await queuedFile.exists(), isFalse);
+    expect(await queuedFile.exists(), isTrue);
     expect(await subject.remove('one'), isFalse);
   });
 
   test('removing the track being downloaded cancels the fetcher', () async {
     final subject = createManager();
-    fetcher.blockedDownloads.add('one');
+    fetcher.blockedDownloads.add('default');
     events.add(_redemption(id: 'one'));
-    await _waitUntil(() => fetcher.activeBlocks.containsKey('one'));
+    await _waitUntil(() => fetcher.activeBlocks.containsKey('default'));
 
     expect(await subject.remove('one'), isTrue);
 
@@ -217,17 +221,16 @@ class _FakeFetcher implements MusicTrackFetcher {
   }
 
   @override
-  Future<String> download({
-    required String itemId,
-    required Uri sourceUrl,
+  Future<String> obtain({
+    required MusicTrackMetadata metadata,
     required void Function(MusicDownloadProgress progress) onProgress,
   }) async {
-    downloaded.add(sourceUrl);
-    if (blockedDownloads.contains(itemId)) {
+    downloaded.add(metadata.sourceUrl);
+    if (blockedDownloads.contains(metadata.videoId)) {
       final blocker = Completer<void>();
-      activeBlocks[itemId] = blocker;
+      activeBlocks[metadata.videoId] = blocker;
       await blocker.future;
-      activeBlocks.remove(itemId);
+      activeBlocks.remove(metadata.videoId);
     }
     onProgress(
       const MusicDownloadProgress(
@@ -236,7 +239,9 @@ class _FakeFetcher implements MusicTrackFetcher {
         eta: Duration(seconds: 1),
       ),
     );
-    final file = File('${cache.path}${Platform.pathSeparator}$itemId.mp3');
+    final file = File(
+      '${cache.path}${Platform.pathSeparator}${metadata.videoId}.mp3',
+    );
     await file.writeAsBytes([1, 2, 3]);
     return file.path;
   }

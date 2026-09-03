@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/music_requests.dart';
 
 class YtDlpException implements Exception {
@@ -22,7 +23,7 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
   final String executable;
   final String? ffmpegLocation;
   final String? denoPath;
-  final Directory cacheDirectory;
+  final MusicFileCache cache;
   final Duration inspectTimeout;
   final Duration downloadTimeout;
 
@@ -32,7 +33,7 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     required this.executable,
     required this.ffmpegLocation,
     required this.denoPath,
-    required this.cacheDirectory,
+    required this.cache,
     this.inspectTimeout = const Duration(seconds: 20),
     this.downloadTimeout = const Duration(minutes: 15),
   });
@@ -99,20 +100,27 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
   }
 
   @override
-  Future<String> download({
-    required String itemId,
+  Future<String> obtain({
+    required MusicTrackMetadata metadata,
+    required void Function(MusicDownloadProgress progress) onProgress,
+  }) => cache.obtain(
+    videoId: metadata.videoId,
+    produce:
+        (stagingDirectory) => _download(
+          sourceUrl: metadata.sourceUrl,
+          stagingDirectory: stagingDirectory,
+          onProgress: onProgress,
+        ),
+  );
+
+  Future<File> _download({
     required Uri sourceUrl,
+    required Directory stagingDirectory,
     required void Function(MusicDownloadProgress progress) onProgress,
   }) async {
-    await cacheDirectory.create(recursive: true);
-
-    final safeItemId = itemId.replaceAll(RegExp(r'[^A-Za-z0-9_-]'), '_');
-    final cachedFile = File(
-      '${cacheDirectory.path}${Platform.pathSeparator}$safeItemId.mp3',
+    final expectedFile = File(
+      '${stagingDirectory.path}${Platform.pathSeparator}audio.mp3',
     );
-    if (await cachedFile.exists() && await cachedFile.length() > 0) {
-      return cachedFile.path;
-    }
 
     final args = <String>[
       '--ignore-config',
@@ -130,9 +138,9 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
         location,
       ],
       '--paths',
-      cacheDirectory.path,
+      stagingDirectory.path,
       '--output',
-      '$safeItemId.%(ext)s',
+      'audio.%(ext)s',
       '--newline',
       '--progress',
       '--progress-delta',
@@ -211,17 +219,19 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
         );
       }
 
-      final path = finalPath ?? cachedFile.path;
+      final path = finalPath ?? expectedFile.path;
       final file = File(path);
       if (!await file.exists() || await file.length() == 0) {
         throw const YtDlpException('yt-dlp did not produce an audio file');
       }
 
-      if (!_isInsideCache(file)) {
-        throw const YtDlpException('yt-dlp returned an unexpected file path');
+      if (!_isInside(file, stagingDirectory)) {
+        throw const YtDlpException(
+          'yt-dlp returned a file outside the staging directory',
+        );
       }
 
-      return file.path;
+      return file;
     } finally {
       if (identical(_activeProcess, process)) {
         _activeProcess = null;
@@ -277,15 +287,15 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     }
   }
 
-  bool _isInsideCache(File file) {
+  static bool _isInside(File file, Directory directory) {
     String normalize(String path) {
-      final absolute = File(path).absolute.path.replaceAll('/', '\\');
-      return absolute.toLowerCase();
+      final absolute = File(path).absolute.path.replaceAll('\\', '/');
+      return Platform.isWindows ? absolute.toLowerCase() : absolute;
     }
 
-    final cache = normalize(cacheDirectory.path);
+    final staging = normalize(directory.path);
     final candidate = normalize(file.path);
-    return candidate.startsWith('$cache\\');
+    return candidate.startsWith('$staging/');
   }
 
   static int? _parseInt(String value) {
