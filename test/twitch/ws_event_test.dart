@@ -27,4 +27,23 @@ void main() {
     expect(event.reward?.id, 'reward-1');
     expect(event.reward?.title, 'Play Music');
   });
+
+  test('parses chat message id and text', () {
+    final message = WsMessage.fromJson({
+      'payload': {
+        'subscription': {'type': 'channel.chat.message'},
+        'event': {
+          'message_id': 'message-1',
+          'chatter_user_id': 'user-1',
+          'chatter_user_login': 'viewer',
+          'chatter_user_name': 'Viewer',
+          'message': {'text': ' !music ', 'fragments': <Object>[]},
+        },
+      },
+    });
+
+    final event = message.payload.event!;
+    expect(event.id, 'message-1');
+    expect(event.messageText, ' !music ');
+  });
 }

@@ -54,6 +54,7 @@ class _State extends State<LoggedWidget> {
   late AvatarPixelRenderer _followRenderer;
   late int _followAvatarResolution;
   MusicRequests? _musicRequests;
+  final _musicOverlayController = MusicQueueOverlayController();
 
   final _rewards = <UserRedeemedEvent>[];
   final _receivedEventIds = <String>{};
@@ -91,6 +92,7 @@ class _State extends State<LoggedWidget> {
     _eventsSubscription?.cancel();
     _stateSubscription?.cancel();
     _configSubscription?.cancel();
+    _musicOverlayController.dispose();
     super.dispose();
   }
 
@@ -122,7 +124,10 @@ class _State extends State<LoggedWidget> {
                             .clamp(82.0, 520.0)
                             .toDouble(),
                   ),
-                  child: MusicQueueOverlay(requests: musicRequests),
+                  child: MusicQueueOverlay(
+                    requests: musicRequests,
+                    controller: _musicOverlayController,
+                  ),
                 ),
               ),
             _createConnectionIndicator(),
@@ -258,6 +263,12 @@ class _State extends State<LoggedWidget> {
 
       case 'channel.channel_points_custom_reward_redemption.add':
         await _handleRewardEvent(event);
+        return;
+
+      case 'channel.chat.message':
+        if (event?.messageText?.trim().toLowerCase() == '!music') {
+          _musicOverlayController.expand();
+        }
         return;
     }
   }

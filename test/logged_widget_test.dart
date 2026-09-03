@@ -9,6 +9,7 @@ import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/logged_widget.dart';
+import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/twitch/twitch_api.dart';
@@ -171,6 +172,67 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('expands the music player for the !music chat command', (
+    tester,
+  ) async {
+    final musicRequests = _FakeMusicRequests(_musicSnapshot());
+    addTearDown(musicRequests.close);
+    locator = _FakeLocator({
+      Settings: settings,
+      ObsConfig: config,
+      WebSocketManager: websocket,
+      MusicRequests: musicRequests,
+    });
+
+    await _pumpLoggedWidget(tester, locator);
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump(const Duration(milliseconds: 421));
+
+    expect(find.byKey(const ValueKey('music_player_compact')), findsOneWidget);
+
+    websocket.add(
+      _message(
+        type: 'channel.chat.message',
+        event: {
+          'message_id': 'message-id',
+          'message': {'text': '  !MUSIC  '},
+        },
+      ),
+    );
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('music_player_expanded')), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+}
+
+MusicQueueSnapshot _musicSnapshot() {
+  final item = MusicQueueItem(
+    id: 'playing-track',
+    requestedBy: 'Viewer',
+    sourceUrl: Uri.parse('https://youtu.be/playing-track'),
+    phase: MusicQueueItemPhase.ready,
+    title: 'Playing track',
+    author: 'Artist',
+    duration: const Duration(minutes: 3),
+    thumbnail: null,
+    downloadProgress: 1,
+  );
+
+  return MusicQueueSnapshot(
+    revision: 1,
+    nowPlaying: MusicNowPlaying(
+      item: item,
+      startedAt: DateTime.now(),
+      position: Duration.zero,
+      positionUpdatedAt: DateTime.now(),
+      paused: false,
+    ),
+    queue: const [],
+    lastError: null,
+  );
 }
 
 Future<void> _pumpLoggedWidget(
@@ -227,6 +289,33 @@ class _FakeWebSocketManager extends WebSocketManager {
 
   @override
   Stream<WsMessage> get messages => _messages.stream;
+}
+
+class _FakeMusicRequests implements MusicRequests {
+  final MusicQueueSnapshot _current;
+
+  _FakeMusicRequests(this._current);
+
+  @override
+  MusicQueueSnapshot get current => _current;
+
+  @override
+  Stream<MusicQueueSnapshot> get states => const Stream.empty();
+
+  @override
+  Future<bool> setPaused(bool paused) async => true;
+
+  @override
+  Future<bool> seek(Duration position) async => true;
+
+  @override
+  Future<bool> skip() async => true;
+
+  @override
+  Future<bool> remove(String itemId) async => true;
+
+  @override
+  Future<void> close() async {}
 }
 
 class _FakeLocator implements ServiceLocator {

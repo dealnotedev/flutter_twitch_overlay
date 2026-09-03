@@ -221,6 +221,15 @@ class WebSocketManager {
           broadcasterId: broadcasterId,
         ),
       );
+
+      await _registerInternal(
+        api,
+        _Registration(
+          _RegistrationType.chatMessages,
+          sessionId: sessionId,
+          broadcasterId: broadcasterId,
+        ),
+      );
     } on DioException catch (e) {
       debugPrint(
         'Api Error ${e.response?.statusCode} with message ${e.message}',
@@ -251,6 +260,14 @@ class WebSocketManager {
           sessionId: registration.sessionId,
         );
         break;
+
+      case _RegistrationType.chatMessages:
+        await api.subscribeChatMessages(
+          broadcasterUserId: registration.broadcasterId,
+          userId: registration.broadcasterId,
+          sessionId: registration.sessionId,
+        );
+        break;
     }
 
     _registrations.add(registration);
@@ -265,7 +282,7 @@ class _Channel {
   _Channel({required this.channel});
 }
 
-enum _RegistrationType { rewards, follow }
+enum _RegistrationType { rewards, follow, chatMessages }
 
 class _Registration {
   final _RegistrationType type;

@@ -49,6 +49,7 @@ class WsMessageEvent {
   final UserInfo? user;
   final WsReward? reward;
   final String? userInput;
+  final String? messageText;
   final DateTime? redeemedAt;
 
   WsMessageEvent({
@@ -56,17 +57,20 @@ class WsMessageEvent {
     required this.user,
     required this.reward,
     required this.userInput,
+    required this.messageText,
     required this.redeemedAt,
   });
 
   factory WsMessageEvent.fromJson(dynamic json) {
     final rewardJson = json['reward'];
+    final messageJson = json['message'];
 
     return WsMessageEvent(
-      id: json['id'] as String?,
+      id: (json['id'] ?? json['message_id']) as String?,
       user: ParseUtil.parseUserInfo(json),
       reward: rewardJson != null ? WsReward.fromJson(rewardJson) : null,
       userInput: json['user_input'] as String?,
+      messageText: messageJson is Map ? messageJson['text'] as String? : null,
       redeemedAt: DateTime.tryParse(json['redeemed_at'] as String? ?? ''),
     );
   }

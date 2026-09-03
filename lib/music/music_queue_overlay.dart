@@ -6,13 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
-
 import 'package:obssource/music/music_requests.dart';
 
 enum MusicQueuePresentation { floatingOverlay, controllerCanvas }
 
+class MusicQueueOverlayController extends ChangeNotifier {
+  void expand() => notifyListeners();
+}
+
 class MusicQueueOverlay extends StatefulWidget {
   final MusicRequests requests;
+  final MusicQueueOverlayController? controller;
   final Duration collapseDelay;
   final Duration animationDuration;
   final bool alwaysExpanded;
@@ -24,7 +28,8 @@ class MusicQueueOverlay extends StatefulWidget {
   const MusicQueueOverlay({
     super.key,
     required this.requests,
-    this.collapseDelay = const Duration(seconds: 3),
+    this.controller,
+    this.collapseDelay = const Duration(seconds: 5),
     this.animationDuration = const Duration(milliseconds: 420),
     this.alwaysExpanded = false,
     this.showWhenEmpty = false,
@@ -55,12 +60,19 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
     super.initState();
     _snapshot = widget.requests.current;
     _subscribe();
+    widget.controller?.addListener(_handleExpandRequest);
     if (_hasContent && !widget.alwaysExpanded) _scheduleCollapse();
   }
 
   @override
   void didUpdateWidget(covariant MusicQueueOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
+
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller?.removeListener(_handleExpandRequest);
+      widget.controller?.addListener(_handleExpandRequest);
+    }
+
     if (oldWidget.requests == widget.requests) return;
 
     unawaited(_subscription?.cancel());
@@ -114,6 +126,14 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
     _scheduleCollapse();
   }
 
+  void _handleExpandRequest() {
+    if (!mounted || widget.alwaysExpanded || !_hasContent) return;
+
+    _collapseTimer?.cancel();
+    if (!_expanded) setState(() => _expanded = true);
+    _scheduleCollapse();
+  }
+
   void _scheduleCollapse() {
     _collapseTimer?.cancel();
     if (widget.alwaysExpanded || !_hasContent || _hovered) return;
@@ -127,6 +147,7 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
   @override
   void dispose() {
     _collapseTimer?.cancel();
+    widget.controller?.removeListener(_handleExpandRequest);
     unawaited(_subscription?.cancel());
     super.dispose();
   }
@@ -138,8 +159,7 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
     final expandedPlayer = _ExpandedMusicPlayer(
       key: const ValueKey('music_player_expanded'),
       state: _snapshot,
-      onPausedChanged:
-          (paused) => unawaited(widget.requests.setPaused(paused)),
+      onPausedChanged: (paused) => unawaited(widget.requests.setPaused(paused)),
       onSeek: (position) => unawaited(widget.requests.seek(position)),
       onSkip: () => unawaited(widget.requests.skip()),
       onRemove: (itemId) => unawaited(widget.requests.remove(itemId)),
@@ -264,8 +284,7 @@ class _ExpandedMusicPlayer extends StatelessWidget {
           ),
           const Gap(7),
           ...visibleQueue.map(
-            (item) =>
-                _QueueRow(item: item, onRemove: () => onRemove(item.id)),
+            (item) => _QueueRow(item: item, onRemove: () => onRemove(item.id)),
           ),
           if (hiddenQueueCount > 0)
             Padding(

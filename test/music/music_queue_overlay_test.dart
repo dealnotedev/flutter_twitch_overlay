@@ -93,6 +93,28 @@ void main() {
     expect(find.text('ДАЛІ'), findsOneWidget);
   });
 
+  testWidgets('controller reveals the compact player', (tester) async {
+    final requests = _FakeMusicRequests(_snapshot());
+    final controller = MusicQueueOverlayController();
+    addTearDown(requests.dispose);
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      _TestSurface(
+        requests: requests,
+        controller: controller,
+        collapseDelay: collapseDelay,
+        animationDuration: animationDuration,
+      ),
+    );
+    await _collapse(tester, collapseDelay, animationDuration);
+
+    controller.expand();
+    await tester.pump();
+
+    expect(find.byKey(const ValueKey('music_player_expanded')), findsOneWidget);
+  });
+
   testWidgets('download phase changes keep the player compact', (tester) async {
     final requests = _FakeMusicRequests(
       _snapshot(
@@ -184,9 +206,7 @@ void main() {
     expect(find.text('1:10'), findsOneWidget);
   });
 
-  testWidgets('localizes playback state and every queue phase', (
-    tester,
-  ) async {
+  testWidgets('localizes playback state and every queue phase', (tester) async {
     final requests = _FakeMusicRequests(_snapshot(paused: true));
     addTearDown(requests.dispose);
 
@@ -312,6 +332,7 @@ MusicQueueItem _queueItem(
 
 class _TestSurface extends StatelessWidget {
   final MusicRequests requests;
+  final MusicQueueOverlayController? controller;
   final Duration collapseDelay;
   final Duration animationDuration;
   final Locale locale;
@@ -320,6 +341,7 @@ class _TestSurface extends StatelessWidget {
 
   const _TestSurface({
     required this.requests,
+    this.controller,
     required this.collapseDelay,
     required this.animationDuration,
     this.locale = const Locale('uk'),
@@ -341,6 +363,7 @@ class _TestSurface extends StatelessWidget {
               bottom: 24,
               child: MusicQueueOverlay(
                 requests: requests,
+                controller: controller,
                 collapseDelay: collapseDelay,
                 animationDuration: animationDuration,
                 alwaysExpanded: alwaysExpanded,
