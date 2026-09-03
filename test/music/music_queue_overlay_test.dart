@@ -25,6 +25,10 @@ void main() {
     );
 
     expect(find.byKey(const ValueKey('music_player_expanded')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('music_cosmic_expanded_background')),
+      findsOneWidget,
+    );
 
     await tester.pump(collapseDelay);
 
@@ -40,6 +44,10 @@ void main() {
     expect(tester.getSize(compact), const Size.square(82));
     expect(
       find.byKey(const ValueKey('music_compact_border_progress')),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('music_cosmic_compact_background')),
       findsOneWidget,
     );
     expect(find.byType(CircularProgressIndicator), findsNothing);

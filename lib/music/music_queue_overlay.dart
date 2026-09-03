@@ -4,6 +4,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_requests.dart';
 
 class MusicQueueOverlay extends StatefulWidget {
@@ -200,10 +201,10 @@ class _ExpandedMusicPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: 360,
-      padding: const EdgeInsets.all(16),
-      decoration: _playerDecoration(borderRadius: 16),
+    return CosmicMusicSurface(
+      backgroundKey: const ValueKey('music_cosmic_expanded_background'),
+      width: 380,
+      padding: const EdgeInsets.all(18),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -218,17 +219,18 @@ class _ExpandedMusicPlayer extends StatelessWidget {
           else
             const _WaitingForTrack(),
           if (state.queue.isNotEmpty) ...[
-            const Gap(8),
+            const Gap(12),
             const Text(
               'ДАЛІ',
               style: TextStyle(
-                color: Color(0xFFBDBDBD),
-                fontSize: 12,
+                color: MusicPlayerPalette.neonPinkBright,
+                fontSize: 11,
                 fontWeight: FontWeight.bold,
-                letterSpacing: 1.5,
+                letterSpacing: 2.2,
+                shadows: MusicPlayerPalette.pinkTextGlow,
               ),
             ),
-            const Gap(6),
+            const Gap(7),
             ...state.queue
                 .take(3)
                 .map(
@@ -241,19 +243,32 @@ class _ExpandedMusicPlayer extends StatelessWidget {
                 child: Text(
                   '+${state.queue.length - 3} у черзі',
                   style: const TextStyle(
-                    color: Color(0xFFBDBDBD),
-                    fontSize: 12,
+                    color: MusicPlayerPalette.textSecondary,
+                    fontSize: 11,
                   ),
                 ),
               ),
           ],
           if (state.lastError case final error?) ...[
-            const Gap(8),
-            Text(
-              error,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xFFFF8A80), fontSize: 12),
+            const Gap(10),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+              decoration: BoxDecoration(
+                color: MusicPlayerPalette.neonPink.withValues(alpha: 0.10),
+                borderRadius: BorderRadius.circular(9),
+                border: Border.all(
+                  color: MusicPlayerPalette.error.withValues(alpha: 0.42),
+                ),
+              ),
+              child: Text(
+                error,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  color: MusicPlayerPalette.error,
+                  fontSize: 12,
+                ),
+              ),
             ),
           ],
         ],
@@ -273,10 +288,13 @@ class _CompactMusicPlayer extends StatelessWidget {
     final item =
         playing?.item ?? (state.queue.isEmpty ? null : state.queue.first);
 
-    return Container(
+    return CosmicMusicSurface(
+      backgroundKey: const ValueKey('music_cosmic_compact_background'),
       width: 82,
       height: 82,
-      decoration: _playerDecoration(borderRadius: 16, drawBorder: false),
+      borderRadius: 18,
+      compact: true,
+      drawBorder: false,
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -285,9 +303,10 @@ class _CompactMusicPlayer extends StatelessWidget {
               padding: const EdgeInsets.all(8),
               child: _Artwork(
                 url: item.thumbnail,
-                size: 64,
+                size: 66,
                 borderRadius: 12,
                 iconSize: 24,
+                glow: false,
               ),
             )
           else
@@ -295,12 +314,12 @@ class _CompactMusicPlayer extends StatelessWidget {
               padding: EdgeInsets.all(8),
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Color(0xFF242424),
+                  color: MusicPlayerPalette.panelSoft,
                   borderRadius: BorderRadius.all(Radius.circular(12)),
                 ),
                 child: Icon(
                   Icons.error_outline,
-                  color: Color(0xFFFF8A80),
+                  color: MusicPlayerPalette.error,
                   size: 26,
                 ),
               ),
@@ -313,14 +332,23 @@ class _CompactMusicPlayer extends StatelessWidget {
             const Center(
               child: DecoratedBox(
                 decoration: BoxDecoration(
-                  color: Color(0xB3000000),
+                  color: Color(0xC0030518),
                   shape: BoxShape.circle,
+                  border: Border.fromBorderSide(
+                    BorderSide(color: MusicPlayerPalette.neonPink, width: 1),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: MusicPlayerPalette.neonPink,
+                      blurRadius: 12,
+                    ),
+                  ],
                 ),
                 child: Padding(
                   padding: EdgeInsets.all(7),
                   child: Icon(
                     Icons.play_arrow_rounded,
-                    color: Colors.white,
+                    color: MusicPlayerPalette.neonPinkBright,
                     size: 24,
                   ),
                 ),
@@ -416,7 +444,7 @@ class _RoundedRectProgressPainter extends CustomPainter {
     final path = _framePath(size);
     final trackPaint =
         Paint()
-          ..color = const Color(0xFF342A40)
+          ..color = const Color(0xFF3D1738)
           ..style = PaintingStyle.stroke
           ..strokeWidth = _strokeWidth
           ..strokeJoin = StrokeJoin.round;
@@ -443,14 +471,39 @@ class _RoundedRectProgressPainter extends CustomPainter {
         ..addPath(metric.extractPath(0, endDistance - length), Offset.zero);
     }
 
+    final glowPaint =
+        Paint()
+          ..color = MusicPlayerPalette.neonPink.withValues(alpha: 0.62)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 11
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round
+          ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 4);
     final progressPaint =
         Paint()
-          ..color = const Color(0xFFB388FF)
+          ..shader = const LinearGradient(
+            colors: [
+              MusicPlayerPalette.neonPink,
+              MusicPlayerPalette.neonPinkBright,
+              MusicPlayerPalette.neonPink,
+            ],
+          ).createShader(Offset.zero & size)
           ..style = PaintingStyle.stroke
-          ..strokeWidth = _strokeWidth
+          ..strokeWidth = 6
           ..strokeCap = StrokeCap.round
           ..strokeJoin = StrokeJoin.round;
-    canvas.drawPath(progressPath, progressPaint);
+    final highlightPaint =
+        Paint()
+          ..color = const Color(0xE6FFFFFF)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.4
+          ..strokeCap = StrokeCap.round
+          ..strokeJoin = StrokeJoin.round;
+
+    canvas
+      ..drawPath(progressPath, glowPaint)
+      ..drawPath(progressPath, progressPaint)
+      ..drawPath(progressPath, highlightPaint);
   }
 
   Path _framePath(Size size) {
@@ -486,20 +539,6 @@ class _RoundedRectProgressPainter extends CustomPainter {
   }
 }
 
-BoxDecoration _playerDecoration({
-  required double borderRadius,
-  bool drawBorder = true,
-}) {
-  return BoxDecoration(
-    color: const Color(0xE63C3C3C),
-    borderRadius: BorderRadius.circular(borderRadius),
-    border: drawBorder ? Border.all(color: const Color(0x668829FF)) : null,
-    boxShadow: const [
-      BoxShadow(color: Color(0x55000000), blurRadius: 18, offset: Offset(0, 6)),
-    ],
-  );
-}
-
 bool _hasSnapshotContent(MusicQueueSnapshot snapshot) {
   return snapshot.nowPlaying != null ||
       snapshot.queue.isNotEmpty ||
@@ -519,6 +558,13 @@ double _progressFor(Duration position, Duration duration) {
   return (position.inMicroseconds / duration.inMicroseconds)
       .clamp(0.0, 1.0)
       .toDouble();
+}
+
+String _formatDuration(Duration duration) {
+  final totalSeconds = duration.isNegative ? 0 : duration.inSeconds;
+  final minutes = totalSeconds ~/ Duration.secondsPerMinute;
+  final seconds = totalSeconds % Duration.secondsPerMinute;
+  return '$minutes:${seconds.toString().padLeft(2, '0')}';
 }
 
 Duration _currentPosition(MusicNowPlaying playing, Duration duration) {
@@ -548,20 +594,14 @@ class _NowPlayingCard extends StatelessWidget {
     final item = playing.item;
     final duration = item.duration ?? Duration.zero;
     final position = _currentPosition(playing, duration);
-    final progress =
-        duration <= Duration.zero
-            ? 0.0
-            : (position.inMicroseconds / duration.inMicroseconds).clamp(
-              0.0,
-              1.0,
-            );
+    final progress = _progressFor(position, duration);
     final remaining = duration - position;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        _Artwork(url: item.thumbnail),
-        const Gap(12),
+        _Artwork(url: item.thumbnail, size: 78, borderRadius: 15),
+        const Gap(15),
         Expanded(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -570,125 +610,92 @@ class _NowPlayingCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      playing.paused ? 'ПАУЗА' : 'ЗАРАЗ ГРАЄ',
+                      playing.paused ? 'Пауза' : 'Зараз грає',
                       style: const TextStyle(
-                        height: 1,
-                        color: Color(0xFFB388FF),
-                        fontSize: 12,
-                        fontWeight: FontWeight.bold,
+                        height: 1.05,
+                        color: MusicPlayerPalette.neonPinkBright,
+                        fontFamily: 'Segoe Script',
+                        fontSize: 17,
+                        fontStyle: FontStyle.italic,
+                        shadows: MusicPlayerPalette.pinkTextGlow,
                       ),
                     ),
                   ),
-                  SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: IconButton(
-                      padding: EdgeInsets.zero,
-                      color: const Color(0xFFB388FF),
-                      iconSize: 22,
-                      onPressed: () => onPausedChanged(!playing.paused),
-                      icon: Icon(
-                        playing.paused ? Icons.play_arrow : Icons.pause,
-                      ),
-                    ),
+                  _NeonControlButton(
+                    tooltip: playing.paused ? 'Продовжити' : 'Пауза',
+                    icon:
+                        playing.paused
+                            ? Icons.play_arrow_rounded
+                            : Icons.pause_rounded,
+                    onPressed: () => onPausedChanged(!playing.paused),
                   ),
-                  SizedBox(
-                    width: 30,
-                    height: 30,
-                    child: IconButton(
-                      key: const ValueKey('music_skip_button'),
-                      padding: EdgeInsets.zero,
-                      color: const Color(0xFFB388FF),
-                      iconSize: 22,
-                      onPressed: onSkip,
-                      icon: const Icon(Icons.skip_next_rounded),
-                    ),
+                  const Gap(6),
+                  _NeonControlButton(
+                    key: const ValueKey('music_skip_button'),
+                    tooltip: 'Наступний трек',
+                    icon: Icons.skip_next_rounded,
+                    onPressed: onSkip,
                   ),
                 ],
               ),
-              const Gap(2),
+              const Gap(5),
               Text(
                 item.title ?? item.sourceUrl.toString(),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
+                  color: MusicPlayerPalette.textPrimary,
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.1,
                 ),
               ),
-              const Gap(2),
+              const Gap(3),
               Text(
                 '${item.author ?? 'YouTube'} · ${item.requestedBy}',
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: const TextStyle(color: Color(0xFFD0D0D0), fontSize: 12),
+                style: const TextStyle(
+                  color: MusicPlayerPalette.textSecondary,
+                  fontSize: 11,
+                ),
               ),
-              const Gap(8),
-              LayoutBuilder(
-                builder:
-                    (context, constraints) => MouseRegion(
-                      cursor:
-                          duration > Duration.zero
-                              ? SystemMouseCursors.click
-                              : MouseCursor.defer,
-                      child: GestureDetector(
-                        key: const ValueKey('music_seek_bar'),
-                        behavior: HitTestBehavior.opaque,
-                        onTapDown:
-                            duration <= Duration.zero ||
-                                    constraints.maxWidth <= 0
-                                ? null
-                                : (details) {
-                                  final fraction = (details.localPosition.dx /
-                                          constraints.maxWidth)
-                                      .clamp(0.0, 1.0);
-                                  onSeek(
-                                    Duration(
-                                      microseconds:
-                                          (duration.inMicroseconds * fraction)
-                                              .round(),
-                                    ),
-                                  );
-                                },
-                        child: SizedBox(
-                          height: 14,
-                          child: Center(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(3),
-                              child: TweenAnimationBuilder<double>(
-                                key: ValueKey(
-                                  '${item.id}-${playing.paused}-'
-                                  '${position.inMilliseconds}',
-                                ),
-                                tween: Tween(
-                                  begin: progress,
-                                  end: playing.paused ? progress : 1,
-                                ),
-                                duration:
-                                    playing.paused ? Duration.zero : remaining,
-                                builder:
-                                    (
-                                      context,
-                                      value,
-                                      _,
-                                    ) => LinearProgressIndicator(
-                                      value:
-                                          duration == Duration.zero
-                                              ? null
-                                              : value,
-                                      minHeight: 5,
-                                      backgroundColor: const Color(0xFF616161),
-                                      valueColor: const AlwaysStoppedAnimation(
-                                        Color(0xFFB388FF),
-                                      ),
-                                    ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
+              const Gap(7),
+              _NeonSeekBar(
+                animationKey: ValueKey(
+                  '${item.id}-${playing.paused}-${position.inMilliseconds}',
+                ),
+                progress: progress,
+                endProgress: playing.paused ? progress : 1,
+                animationDuration: playing.paused ? Duration.zero : remaining,
+                enabled: duration > Duration.zero,
+                onSeekFraction: (fraction) {
+                  onSeek(
+                    Duration(
+                      microseconds:
+                          (duration.inMicroseconds * fraction).round(),
                     ),
+                  );
+                },
+              ),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    _formatDuration(position),
+                    style: const TextStyle(
+                      color: MusicPlayerPalette.textSecondary,
+                      fontSize: 9,
+                    ),
+                  ),
+                  Text(
+                    _formatDuration(duration),
+                    style: const TextStyle(
+                      color: MusicPlayerPalette.textSecondary,
+                      fontSize: 9,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -698,31 +705,192 @@ class _NowPlayingCard extends StatelessWidget {
   }
 }
 
+class _NeonControlButton extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback onPressed;
+
+  const _NeonControlButton({
+    super.key,
+    required this.icon,
+    required this.tooltip,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 32,
+      height: 32,
+      decoration: BoxDecoration(
+        color: MusicPlayerPalette.neonPink.withValues(alpha: 0.12),
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: MusicPlayerPalette.neonPink.withValues(alpha: 0.62),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: MusicPlayerPalette.neonPink.withValues(alpha: 0.24),
+            blurRadius: 10,
+          ),
+        ],
+      ),
+      child: IconButton(
+        padding: EdgeInsets.zero,
+        tooltip: tooltip,
+        color: MusicPlayerPalette.neonPinkBright,
+        iconSize: 20,
+        onPressed: onPressed,
+        icon: Icon(icon),
+      ),
+    );
+  }
+}
+
+class _NeonSeekBar extends StatelessWidget {
+  final Key animationKey;
+  final double progress;
+  final double endProgress;
+  final Duration animationDuration;
+  final bool enabled;
+  final ValueChanged<double> onSeekFraction;
+
+  const _NeonSeekBar({
+    required this.animationKey,
+    required this.progress,
+    required this.endProgress,
+    required this.animationDuration,
+    required this.enabled,
+    required this.onSeekFraction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return LayoutBuilder(
+      builder:
+          (context, constraints) => MouseRegion(
+            cursor: enabled ? SystemMouseCursors.click : MouseCursor.defer,
+            child: GestureDetector(
+              key: const ValueKey('music_seek_bar'),
+              behavior: HitTestBehavior.opaque,
+              onTapDown:
+                  !enabled || constraints.maxWidth <= 0
+                      ? null
+                      : (details) {
+                        final fraction =
+                            (details.localPosition.dx / constraints.maxWidth)
+                                .clamp(0.0, 1.0)
+                                .toDouble();
+                        onSeekFraction(fraction);
+                      },
+              child: SizedBox(
+                height: 13,
+                child: TweenAnimationBuilder<double>(
+                  key: animationKey,
+                  tween: Tween(begin: progress, end: endProgress),
+                  duration: animationDuration,
+                  builder: (context, value, _) {
+                    final normalized = value.clamp(0.0, 1.0).toDouble();
+                    return Stack(
+                      alignment: Alignment.centerLeft,
+                      clipBehavior: Clip.none,
+                      children: [
+                        Container(
+                          height: 3,
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF4A2447),
+                            borderRadius: BorderRadius.circular(2),
+                          ),
+                        ),
+                        FractionallySizedBox(
+                          widthFactor: normalized,
+                          child: Container(
+                            height: 4,
+                            decoration: BoxDecoration(
+                              gradient: const LinearGradient(
+                                colors: [
+                                  MusicPlayerPalette.neonPink,
+                                  MusicPlayerPalette.neonPinkBright,
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(2),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: MusicPlayerPalette.neonPink.withValues(
+                                    alpha: 0.72,
+                                  ),
+                                  blurRadius: 8,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment(normalized * 2 - 1, 0),
+                          child: Container(
+                            width: 8,
+                            height: 8,
+                            decoration: const BoxDecoration(
+                              color: MusicPlayerPalette.neonPinkBright,
+                              shape: BoxShape.circle,
+                              boxShadow: [
+                                BoxShadow(
+                                  color: MusicPlayerPalette.neonPink,
+                                  blurRadius: 8,
+                                  spreadRadius: 1,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+            ),
+          ),
+    );
+  }
+}
+
 class _WaitingForTrack extends StatelessWidget {
   const _WaitingForTrack();
 
   @override
   Widget build(BuildContext context) {
-    return const Row(
-      children: [
-        SizedBox(
-          width: 18,
-          height: 18,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: Color(0xFFB388FF),
-          ),
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
+      decoration: BoxDecoration(
+        color: MusicPlayerPalette.panelSoft,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: MusicPlayerPalette.neonPink.withValues(alpha: 0.30),
         ),
-        Gap(10),
-        Text(
-          'ГОТУЄМО МУЗИКУ',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.bold,
+      ),
+      child: const Row(
+        children: [
+          SizedBox(
+            width: 18,
+            height: 18,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              color: MusicPlayerPalette.neonPink,
+            ),
           ),
-        ),
-      ],
+          Gap(10),
+          Text(
+            'ГОТУЄМО МУЗИКУ',
+            style: TextStyle(
+              color: MusicPlayerPalette.neonPinkBright,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.1,
+              shadows: MusicPlayerPalette.pinkTextGlow,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -744,18 +912,43 @@ class _QueueRow extends StatelessWidget {
       MusicQueueItemPhase.ready => 'готово',
     };
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
+    return Container(
+      margin: const EdgeInsets.only(bottom: 5),
+      padding: const EdgeInsets.only(left: 9, right: 3, top: 4, bottom: 4),
+      decoration: BoxDecoration(
+        color: MusicPlayerPalette.panelSoft,
+        borderRadius: BorderRadius.circular(9),
+        border: Border.all(
+          color: MusicPlayerPalette.neonPink.withValues(alpha: 0.18),
+        ),
+      ),
       child: Row(
         children: [
-          const Icon(Icons.music_note, size: 15, color: Color(0xFFB388FF)),
-          const Gap(7),
+          Container(
+            width: 5,
+            height: 5,
+            decoration: const BoxDecoration(
+              color: MusicPlayerPalette.neonPink,
+              shape: BoxShape.circle,
+              boxShadow: [
+                BoxShadow(
+                  color: MusicPlayerPalette.neonPink,
+                  blurRadius: 7,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+          const Gap(9),
           Expanded(
             child: Text(
               item.title ?? item.sourceUrl.toString(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Colors.white, fontSize: 12),
+              style: const TextStyle(
+                color: MusicPlayerPalette.textPrimary,
+                fontSize: 12,
+              ),
             ),
           ),
           const Gap(8),
@@ -765,7 +958,10 @@ class _QueueRow extends StatelessWidget {
               '${item.requestedBy} · $status',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(color: Color(0xFFBDBDBD), fontSize: 11),
+              style: const TextStyle(
+                color: MusicPlayerPalette.textSecondary,
+                fontSize: 10,
+              ),
             ),
           ),
           const Gap(2),
@@ -775,7 +971,8 @@ class _QueueRow extends StatelessWidget {
             child: IconButton(
               key: ValueKey('remove_music_${item.id}'),
               padding: EdgeInsets.zero,
-              color: const Color(0xFFBDBDBD),
+              color: MusicPlayerPalette.textSecondary,
+              hoverColor: MusicPlayerPalette.neonPink.withValues(alpha: 0.14),
               iconSize: 17,
               onPressed: onRemove,
               icon: const Icon(Icons.close_rounded),
@@ -792,32 +989,61 @@ class _Artwork extends StatelessWidget {
   final double size;
   final double borderRadius;
   final double iconSize;
+  final bool glow;
 
   const _Artwork({
     required this.url,
     this.size = 64,
     this.borderRadius = 12,
     this.iconSize = 28,
+    this.glow = true,
   });
 
   @override
   Widget build(BuildContext context) {
-    final fallback = ColoredBox(
-      color: const Color(0xFF242424),
+    final fallback = DecoratedBox(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [MusicPlayerPalette.deepPurple, MusicPlayerPalette.midnight],
+        ),
+      ),
       child: Center(
         child: Icon(
-          Icons.music_note,
-          color: const Color(0xFFB388FF),
+          Icons.music_note_rounded,
+          color: MusicPlayerPalette.neonPinkBright,
+          shadows: MusicPlayerPalette.pinkTextGlow,
           size: iconSize,
         ),
       ),
     );
 
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(borderRadius),
-      child: SizedBox(
-        width: size,
-        height: size,
+    return Container(
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(glow ? 1.5 : 0),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(borderRadius + 1.5),
+        border:
+            glow
+                ? Border.all(
+                  color: MusicPlayerPalette.neonPink.withValues(alpha: 0.78),
+                )
+                : null,
+        boxShadow:
+            glow
+                ? [
+                  BoxShadow(
+                    color: MusicPlayerPalette.neonPink.withValues(alpha: 0.35),
+                    blurRadius: 14,
+                    spreadRadius: 1,
+                  ),
+                ]
+                : null,
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(borderRadius),
         child:
             url == null
                 ? fallback
