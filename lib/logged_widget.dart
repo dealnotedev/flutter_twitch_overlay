@@ -100,6 +100,7 @@ class _State extends State<LoggedWidget> {
       builder: (context, constraints) {
         return Stack(
           children: [
+            _createConfigInfo(context),
             ..._follows.map(
               (follow) => FollowWidget(
                 event: follow,
@@ -125,7 +126,6 @@ class _State extends State<LoggedWidget> {
                 ),
               ),
             _createConnectionIndicator(),
-            _createConfigInfo(context),
           ],
         );
       },
