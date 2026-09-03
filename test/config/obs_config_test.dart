@@ -1,17 +1,41 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/config/obs_config.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  test('uses fallback JSON after a malformed OBS response', () async {
+    const channel = BasicMessageChannel<String>('obs_config', StringCodec());
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockDecodedMessageHandler(
+      channel,
+      (_) async => '{not-valid-json',
+    );
+    addTearDown(
+      () => messenger.setMockDecodedMessageHandler<String>(channel, null),
+    );
+
+    final config = ObsConfig();
+    await config.init();
+
+    expect(config.config.current.valid, isFalse);
+    expect(
+      config.getString('music_reward_title', fallback: 'Other'),
+      'Play Music',
+    );
+    expect(config.getInt('music_max_queue', fallback: 1), 10);
+  });
+
   group('ObsConfig.getBool', () {
-    test('enables all options when configuration is invalid', () {
+    test('uses fallback JSON when configuration is invalid', () {
       final config = ObsConfig();
 
       expect(config.getBool('followers'), isTrue);
-      expect(config.getBool('subscriptions'), isTrue);
-      expect(config.getBool('raids'), isTrue);
-      expect(config.getBool('followers', fallback: false), isTrue);
+      expect(config.getBool('music_enabled', fallback: false), isTrue);
+      expect(config.getBool('subscriptions'), isFalse);
+      expect(config.getBool('subscriptions', fallback: true), isTrue);
     });
 
     test('honors explicit values', () {
@@ -42,12 +66,16 @@ void main() {
   });
 
   group('ObsConfig.getString', () {
-    test('uses the fallback when configuration is invalid', () {
+    test('uses fallback JSON when configuration is invalid', () {
       final config = ObsConfig();
 
       expect(
-        config.getString('follow_animation_renderer', fallback: 'optimized'),
+        config.getString('follow_animation_renderer', fallback: 'legacy'),
         'optimized',
+      );
+      expect(
+        config.getString('music_reward_title', fallback: 'Other'),
+        'Play Music',
       );
     });
 
@@ -77,10 +105,11 @@ void main() {
   });
 
   group('ObsConfig.getInt', () {
-    test('uses the fallback when configuration is invalid', () {
+    test('uses fallback JSON when configuration is invalid', () {
       final config = ObsConfig();
 
-      expect(config.getInt('follow_avatar_resolution', fallback: 48), 48);
+      expect(config.getInt('follow_avatar_resolution', fallback: 24), 48);
+      expect(config.getInt('music_max_queue', fallback: 1), 10);
     });
 
     test('returns a configured integer value', () {

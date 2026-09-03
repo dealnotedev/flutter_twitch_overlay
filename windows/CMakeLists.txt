@@ -102,6 +102,17 @@ install(CODE "
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
+# Keep the downloader toolchain beside the application. The source directory
+# is populated by tools/download_tools.ps1 and intentionally contains only the
+# executables needed at runtime.
+set(MUSIC_TOOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../tools")
+if(EXISTS "${MUSIC_TOOLS_DIR}")
+  install(DIRECTORY "${MUSIC_TOOLS_DIR}/"
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/tools"
+    COMPONENT Runtime
+    FILES_MATCHING PATTERN "*.exe")
+endif()
+
 # Install the AOT library on non-Debug builds only.
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"
   CONFIGURATIONS Profile;Release

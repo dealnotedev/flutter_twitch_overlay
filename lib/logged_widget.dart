@@ -13,6 +13,8 @@ import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/generated/assets.dart';
+import 'package:obssource/music/music_queue_overlay.dart';
+import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
@@ -51,6 +53,7 @@ class _State extends State<LoggedWidget> {
   late WsState _wsState;
   late AvatarPixelRenderer _followRenderer;
   late int _followAvatarResolution;
+  MusicRequests? _musicRequests;
 
   final _rewards = <UserRedeemedEvent>[];
   final _receivedEventIds = <String>{};
@@ -65,6 +68,11 @@ class _State extends State<LoggedWidget> {
     _obsConfig = widget.locator.provide();
     _followRenderer = _readFollowRenderer();
     _followAvatarResolution = _readFollowAvatarResolution();
+    try {
+      _musicRequests = widget.locator.provide<MusicRequests>();
+    } catch (_) {
+      // Older test and debug locators may not provide music requests yet.
+    }
     _configSubscription = _obsConfig.config.changes.listen(_handleConfig);
 
     final ws = widget.locator.provide<WebSocketManager>();
@@ -102,6 +110,20 @@ class _State extends State<LoggedWidget> {
               ),
             ),
             _createRewardsWidget(),
+            if (_musicRequests case final musicRequests?)
+              Positioned(
+                right: 24,
+                bottom: 24,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth:
+                        (constraints.maxWidth - 48)
+                            .clamp(82.0, 520.0)
+                            .toDouble(),
+                  ),
+                  child: MusicQueueOverlay(requests: musicRequests),
+                ),
+              ),
             _createConnectionIndicator(),
           ],
         );

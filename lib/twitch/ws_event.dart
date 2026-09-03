@@ -29,13 +29,18 @@ class WsMessagePayload {
 }
 
 class WsReward {
+  final String? id;
   final String title;
   final int cost;
 
-  WsReward({required this.title, required this.cost});
+  WsReward({required this.id, required this.title, required this.cost});
 
   factory WsReward.fromJson(dynamic json) {
-    return WsReward(title: json['title'] as String, cost: json['cost'] as int);
+    return WsReward(
+      id: json['id'] as String?,
+      title: json['title'] as String,
+      cost: json['cost'] as int,
+    );
   }
 }
 
@@ -43,8 +48,16 @@ class WsMessageEvent {
   final String? id;
   final UserInfo? user;
   final WsReward? reward;
+  final String? userInput;
+  final DateTime? redeemedAt;
 
-  WsMessageEvent({required this.id, required this.user, required this.reward});
+  WsMessageEvent({
+    required this.id,
+    required this.user,
+    required this.reward,
+    required this.userInput,
+    required this.redeemedAt,
+  });
 
   factory WsMessageEvent.fromJson(dynamic json) {
     final rewardJson = json['reward'];
@@ -53,6 +66,8 @@ class WsMessageEvent {
       id: json['id'] as String?,
       user: ParseUtil.parseUserInfo(json),
       reward: rewardJson != null ? WsReward.fromJson(rewardJson) : null,
+      userInput: json['user_input'] as String?,
+      redeemedAt: DateTime.tryParse(json['redeemed_at'] as String? ?? ''),
     );
   }
 }
