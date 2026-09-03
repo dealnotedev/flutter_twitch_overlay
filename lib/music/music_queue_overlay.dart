@@ -682,13 +682,14 @@ class _NowPlayingCard extends StatelessWidget {
                 ),
               ),
               const Gap(7),
-              _NeonSeekBar(
+              _PlaybackProgress(
                 animationKey: ValueKey(
                   '${item.id}-${playing.paused}-${position.inMilliseconds}',
                 ),
                 progress: progress,
                 endProgress: playing.paused ? progress : 1,
                 animationDuration: playing.paused ? Duration.zero : remaining,
+                duration: duration,
                 enabled: duration > Duration.zero,
                 onSeekFraction: (fraction) {
                   onSeek(
@@ -698,25 +699,6 @@ class _NowPlayingCard extends StatelessWidget {
                     ),
                   );
                 },
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    _formatDuration(position),
-                    style: const TextStyle(
-                      color: MusicPlayerPalette.textSecondary,
-                      fontSize: 9,
-                    ),
-                  ),
-                  Text(
-                    _formatDuration(duration),
-                    style: const TextStyle(
-                      color: MusicPlayerPalette.textSecondary,
-                      fontSize: 9,
-                    ),
-                  ),
-                ],
               ),
             ],
           ),
@@ -765,19 +747,76 @@ class _NeonControlButton extends StatelessWidget {
   }
 }
 
-class _NeonSeekBar extends StatelessWidget {
+class _PlaybackProgress extends StatelessWidget {
   final Key animationKey;
   final double progress;
   final double endProgress;
   final Duration animationDuration;
+  final Duration duration;
   final bool enabled;
   final ValueChanged<double> onSeekFraction;
 
-  const _NeonSeekBar({
+  const _PlaybackProgress({
     required this.animationKey,
     required this.progress,
     required this.endProgress,
     required this.animationDuration,
+    required this.duration,
+    required this.enabled,
+    required this.onSeekFraction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return TweenAnimationBuilder<double>(
+      key: animationKey,
+      tween: Tween(begin: progress, end: endProgress),
+      duration: animationDuration,
+      builder: (context, value, _) {
+        final normalized = value.clamp(0.0, 1.0).toDouble();
+        final position = Duration(
+          microseconds: (duration.inMicroseconds * normalized).round(),
+        );
+        return Column(
+          children: [
+            _NeonSeekBar(
+              progress: normalized,
+              enabled: enabled,
+              onSeekFraction: onSeekFraction,
+            ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  _formatDuration(position),
+                  style: const TextStyle(
+                    color: MusicPlayerPalette.textSecondary,
+                    fontSize: 9,
+                  ),
+                ),
+                Text(
+                  _formatDuration(duration),
+                  style: const TextStyle(
+                    color: MusicPlayerPalette.textSecondary,
+                    fontSize: 9,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _NeonSeekBar extends StatelessWidget {
+  final double progress;
+  final bool enabled;
+  final ValueChanged<double> onSeekFraction;
+
+  const _NeonSeekBar({
+    required this.progress,
     required this.enabled,
     required this.onSeekFraction,
   });
@@ -803,67 +842,59 @@ class _NeonSeekBar extends StatelessWidget {
                       },
               child: SizedBox(
                 height: 13,
-                child: TweenAnimationBuilder<double>(
-                  key: animationKey,
-                  tween: Tween(begin: progress, end: endProgress),
-                  duration: animationDuration,
-                  builder: (context, value, _) {
-                    final normalized = value.clamp(0.0, 1.0).toDouble();
-                    return Stack(
-                      alignment: Alignment.centerLeft,
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          height: 3,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF4A2447),
-                            borderRadius: BorderRadius.circular(2),
+                child: Stack(
+                  alignment: Alignment.centerLeft,
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      height: 3,
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF4A2447),
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                    FractionallySizedBox(
+                      widthFactor: progress,
+                      child: Container(
+                        height: 4,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [
+                              MusicPlayerPalette.neonPink,
+                              MusicPlayerPalette.neonPinkBright,
+                            ],
                           ),
-                        ),
-                        FractionallySizedBox(
-                          widthFactor: normalized,
-                          child: Container(
-                            height: 4,
-                            decoration: BoxDecoration(
-                              gradient: const LinearGradient(
-                                colors: [
-                                  MusicPlayerPalette.neonPink,
-                                  MusicPlayerPalette.neonPinkBright,
-                                ],
+                          borderRadius: BorderRadius.circular(2),
+                          boxShadow: [
+                            BoxShadow(
+                              color: MusicPlayerPalette.neonPink.withValues(
+                                alpha: 0.72,
                               ),
-                              borderRadius: BorderRadius.circular(2),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: MusicPlayerPalette.neonPink.withValues(
-                                    alpha: 0.72,
-                                  ),
-                                  blurRadius: 8,
-                                ),
-                              ],
+                              blurRadius: 8,
                             ),
-                          ),
+                          ],
                         ),
-                        Align(
-                          alignment: Alignment(normalized * 2 - 1, 0),
-                          child: Container(
-                            width: 8,
-                            height: 8,
-                            decoration: const BoxDecoration(
-                              color: MusicPlayerPalette.neonPinkBright,
-                              shape: BoxShape.circle,
-                              boxShadow: [
-                                BoxShadow(
-                                  color: MusicPlayerPalette.neonPink,
-                                  blurRadius: 8,
-                                  spreadRadius: 1,
-                                ),
-                              ],
+                      ),
+                    ),
+                    Align(
+                      alignment: Alignment(progress * 2 - 1, 0),
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: MusicPlayerPalette.neonPinkBright,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: MusicPlayerPalette.neonPink,
+                              blurRadius: 8,
+                              spreadRadius: 1,
                             ),
-                          ),
+                          ],
                         ),
-                      ],
-                    );
-                  },
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

@@ -155,6 +155,35 @@ void main() {
     expect(requests.seekPositions.single.inSeconds, 135);
   });
 
+  testWidgets('current time advances with the seek bar during playback', (
+    tester,
+  ) async {
+    final requests = _FakeMusicRequests(_snapshot());
+    addTearDown(requests.dispose);
+
+    await tester.pumpWidget(
+      _TestSurface(
+        requests: requests,
+        collapseDelay: const Duration(hours: 1),
+        animationDuration: animationDuration,
+      ),
+    );
+
+    expect(find.text('1:00'), findsOneWidget);
+    final seekBar = find.byKey(const ValueKey('music_seek_bar'));
+    final initialFill = tester.widget<FractionallySizedBox>(
+      find.descendant(of: seekBar, matching: find.byType(FractionallySizedBox)),
+    );
+
+    await tester.pump(const Duration(seconds: 10));
+
+    final advancedFill = tester.widget<FractionallySizedBox>(
+      find.descendant(of: seekBar, matching: find.byType(FractionallySizedBox)),
+    );
+    expect(advancedFill.widthFactor, greaterThan(initialFill.widthFactor!));
+    expect(find.text('1:10'), findsOneWidget);
+  });
+
   testWidgets('localizes playback controls and every queue phase', (
     tester,
   ) async {
