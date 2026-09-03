@@ -6,7 +6,7 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings {
-  static const _kTwitchAuth = 'twitch_credentials';
+  static const _kTwitchAuth = 'twitch_login';
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
