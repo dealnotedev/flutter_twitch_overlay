@@ -3,6 +3,37 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 
 void main() {
+  testWidgets('surface paints a strong border above its content', (
+    tester,
+  ) async {
+    const surfaceKey = ValueKey('bordered_cosmic_surface');
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Center(
+          child: CosmicMusicSurface(
+            surfaceKey: surfaceKey,
+            width: 380,
+            height: 140,
+            child: SizedBox.expand(),
+          ),
+        ),
+      ),
+    );
+
+    final surface = tester.widget<Container>(find.byKey(surfaceKey));
+    final background = surface.decoration! as BoxDecoration;
+    final foreground = surface.foregroundDecoration! as BoxDecoration;
+    final border = foreground.border! as Border;
+
+    expect(background.border, isNull);
+    expect(border.top.width, 1.5);
+    expect(
+      border.top.color,
+      MusicPlayerPalette.neonPink.withValues(alpha: 0.58),
+    );
+  });
+
   test('particles respawn after drifting fully outside the surface', () {
     final motion = CosmicMusicMotion(seed: 950);
     addTearDown(motion.dispose);

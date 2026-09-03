@@ -106,12 +106,6 @@ class _CosmicMusicSurfaceState extends State<CosmicMusicSurface>
         decoration: BoxDecoration(
           color: MusicPlayerPalette.panel,
           borderRadius: radius,
-          border:
-              widget.drawBorder
-                  ? Border.all(
-                    color: MusicPlayerPalette.neonPink.withValues(alpha: 0.58),
-                  )
-                  : null,
           boxShadow:
               widget.drawShadow
                   ? [
@@ -130,6 +124,16 @@ class _CosmicMusicSurfaceState extends State<CosmicMusicSurface>
                   ]
                   : null,
         ),
+        foregroundDecoration:
+            widget.drawBorder
+                ? BoxDecoration(
+                  borderRadius: radius,
+                  border: Border.all(
+                    color: MusicPlayerPalette.neonPink.withValues(alpha: 0.58),
+                    width: 1.5,
+                  ),
+                )
+                : null,
         child: ClipRRect(
           borderRadius: radius,
           child: Stack(
