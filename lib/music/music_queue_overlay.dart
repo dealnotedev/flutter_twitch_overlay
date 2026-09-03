@@ -644,10 +644,6 @@ class _NowPlayingCard extends StatelessWidget {
                     ),
                   ),
                   _NeonControlButton(
-                    tooltip:
-                        playing.paused
-                            ? context.localizations.music_action_resume
-                            : context.localizations.music_action_pause,
                     icon:
                         playing.paused
                             ? Icons.play_arrow_rounded
@@ -657,7 +653,6 @@ class _NowPlayingCard extends StatelessWidget {
                   const Gap(6),
                   _NeonControlButton(
                     key: const ValueKey('music_skip_button'),
-                    tooltip: context.localizations.music_action_next,
                     icon: Icons.skip_next_rounded,
                     onPressed: onSkip,
                   ),
@@ -733,13 +728,11 @@ class _NowPlayingCard extends StatelessWidget {
 
 class _NeonControlButton extends StatelessWidget {
   final IconData icon;
-  final String tooltip;
   final VoidCallback onPressed;
 
   const _NeonControlButton({
     super.key,
     required this.icon,
-    required this.tooltip,
     required this.onPressed,
   });
 
@@ -763,7 +756,6 @@ class _NeonControlButton extends StatelessWidget {
       ),
       child: IconButton(
         padding: EdgeInsets.zero,
-        tooltip: tooltip,
         color: MusicPlayerPalette.neonPinkBright,
         iconSize: 20,
         onPressed: onPressed,
