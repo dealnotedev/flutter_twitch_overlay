@@ -86,3 +86,29 @@ on `obs_audio_events` with `event` set to `started`, `progress`, `ended`, or
 `error`, plus the numeric `id` and optional `session_id`. Until that callback is
 implemented, the MVP advances using the duration reported by `yt-dlp` plus a
 small grace period.
+
+## Optional Windows music controller
+
+The overlay owns the music queue, playback, and a loopback-only control server.
+The standalone controller in `apps/music_controller` is optional; closing it
+does not interrupt playback. Its player UI imports the same
+`MusicQueueOverlay` used by OBS.
+
+The default endpoint is `http://127.0.0.1:47821`. Override the port in the OBS
+source configuration and pass the same port to the controller when needed:
+
+```json
+{
+  "music_control_server_enabled": true,
+  "music_control_server_port": 47821
+}
+```
+
+```powershell
+cd apps\music_controller
+flutter run -d windows -- --port=47821
+```
+
+The local interface is versioned under `/v1`: `GET /health`, `GET /player`,
+`POST /player/commands`, and WebSocket `/player/events`. The server binds only
+to IPv4 loopback and rejects browser-originated requests.

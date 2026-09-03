@@ -39,6 +39,7 @@
   "music_action_next": "Наступний трек",
   "music_source_youtube": "YouTube",
   "music_preparing": "ГОТУЄМО МУЗИКУ",
+  "music_waiting_for_requests": "ОЧІКУЄМО МУЗИЧНІ ЗАПИТИ",
   "music_queue_status_resolving": "пошук",
   "music_queue_status_downloading": "завантаження",
   "music_queue_status_ready": "готово",
@@ -72,5 +73,18 @@
       "requester": { "type": "String" },
       "details": { "type": "String" }
     }
-  }
+  },
+  "music_control_title": "Керування музикою",
+  "music_control_connected": "Підключено до оверлею OBS",
+  "music_control_connecting": "Підключення до оверлею OBS…",
+  "music_control_reconnecting": "Спроба перепідключення {attempt} через {seconds} с",
+  "@music_control_reconnecting": {
+    "placeholders": {
+      "attempt": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "music_control_disconnected": "Оверлей OBS недоступний",
+  "music_control_incompatible": "Версії контролера та оверлею несумісні",
+  "music_control_closed": "Підключення закрито"
 }

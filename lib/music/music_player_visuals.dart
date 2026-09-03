@@ -32,6 +32,8 @@ class CosmicMusicSurface extends StatefulWidget {
   final double borderRadius;
   final bool compact;
   final bool drawBorder;
+  final bool drawShadow;
+  final Key? surfaceKey;
   final Key? backgroundKey;
 
   const CosmicMusicSurface({
@@ -43,6 +45,8 @@ class CosmicMusicSurface extends StatefulWidget {
     this.borderRadius = 18,
     this.compact = false,
     this.drawBorder = true,
+    this.drawShadow = true,
+    this.surfaceKey,
     this.backgroundKey,
   });
 
@@ -96,6 +100,7 @@ class _CosmicMusicSurfaceState extends State<CosmicMusicSurface>
 
     return RepaintBoundary(
       child: Container(
+        key: widget.surfaceKey,
         width: widget.width,
         height: widget.height,
         decoration: BoxDecoration(
@@ -107,20 +112,23 @@ class _CosmicMusicSurfaceState extends State<CosmicMusicSurface>
                     color: MusicPlayerPalette.neonPink.withValues(alpha: 0.58),
                   )
                   : null,
-          boxShadow: [
-            const BoxShadow(
-              color: Color(0x99000000),
-              blurRadius: 24,
-              offset: Offset(0, 9),
-            ),
-            BoxShadow(
-              color: MusicPlayerPalette.neonPink.withValues(
-                alpha: widget.compact ? 0.18 : 0.25,
-              ),
-              blurRadius: widget.compact ? 16 : 28,
-              spreadRadius: widget.compact ? 0 : 1,
-            ),
-          ],
+          boxShadow:
+              widget.drawShadow
+                  ? [
+                    const BoxShadow(
+                      color: Color(0x99000000),
+                      blurRadius: 24,
+                      offset: Offset(0, 9),
+                    ),
+                    BoxShadow(
+                      color: MusicPlayerPalette.neonPink.withValues(
+                        alpha: widget.compact ? 0.18 : 0.25,
+                      ),
+                      blurRadius: widget.compact ? 16 : 28,
+                      spreadRadius: widget.compact ? 0 : 1,
+                    ),
+                  ]
+                  : null,
         ),
         child: ClipRRect(
           borderRadius: radius,

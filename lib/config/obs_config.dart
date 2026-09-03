@@ -16,6 +16,8 @@ class ObsConfig {
     'music_max_duration_seconds': 600,
     'music_cache_max_mb': 2048,
     'music_volume_percent': 70,
+    'music_control_server_enabled': true,
+    'music_control_server_port': 47821,
     'followers': true,
     'follow_animation_renderer': 'optimized',
     'follow_avatar_resolution': 48,

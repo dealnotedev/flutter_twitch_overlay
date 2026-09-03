@@ -233,6 +233,33 @@ void main() {
     expect(find.text('Viewer · ready'), findsOneWidget);
     expect(find.text('Viewer: invalid YouTube URL'), findsOneWidget);
   });
+
+  testWidgets('forced expanded mode renders the complete queue', (
+    tester,
+  ) async {
+    final requests = _FakeMusicRequests(
+      _snapshot(
+        queue: List.generate(6, (index) => _queueItem('queued-$index')),
+      ),
+    );
+    addTearDown(requests.dispose);
+
+    await tester.pumpWidget(
+      _TestSurface(
+        requests: requests,
+        collapseDelay: collapseDelay,
+        animationDuration: animationDuration,
+        alwaysExpanded: true,
+        maxVisibleQueueItems: null,
+      ),
+    );
+    await tester.pump(collapseDelay + animationDuration);
+
+    expect(find.byKey(const ValueKey('music_player_expanded')), findsOneWidget);
+    expect(find.byKey(const ValueKey('music_player_compact')), findsNothing);
+    expect(find.text('Track queued-5'), findsOneWidget);
+    expect(find.textContaining('у черзі'), findsNothing);
+  });
 }
 
 Future<void> _collapse(
@@ -289,12 +316,16 @@ class _TestSurface extends StatelessWidget {
   final Duration collapseDelay;
   final Duration animationDuration;
   final Locale locale;
+  final bool alwaysExpanded;
+  final int? maxVisibleQueueItems;
 
   const _TestSurface({
     required this.requests,
     required this.collapseDelay,
     required this.animationDuration,
     this.locale = const Locale('uk'),
+    this.alwaysExpanded = false,
+    this.maxVisibleQueueItems = 3,
   });
 
   @override
@@ -313,6 +344,8 @@ class _TestSurface extends StatelessWidget {
                 requests: requests,
                 collapseDelay: collapseDelay,
                 animationDuration: animationDuration,
+                alwaysExpanded: alwaysExpanded,
+                maxVisibleQueueItems: maxVisibleQueueItems,
               ),
             ),
           ],

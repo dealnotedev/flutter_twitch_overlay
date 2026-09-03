@@ -5,6 +5,8 @@ import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/music/music_file_cache.dart';
+import 'package:obssource/music/control/music_control_protocol.dart';
+import 'package:obssource/music/control/music_control_server.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_tool_paths.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
@@ -14,8 +16,16 @@ import 'package:obssource/twitch/ws_manager.dart';
 class AppServiceLocator extends ServiceLocator {
   static late final AppServiceLocator instance;
 
-  static AppServiceLocator init(Settings settings, ObsConfig config) {
-    instance = AppServiceLocator._(settings, config);
+  static AppServiceLocator init(
+    Settings settings,
+    ObsConfig config, {
+    bool startMusicControlServer = false,
+  }) {
+    instance = AppServiceLocator._(
+      settings,
+      config,
+      startMusicControlServer: startMusicControlServer,
+    );
     return instance;
   }
 
@@ -23,8 +33,13 @@ class AppServiceLocator extends ServiceLocator {
   final ObsConfig config;
   final Map<Type, Object> map = {};
   late final StreamSubscription<Config> _musicVolumeSubscription;
+  MusicControlServer? _musicControlServer;
 
-  AppServiceLocator._(this.settings, this.config) {
+  AppServiceLocator._(
+    this.settings,
+    this.config, {
+    required bool startMusicControlServer,
+  }) {
     final wsManager = WebSocketManager(
       'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30',
       settings,
@@ -78,6 +93,28 @@ class AppServiceLocator extends ServiceLocator {
     map[ObsAudioMusicTrackPlayer] = musicPlayer;
     map[MusicRequests] = musicRequests;
 
+    if (startMusicControlServer &&
+        config.getBool('music_control_server_enabled', fallback: true)) {
+      final configuredPort = config.getInt(
+        'music_control_server_port',
+        fallback: MusicControlProtocol.defaultPort,
+      );
+      final server = MusicControlServer(
+        requests: musicRequests,
+        requestedPort:
+            configuredPort > 0 && configuredPort <= 65535
+                ? configuredPort
+                : MusicControlProtocol.defaultPort,
+      );
+      _musicControlServer = server;
+      map[MusicControlServer] = server;
+      unawaited(
+        server.start().catchError((Object error) {
+          stderr.writeln('Unable to start music control server: $error');
+        }),
+      );
+    }
+
     _musicVolumeSubscription = config.config.changes.listen((_) {
       unawaited(musicPlayer.setVolume(_musicVolume(config)));
     });
@@ -88,6 +125,7 @@ class AppServiceLocator extends ServiceLocator {
 
   Future<void> close() async {
     await _musicVolumeSubscription.cancel();
+    await _musicControlServer?.close();
     await (map[MusicRequests]! as MusicRequests).close();
   }
 }

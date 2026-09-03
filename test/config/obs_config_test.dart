@@ -27,6 +27,7 @@ void main() {
     );
     expect(config.getInt('music_max_queue', fallback: 1), 10);
     expect(config.getInt('music_cache_max_mb', fallback: 1), 2048);
+    expect(config.getInt('music_control_server_port', fallback: 1), 47821);
   });
 
   group('ObsConfig.getBool', () {
@@ -35,6 +36,10 @@ void main() {
 
       expect(config.getBool('followers'), isTrue);
       expect(config.getBool('music_enabled', fallback: false), isTrue);
+      expect(
+        config.getBool('music_control_server_enabled', fallback: false),
+        isTrue,
+      );
       expect(config.getBool('subscriptions'), isFalse);
       expect(config.getBool('subscriptions', fallback: true), isTrue);
     });

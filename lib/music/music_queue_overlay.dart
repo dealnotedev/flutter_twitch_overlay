@@ -8,17 +8,29 @@ import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_requests.dart';
 
+enum MusicQueuePresentation { floatingOverlay, controllerCanvas }
+
 class MusicQueueOverlay extends StatefulWidget {
   final MusicRequests requests;
   final Duration collapseDelay;
   final Duration animationDuration;
+  final bool alwaysExpanded;
+  final bool showWhenEmpty;
+  final int? maxVisibleQueueItems;
+  final MusicQueuePresentation presentation;
+  final ScrollController? scrollController;
 
   const MusicQueueOverlay({
     super.key,
     required this.requests,
     this.collapseDelay = const Duration(seconds: 3),
     this.animationDuration = const Duration(milliseconds: 420),
-  });
+    this.alwaysExpanded = false,
+    this.showWhenEmpty = false,
+    this.maxVisibleQueueItems = 3,
+    this.presentation = MusicQueuePresentation.floatingOverlay,
+    this.scrollController,
+  }) : assert(maxVisibleQueueItems == null || maxVisibleQueueItems >= 0);
 
   @override
   State<MusicQueueOverlay> createState() => _MusicQueueOverlayState();
@@ -32,6 +44,7 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
   bool _hovered = false;
 
   bool get _hasContent =>
+      widget.showWhenEmpty ||
       _snapshot.nowPlaying != null ||
       _snapshot.queue.isNotEmpty ||
       _snapshot.lastError != null;
@@ -41,7 +54,7 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
     super.initState();
     _snapshot = widget.requests.current;
     _subscribe();
-    if (_hasContent) _scheduleCollapse();
+    if (_hasContent && !widget.alwaysExpanded) _scheduleCollapse();
   }
 
   @override
@@ -54,7 +67,7 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
     _snapshot = widget.requests.current;
     _expanded = true;
     _subscribe();
-    if (_hasContent) _scheduleCollapse();
+    if (_hasContent && !widget.alwaysExpanded) _scheduleCollapse();
   }
 
   void _subscribe() {
@@ -80,17 +93,20 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
   }
 
   void _handlePointerEnter(PointerEnterEvent event) {
+    if (widget.alwaysExpanded) return;
     _hovered = true;
     _collapseTimer?.cancel();
     if (!_expanded) setState(() => _expanded = true);
   }
 
   void _handlePointerExit(PointerExitEvent event) {
+    if (widget.alwaysExpanded) return;
     _hovered = false;
     _scheduleCollapse();
   }
 
   void _expandFromTap() {
+    if (widget.alwaysExpanded) return;
     if (_expanded) return;
     _collapseTimer?.cancel();
     setState(() => _expanded = true);
@@ -99,7 +115,7 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
 
   void _scheduleCollapse() {
     _collapseTimer?.cancel();
-    if (!_hasContent || _hovered) return;
+    if (widget.alwaysExpanded || !_hasContent || _hovered) return;
 
     _collapseTimer = Timer(widget.collapseDelay, () {
       if (!mounted || _hovered || !_expanded) return;
@@ -117,6 +133,24 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
   @override
   Widget build(BuildContext context) {
     if (!_hasContent) return const SizedBox.shrink();
+
+    final expandedPlayer = _ExpandedMusicPlayer(
+      key: const ValueKey('music_player_expanded'),
+      state: _snapshot,
+      onPausedChanged:
+          (paused) => unawaited(widget.requests.setPaused(paused)),
+      onSeek: (position) => unawaited(widget.requests.seek(position)),
+      onSkip: () => unawaited(widget.requests.skip()),
+      onRemove: (itemId) => unawaited(widget.requests.remove(itemId)),
+      maxVisibleQueueItems: widget.maxVisibleQueueItems,
+      fillAvailableSpace:
+          widget.presentation == MusicQueuePresentation.controllerCanvas,
+      scrollController: widget.scrollController,
+    );
+
+    if (widget.presentation == MusicQueuePresentation.controllerCanvas) {
+      return expandedPlayer;
+    }
 
     return MouseRegion(
       key: const ValueKey('music_queue_overlay'),
@@ -159,20 +193,8 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
               );
             },
             child:
-                _expanded
-                    ? _ExpandedMusicPlayer(
-                      key: const ValueKey('music_player_expanded'),
-                      state: _snapshot,
-                      onPausedChanged:
-                          (paused) =>
-                              unawaited(widget.requests.setPaused(paused)),
-                      onSeek:
-                          (position) =>
-                              unawaited(widget.requests.seek(position)),
-                      onSkip: () => unawaited(widget.requests.skip()),
-                      onRemove:
-                          (itemId) => unawaited(widget.requests.remove(itemId)),
-                    )
+                (_expanded || widget.alwaysExpanded)
+                    ? expandedPlayer
                     : _CompactMusicPlayer(
                       key: const ValueKey('music_player_compact'),
                       state: _snapshot,
@@ -190,6 +212,9 @@ class _ExpandedMusicPlayer extends StatelessWidget {
   final ValueChanged<Duration> onSeek;
   final VoidCallback onSkip;
   final ValueChanged<String> onRemove;
+  final int? maxVisibleQueueItems;
+  final bool fillAvailableSpace;
+  final ScrollController? scrollController;
 
   const _ExpandedMusicPlayer({
     super.key,
@@ -198,84 +223,112 @@ class _ExpandedMusicPlayer extends StatelessWidget {
     required this.onSeek,
     required this.onSkip,
     required this.onRemove,
+    required this.maxVisibleQueueItems,
+    required this.fillAvailableSpace,
+    this.scrollController,
   });
 
   @override
   Widget build(BuildContext context) {
+    final visibleQueue =
+        maxVisibleQueueItems == null
+            ? state.queue
+            : state.queue.take(maxVisibleQueueItems!).toList(growable: false);
+    final hiddenQueueCount = state.queue.length - visibleQueue.length;
+
+    final content = Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (state.nowPlaying case final playing?)
+          _NowPlayingCard(
+            playing: playing,
+            onPausedChanged: onPausedChanged,
+            onSeek: onSeek,
+            onSkip: onSkip,
+          )
+        else
+          _WaitingForTrack(preparing: state.queue.isNotEmpty),
+        if (state.queue.isNotEmpty) ...[
+          const Gap(12),
+          Text(
+            context.localizations.music_queue_next,
+            style: const TextStyle(
+              color: MusicPlayerPalette.neonPinkBright,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2.2,
+              shadows: MusicPlayerPalette.pinkTextGlow,
+            ),
+          ),
+          const Gap(7),
+          ...visibleQueue.map(
+            (item) =>
+                _QueueRow(item: item, onRemove: () => onRemove(item.id)),
+          ),
+          if (hiddenQueueCount > 0)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                context.localizations.music_queue_more(hiddenQueueCount),
+                style: const TextStyle(
+                  color: MusicPlayerPalette.textSecondary,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+        ],
+        if (state.lastError case final error?) ...[
+          const Gap(10),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: MusicPlayerPalette.neonPink.withValues(alpha: 0.10),
+              borderRadius: BorderRadius.circular(9),
+              border: Border.all(
+                color: MusicPlayerPalette.error.withValues(alpha: 0.42),
+              ),
+            ),
+            child: Text(
+              _localizedMusicError(context, error),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: MusicPlayerPalette.error,
+                fontSize: 12,
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+
+    if (fillAvailableSpace) {
+      return CosmicMusicSurface(
+        surfaceKey: const ValueKey('music_controller_player_surface'),
+        backgroundKey: const ValueKey('music_cosmic_expanded_background'),
+        width: double.infinity,
+        height: double.infinity,
+        borderRadius: 0,
+        drawBorder: false,
+        drawShadow: false,
+        child: Scrollbar(
+          controller: scrollController,
+          thumbVisibility: scrollController != null,
+          child: SingleChildScrollView(
+            controller: scrollController,
+            padding: const EdgeInsets.fromLTRB(24, 20, 24, 24),
+            child: content,
+          ),
+        ),
+      );
+    }
+
     return CosmicMusicSurface(
       backgroundKey: const ValueKey('music_cosmic_expanded_background'),
       width: 380,
       padding: const EdgeInsets.all(18),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          if (state.nowPlaying case final playing?)
-            _NowPlayingCard(
-              playing: playing,
-              onPausedChanged: onPausedChanged,
-              onSeek: onSeek,
-              onSkip: onSkip,
-            )
-          else
-            const _WaitingForTrack(),
-          if (state.queue.isNotEmpty) ...[
-            const Gap(12),
-            Text(
-              context.localizations.music_queue_next,
-              style: const TextStyle(
-                color: MusicPlayerPalette.neonPinkBright,
-                fontSize: 11,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2.2,
-                shadows: MusicPlayerPalette.pinkTextGlow,
-              ),
-            ),
-            const Gap(7),
-            ...state.queue
-                .take(3)
-                .map(
-                  (item) =>
-                      _QueueRow(item: item, onRemove: () => onRemove(item.id)),
-                ),
-            if (state.queue.length > 3)
-              Padding(
-                padding: const EdgeInsets.only(top: 4),
-                child: Text(
-                  context.localizations.music_queue_more(
-                    state.queue.length - 3,
-                  ),
-                  style: const TextStyle(
-                    color: MusicPlayerPalette.textSecondary,
-                    fontSize: 11,
-                  ),
-                ),
-              ),
-          ],
-          if (state.lastError case final error?) ...[
-            const Gap(10),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-              decoration: BoxDecoration(
-                color: MusicPlayerPalette.neonPink.withValues(alpha: 0.10),
-                borderRadius: BorderRadius.circular(9),
-                border: Border.all(
-                  color: MusicPlayerPalette.error.withValues(alpha: 0.42),
-                ),
-              ),
-              child: Text(
-                _localizedMusicError(context, error),
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                style: const TextStyle(
-                  color: MusicPlayerPalette.error,
-                  fontSize: 12,
-                ),
-              ),
-            ),
-          ],
-        ],
-      ),
+      child: content,
     );
   }
 }
@@ -649,12 +702,17 @@ class _NowPlayingCard extends StatelessWidget {
                             ? Icons.play_arrow_rounded
                             : Icons.pause_rounded,
                     onPressed: () => onPausedChanged(!playing.paused),
+                    tooltip:
+                        playing.paused
+                            ? context.localizations.music_action_resume
+                            : context.localizations.music_action_pause,
                   ),
                   const Gap(6),
                   _NeonControlButton(
                     key: const ValueKey('music_skip_button'),
                     icon: Icons.skip_next_rounded,
                     onPressed: onSkip,
+                    tooltip: context.localizations.music_action_next,
                   ),
                 ],
               ),
@@ -711,11 +769,13 @@ class _NowPlayingCard extends StatelessWidget {
 class _NeonControlButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onPressed;
+  final String tooltip;
 
   const _NeonControlButton({
     super.key,
     required this.icon,
     required this.onPressed,
+    required this.tooltip,
   });
 
   @override
@@ -741,6 +801,7 @@ class _NeonControlButton extends StatelessWidget {
         color: MusicPlayerPalette.neonPinkBright,
         iconSize: 20,
         onPressed: onPressed,
+        tooltip: tooltip,
         icon: Icon(icon),
       ),
     );
@@ -904,7 +965,9 @@ class _NeonSeekBar extends StatelessWidget {
 }
 
 class _WaitingForTrack extends StatelessWidget {
-  const _WaitingForTrack();
+  final bool preparing;
+
+  const _WaitingForTrack({required this.preparing});
 
   @override
   Widget build(BuildContext context) {
@@ -919,23 +982,36 @@ class _WaitingForTrack extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const SizedBox(
-            width: 18,
-            height: 18,
-            child: CircularProgressIndicator(
-              strokeWidth: 2,
+          if (preparing)
+            const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: MusicPlayerPalette.neonPink,
+              ),
+            )
+          else
+            const Icon(
+              Icons.music_note_rounded,
               color: MusicPlayerPalette.neonPink,
+              size: 18,
             ),
-          ),
           const Gap(10),
-          Text(
-            context.localizations.music_preparing,
-            style: const TextStyle(
-              color: MusicPlayerPalette.neonPinkBright,
-              fontSize: 12,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.1,
-              shadows: MusicPlayerPalette.pinkTextGlow,
+          Expanded(
+            child: Text(
+              preparing
+                  ? context.localizations.music_preparing
+                  : context.localizations.music_waiting_for_requests,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: MusicPlayerPalette.neonPinkBright,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 1.1,
+                shadows: MusicPlayerPalette.pinkTextGlow,
+              ),
             ),
           ),
         ],

@@ -39,6 +39,7 @@
   "music_action_next": "Next track",
   "music_source_youtube": "YouTube",
   "music_preparing": "PREPARING MUSIC",
+  "music_waiting_for_requests": "WAITING FOR MUSIC REQUESTS",
   "music_queue_status_resolving": "searching",
   "music_queue_status_downloading": "downloading",
   "music_queue_status_ready": "ready",
@@ -72,5 +73,18 @@
       "requester": { "type": "String" },
       "details": { "type": "String" }
     }
-  }
+  },
+  "music_control_title": "Music controller",
+  "music_control_connected": "Connected to the OBS overlay",
+  "music_control_connecting": "Connecting to the OBS overlay…",
+  "music_control_reconnecting": "Reconnect attempt {attempt} in {seconds}s",
+  "@music_control_reconnecting": {
+    "placeholders": {
+      "attempt": { "type": "int" },
+      "seconds": { "type": "int" }
+    }
+  },
+  "music_control_disconnected": "OBS overlay is unavailable",
+  "music_control_incompatible": "Controller and overlay versions are incompatible",
+  "music_control_closed": "Connection closed"
 }
