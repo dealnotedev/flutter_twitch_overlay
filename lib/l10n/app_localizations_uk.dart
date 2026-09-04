@@ -132,7 +132,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get overlay_settings_reward_description =>
-      'Оберіть винагороду Twitch, якою керує застосунок. Оновіть список після змін у Twitch.';
+      'Оберіть керовану винагороду, яка вимагає текст від глядача та залишає погашення в черзі. Оновіть список після змін у Twitch.';
 
   @override
   String get overlay_settings_create_reward => 'Створити';

@@ -11,6 +11,9 @@ import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_tool_paths.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
 import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
+import 'package:obssource/secrets.dart';
+import 'package:obssource/twitch/twitch_api.dart';
+import 'package:obssource/twitch/twitch_redemption_service.dart';
 import 'package:obssource/twitch/ws_manager.dart';
 
 class AppServiceLocator extends ServiceLocator {
@@ -71,6 +74,10 @@ class AppServiceLocator extends ServiceLocator {
       cache: musicCache,
     );
     final musicPlayer = ObsAudioMusicTrackPlayer(volume: _musicVolume(config));
+    final redemptionService = TwitchApiRedemptionService(
+      api: TwitchApi(settings: settings, clientSecret: twitchClientSecret),
+      settings: settings,
+    );
     final musicRequests = MusicRequestManager(
       events: wsManager.messages,
       fetcher: trackFetcher,
@@ -82,6 +89,7 @@ class AppServiceLocator extends ServiceLocator {
       ),
       rewardId: settings.musicRewardId,
       rewardIdChanges: settings.musicRewardIdChanges,
+      redemptionService: redemptionService,
     );
 
     map[Settings] = settings;
@@ -89,6 +97,7 @@ class AppServiceLocator extends ServiceLocator {
     map[ServiceLocator] = this;
     map[WebSocketManager] = wsManager;
     map[ObsAudioMusicTrackPlayer] = musicPlayer;
+    map[TwitchRedemptionService] = redemptionService;
     map[MusicRequests] = musicRequests;
 
     if (startMusicControlServer &&

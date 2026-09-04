@@ -49,7 +49,10 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
       final selectedId = _selectedRewardId;
       final selectionStillExists =
           selectedId == null ||
-          rewards.any((reward) => reward.id == selectedId);
+          rewards.any(
+            (reward) =>
+                reward.id == selectedId && reward.isMusicRequestCompatible,
+          );
       if (!selectionStillExists) {
         await widget.settings.saveMusicRewardId(null);
       }
@@ -96,6 +99,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   }
 
   Future<void> _selectReward(TwitchCustomReward reward) async {
+    if (!reward.isMusicRequestCompatible) return;
     final previousId = _selectedRewardId;
     setState(() {
       _selectedRewardId = reward.id;
@@ -396,7 +400,10 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
                     key: ValueKey('twitch_reward_${reward.id}'),
                     reward: reward,
                     selected: reward.id == _selectedRewardId,
-                    onPressed: () => _selectReward(reward),
+                    onPressed:
+                        reward.isMusicRequestCompatible
+                            ? () => _selectReward(reward)
+                            : null,
                   ),
               ],
             ),
@@ -483,7 +490,7 @@ class _SettingsAction extends StatelessWidget {
 class _TwitchRewardCard extends StatefulWidget {
   final TwitchCustomReward reward;
   final bool selected;
-  final VoidCallback onPressed;
+  final VoidCallback? onPressed;
 
   const _TwitchRewardCard({
     super.key,
@@ -511,7 +518,10 @@ class _TwitchRewardCardState extends State<_TwitchRewardCard> {
       selected: widget.selected,
       label: '${reward.title}, ${reward.cost}',
       child: MouseRegion(
-        cursor: SystemMouseCursors.click,
+        cursor:
+            widget.onPressed == null
+                ? SystemMouseCursors.basic
+                : SystemMouseCursors.click,
         onEnter: (_) => setState(() => _hovered = true),
         onExit: (_) => setState(() => _hovered = false),
         child: GestureDetector(

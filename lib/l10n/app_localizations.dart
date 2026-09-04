@@ -304,7 +304,7 @@ abstract class AppLocalizations {
   /// No description provided for @overlay_settings_reward_description.
   ///
   /// In en, this message translates to:
-  /// **'Choose an app-managed Twitch reward. Refresh after editing rewards on Twitch.'**
+  /// **'Choose an app-managed reward that requires viewer input and keeps redemptions in the queue. Refresh after editing it on Twitch.'**
   String get overlay_settings_reward_description;
 
   /// No description provided for @overlay_settings_create_reward.

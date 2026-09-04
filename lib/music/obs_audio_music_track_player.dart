@@ -5,6 +5,7 @@ import 'package:obssource/obs_audio.dart';
 
 class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
   final Duration completionGrace;
+  final Duration nativeEventTimeout;
 
   double _volume;
 
@@ -16,6 +17,7 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
   ObsAudioMusicTrackPlayer({
     required double volume,
     this.completionGrace = const Duration(seconds: 2),
+    this.nativeEventTimeout = const Duration(seconds: 10),
   }) : _volume = _normalizeVolume(volume);
 
   double get volume => _volume;
@@ -25,18 +27,23 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
     _pauseRequested = false;
     _seekRequested = null;
     final generation = ++_generation;
-    final audioId = await ObsAudio.loadFile(track.filePath);
+    final sessionId = '${track.itemId}-$generation';
+    final audioId = await ObsAudio.loadFile(
+      track.filePath,
+      sessionId: sessionId,
+    );
 
     if (generation != _generation) {
       await ObsAudio.release(audioId);
       return;
     }
 
-    final sessionId = '${track.itemId}-$generation';
     final completer = Completer<void>();
+    final startedCompleter = Completer<void>();
     final active = _ActivePlayback(
       audioId: audioId,
       completer: completer,
+      startedCompleter: startedCompleter,
       totalDuration: track.metadata.duration + completionGrace,
     );
     _active = active;
@@ -49,17 +56,23 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
         )
         .listen((event) {
           switch (event.type) {
-            case ObsAudioEventType.started:
+            case ObsAudioEventType.loaded:
             case ObsAudioEventType.progress:
+              break;
+            case ObsAudioEventType.started:
+              if (!startedCompleter.isCompleted) startedCompleter.complete();
               break;
             case ObsAudioEventType.ended:
               if (!completer.isCompleted) completer.complete();
               break;
             case ObsAudioEventType.error:
-              if (!completer.isCompleted) {
-                completer.completeError(
-                  StateError(event.message ?? 'Native audio playback failed'),
-                );
+              final error = StateError(
+                event.message ?? 'Native audio playback failed',
+              );
+              if (!startedCompleter.isCompleted) {
+                startedCompleter.completeError(error);
+              } else if (!completer.isCompleted) {
+                completer.completeError(error);
               }
               break;
           }
@@ -67,7 +80,20 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
 
     try {
       final startedVolume = _volume;
-      await ObsAudio.play(audioId, volume: startedVolume, sessionId: sessionId);
+      final eventsSupported = await ObsAudio.play(
+        audioId,
+        volume: startedVolume,
+        sessionId: sessionId,
+      );
+      if (eventsSupported) {
+        await startedCompleter.future.timeout(
+          nativeEventTimeout,
+          onTimeout:
+              () =>
+                  throw StateError('Native audio start confirmation timed out'),
+        );
+      }
+      if (generation != _generation) return;
       active.started = true;
 
       var appliedVolume = startedVolume;
@@ -152,6 +178,9 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
     final active = _active;
     if (active == null) return;
 
+    if (!active.startedCompleter.isCompleted) {
+      active.startedCompleter.complete();
+    }
     if (!active.completer.isCompleted) {
       active.completer.complete();
     }
@@ -167,6 +196,7 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
 class _ActivePlayback {
   final int audioId;
   final Completer<void> completer;
+  final Completer<void> startedCompleter;
   final Duration totalDuration;
   Duration remaining;
 
@@ -177,6 +207,7 @@ class _ActivePlayback {
   _ActivePlayback({
     required this.audioId,
     required this.completer,
+    required this.startedCompleter,
     required this.totalDuration,
   }) : remaining = totalDuration;
 

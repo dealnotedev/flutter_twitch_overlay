@@ -3,6 +3,8 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/twitch/twitch_redemption.dart';
+import 'package:obssource/twitch/twitch_redemption_service.dart';
 import 'package:obssource/twitch/ws_event.dart';
 
 void main() {
@@ -10,6 +12,7 @@ void main() {
   late Directory cache;
   late _FakeFetcher fetcher;
   late _FakePlayer player;
+  late _FakeRedemptionService redemptions;
   MusicRequestManager? manager;
 
   setUp(() async {
@@ -17,6 +20,7 @@ void main() {
     cache = await Directory.systemTemp.createTemp('music_requests_test_');
     fetcher = _FakeFetcher(cache);
     player = _FakePlayer();
+    redemptions = _FakeRedemptionService();
   });
 
   tearDown(() async {
@@ -28,16 +32,18 @@ void main() {
   MusicRequestManager createManager({
     String? rewardId = 'reward-1',
     Stream<String?>? rewardIdChanges,
+    int maxQueueLength = 10,
   }) {
     return manager = MusicRequestManager(
       events: events.stream,
       fetcher: fetcher,
       player: player,
       enabled: true,
-      maxQueueLength: 10,
+      maxQueueLength: maxQueueLength,
       maxDuration: const Duration(minutes: 10),
       rewardId: rewardId,
       rewardIdChanges: rewardIdChanges,
+      redemptionService: redemptions,
     );
   }
 
@@ -97,7 +103,11 @@ void main() {
     events.add(
       _redemption(id: 'one', input: 'https://example.com/not-youtube'),
     );
-    await _waitUntil(() => subject.current.lastError != null);
+    await _waitUntil(
+      () =>
+          subject.current.lastError != null &&
+          redemptions.settlements.isNotEmpty,
+    );
 
     expect(
       subject.current.lastError?.type,
@@ -106,6 +116,124 @@ void main() {
     expect(subject.current.lastError?.requester, 'Viewer one');
     expect(fetcher.inspected, isEmpty);
     expect(player.played, isEmpty);
+    expect(redemptions.settlements.single.redemptionId, 'one');
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('refunds a redemption with missing viewer input', () async {
+    final subject = createManager();
+
+    events.add(_redemption(id: 'one', input: '  '));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.missingYoutubeUrl,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('refunds a redemption when the queue is full', () async {
+    final subject = createManager(maxQueueLength: 1);
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    events.add(_redemption(id: 'two', input: 'https://youtu.be/two'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(subject.current.lastError?.type, MusicQueueErrorType.queueFull);
+    expect(redemptions.settlements.single.redemptionId, 'two');
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('refunds a track that is too long', () async {
+    final subject = createManager();
+    fetcher.inspectedDuration = const Duration(minutes: 11);
+
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.trackTooLongOrLive,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('refunds a redemption when track preparation fails', () async {
+    final subject = createManager();
+    fetcher.inspectError = StateError('yt-dlp failed');
+
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.operationFailed,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('fulfills a redemption after normal playback completion', () async {
+    final subject = createManager();
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    player.finishCurrent();
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(redemptions.settlements.single.redemptionId, 'one');
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.fulfilled,
+    );
+    expect(subject.current.nowPlaying, isNull);
+  });
+
+  test('fulfills a redemption when playback is skipped', () async {
+    final subject = createManager();
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    expect(await subject.skip(), isTrue);
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.fulfilled,
+    );
+  });
+
+  test('refunds a redemption when playback fails', () async {
+    final subject = createManager();
+    player.playError = StateError('native player failed');
+
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.operationFailed,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
   });
 
   test('downloads and plays accepted requests in FIFO order', () async {
@@ -184,6 +312,12 @@ void main() {
     expect(subject.current.queue, isEmpty);
     expect(await queuedFile.exists(), isTrue);
     expect(await subject.remove('one'), isFalse);
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+    expect(redemptions.settlements.single.redemptionId, 'two');
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
   });
 
   test('removing the track being downloaded cancels the fetcher', () async {
@@ -196,7 +330,38 @@ void main() {
 
     expect(subject.current.queue, isEmpty);
     expect(fetcher.cancelCount, 1);
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
   });
+
+  test('does not retry a failed Twitch status update', () async {
+    redemptions.settleError = StateError('network unavailable');
+    createManager();
+
+    events.add(_redemption(id: 'one', input: 'not a YouTube URL'));
+    await _waitUntil(() => redemptions.settlements.length == 1);
+    events.add(_redemption(id: 'one', input: 'not a YouTube URL'));
+    await _flushEvents();
+
+    expect(redemptions.settlements.length, 1);
+  });
+
+  test(
+    'does not settle active playback while the application is closing',
+    () async {
+      final subject = createManager();
+      events.add(_redemption(id: 'one'));
+      await _waitUntil(() => player.played.length == 1);
+
+      await subject.close();
+      manager = null;
+
+      expect(redemptions.settlements, isEmpty);
+    },
+  );
 }
 
 WsMessage _redemption({
@@ -244,12 +409,17 @@ class _FakeFetcher implements MusicTrackFetcher {
   final Set<String> blockedDownloads = {};
   final Map<String, Completer<void>> activeBlocks = {};
   int cancelCount = 0;
+  Duration inspectedDuration = const Duration(minutes: 3);
+  Object? inspectError;
+  Object? downloadError;
 
   _FakeFetcher(this.cache);
 
   @override
   Future<MusicTrackMetadata> inspect(Uri sourceUrl) async {
     inspected.add(sourceUrl);
+    final inspectError = this.inspectError;
+    if (inspectError != null) throw inspectError;
     final videoId =
         sourceUrl.pathSegments.lastOrNull ??
         sourceUrl.queryParameters['v'] ??
@@ -258,7 +428,7 @@ class _FakeFetcher implements MusicTrackFetcher {
       videoId: videoId,
       title: 'Track $videoId',
       author: 'Artist',
-      duration: const Duration(minutes: 3),
+      duration: inspectedDuration,
       thumbnail: null,
       sourceUrl: sourceUrl,
     );
@@ -270,6 +440,8 @@ class _FakeFetcher implements MusicTrackFetcher {
     required void Function(MusicDownloadProgress progress) onProgress,
   }) async {
     downloaded.add(metadata.sourceUrl);
+    final downloadError = this.downloadError;
+    if (downloadError != null) throw downloadError;
     if (blockedDownloads.contains(metadata.videoId)) {
       final blocker = Completer<void>();
       activeBlocks[metadata.videoId] = blocker;
@@ -305,10 +477,13 @@ class _FakePlayer implements MusicTrackPlayer {
   final List<bool> pauseChanges = [];
   final List<Duration> seekPositions = [];
   Completer<void>? _current;
+  Object? playError;
 
   @override
   Future<void> play(DownloadedMusicTrack track) async {
     played.add(track);
+    final playError = this.playError;
+    if (playError != null) throw playError;
     final completer = Completer<void>();
     _current = completer;
     await completer.future;
@@ -331,6 +506,40 @@ class _FakePlayer implements MusicTrackPlayer {
 
   @override
   Future<void> stop() async => finishCurrent();
+}
+
+class _FakeRedemptionService implements TwitchRedemptionService {
+  final List<_Settlement> settlements = [];
+  Object? settleError;
+
+  @override
+  Future<void> settle({
+    required String rewardId,
+    required String redemptionId,
+    required TwitchRedemptionStatus status,
+  }) async {
+    settlements.add(
+      _Settlement(
+        rewardId: rewardId,
+        redemptionId: redemptionId,
+        status: status,
+      ),
+    );
+    final error = settleError;
+    if (error != null) throw error;
+  }
+}
+
+class _Settlement {
+  final String rewardId;
+  final String redemptionId;
+  final TwitchRedemptionStatus status;
+
+  const _Settlement({
+    required this.rewardId,
+    required this.redemptionId,
+    required this.status,
+  });
 }
 
 extension on List<String> {

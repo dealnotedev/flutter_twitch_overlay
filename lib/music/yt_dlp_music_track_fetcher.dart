@@ -5,6 +5,9 @@ import 'dart:io';
 import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/music_requests.dart';
 
+typedef MusicProcessStarter =
+    Future<Process> Function(String executable, List<String> arguments);
+
 class YtDlpException implements Exception {
   final String message;
   final int? exitCode;
@@ -26,6 +29,7 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
   final MusicFileCache cache;
   final Duration inspectTimeout;
   final Duration downloadTimeout;
+  final MusicProcessStarter _processStarter;
 
   Process? _activeProcess;
 
@@ -36,13 +40,16 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     required this.cache,
     this.inspectTimeout = const Duration(seconds: 20),
     this.downloadTimeout = const Duration(minutes: 15),
-  });
+    MusicProcessStarter? processStarter,
+  }) : _processStarter = processStarter ?? _startProcess;
 
   @override
   Future<MusicTrackMetadata> inspect(Uri sourceUrl) async {
     final result = await _runCollectingOutput([
       '--ignore-config',
       '--no-colors',
+      '--encoding',
+      'utf-8',
       '--no-playlist',
       '--skip-download',
       '--dump-single-json',
@@ -125,6 +132,8 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     final args = <String>[
       '--ignore-config',
       '--no-colors',
+      '--encoding',
+      'utf-8',
       '--no-playlist',
       '--format',
       'ba/b',
@@ -279,13 +288,18 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     }
 
     try {
-      final process = await Process.start(executable, args, runInShell: false);
+      final process = await _processStarter(executable, args);
       _activeProcess = process;
       return process;
     } on ProcessException catch (error) {
       throw YtDlpException('Unable to start $executable: ${error.message}');
     }
   }
+
+  static Future<Process> _startProcess(
+    String executable,
+    List<String> arguments,
+  ) => Process.start(executable, arguments, runInShell: false);
 
   static bool _isInside(File file, Directory directory) {
     String normalize(String path) {

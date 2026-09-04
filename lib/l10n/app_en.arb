@@ -92,7 +92,7 @@
   "overlay_settings_player": "Player",
   "overlay_settings_player_description": "Configure how viewers request music with Channel Points.",
   "overlay_settings_reward_title": "Reward button",
-  "overlay_settings_reward_description": "Choose an app-managed Twitch reward. Refresh after editing rewards on Twitch.",
+  "overlay_settings_reward_description": "Choose an app-managed reward that requires viewer input and keeps redemptions in the queue. Refresh after editing it on Twitch.",
   "overlay_settings_create_reward": "Create New",
   "overlay_settings_refresh_rewards": "Refresh",
   "overlay_settings_loading_rewards": "Loading Twitch rewards…",

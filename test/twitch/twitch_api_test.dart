@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_api.dart';
+import 'package:obssource/twitch/twitch_redemption.dart';
 
 void main() {
   test('subscribes to chat messages for the broadcaster websocket', () async {
@@ -143,5 +144,38 @@ void main() {
       'should_redemptions_skip_request_queue': false,
     });
     expect(reward.id, 'created-reward');
+  });
+
+  test('updates a redemption to a terminal status', () async {
+    final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+    RequestOptions? capturedRequest;
+    api.dio.interceptors
+      ..clear()
+      ..add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedRequest = options;
+            handler.resolve(
+              Response<void>(requestOptions: options, statusCode: 200),
+            );
+          },
+        ),
+      );
+
+    await api.updateRedemptionStatus(
+      broadcasterUserId: 'broadcaster-1',
+      rewardId: 'reward-1',
+      redemptionId: 'redemption-1',
+      status: TwitchRedemptionStatus.canceled,
+    );
+
+    expect(capturedRequest?.method, 'PATCH');
+    expect(capturedRequest?.path, '/channel_points/custom_rewards/redemptions');
+    expect(capturedRequest?.queryParameters, {
+      'broadcaster_id': 'broadcaster-1',
+      'reward_id': 'reward-1',
+      'id': 'redemption-1',
+    });
+    expect(capturedRequest?.data, {'status': 'CANCELED'});
   });
 }

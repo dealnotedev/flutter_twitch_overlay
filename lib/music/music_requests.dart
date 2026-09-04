@@ -1,5 +1,8 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
+import 'package:obssource/twitch/twitch_redemption.dart';
+import 'package:obssource/twitch/twitch_redemption_service.dart';
 import 'package:obssource/twitch/ws_event.dart';
 
 enum MusicQueueItemPhase { resolving, downloading, ready }
@@ -181,13 +184,16 @@ class MusicRequestManager implements MusicRequests {
 
   final MusicTrackFetcher _fetcher;
   final MusicTrackPlayer _player;
+  final TwitchRedemptionService? _redemptionService;
   final int _maxQueueLength;
   final Duration _maxDuration;
   final bool _enabled;
 
   final _stateController = StreamController<MusicQueueSnapshot>.broadcast();
   final _processedRedemptionIds = <String>{};
+  final _settlementRequestedIds = <String>{};
   final _queue = <_PendingMusicRequest>[];
+  final _backgroundOperations = <Future<void>>{};
 
   late final StreamSubscription<WsMessage> _eventSubscription;
   StreamSubscription<String?>? _rewardIdSubscription;
@@ -200,6 +206,7 @@ class MusicRequestManager implements MusicRequests {
   bool _closed = false;
   _PendingMusicRequest? _preparingRequest;
   Future<void>? _preparationFuture;
+  Future<void>? _playbackFuture;
   MusicQueueError? _lastError;
 
   MusicRequestManager({
@@ -211,16 +218,16 @@ class MusicRequestManager implements MusicRequests {
     required Duration maxDuration,
     String? rewardId,
     Stream<String?>? rewardIdChanges,
+    TwitchRedemptionService? redemptionService,
   }) : _fetcher = fetcher,
        _player = player,
+       _redemptionService = redemptionService,
        _rewardId = _normalizeRewardId(rewardId),
        _enabled = enabled,
        _maxQueueLength = maxQueueLength,
        _maxDuration = maxDuration {
     _eventSubscription = events.listen(_handleMessage);
-    _rewardIdSubscription = rewardIdChanges?.listen((rewardId) {
-      _rewardId = _normalizeRewardId(rewardId);
-    });
+    _rewardIdSubscription = rewardIdChanges?.listen(_handleRewardIdChanged);
   }
 
   @override
@@ -240,40 +247,62 @@ class MusicRequestManager implements MusicRequests {
     final id = event?.id;
     final requester = event?.user?.name;
     final reward = event?.reward;
-    final input = event?.userInput?.trim();
+    final rewardId = reward?.id;
 
     if (!_matchesReward(reward)) return;
-    if (id == null || requester == null) return;
+    if (id == null || requester == null || rewardId == null) return;
+
+    _acceptRedemption(
+      id: id,
+      rewardId: rewardId,
+      requester: requester,
+      input: event?.userInput,
+    );
+  }
+
+  void _acceptRedemption({
+    required String id,
+    required String rewardId,
+    required String requester,
+    required String? input,
+  }) {
     if (!_processedRedemptionIds.add(id)) return;
 
-    if (input == null || input.isEmpty) {
-      _setError(
+    final normalizedInput = input?.trim();
+    if (normalizedInput == null || normalizedInput.isEmpty) {
+      _rejectRedemption(
         MusicQueueError(
           requester: requester,
           type: MusicQueueErrorType.missingYoutubeUrl,
         ),
+        id: id,
+        rewardId: rewardId,
       );
       return;
     }
 
-    final sourceUrl = Uri.tryParse(input);
+    final sourceUrl = Uri.tryParse(normalizedInput);
     if (sourceUrl == null || !_isYouTubeUrl(sourceUrl)) {
-      _setError(
+      _rejectRedemption(
         MusicQueueError(
           requester: requester,
           type: MusicQueueErrorType.invalidYoutubeUrl,
         ),
+        id: id,
+        rewardId: rewardId,
       );
       return;
     }
 
     final activeCount = _queue.length + (_nowPlaying == null ? 0 : 1);
     if (activeCount >= _maxQueueLength) {
-      _setError(
+      _rejectRedemption(
         MusicQueueError(
           requester: requester,
           type: MusicQueueErrorType.queueFull,
         ),
+        id: id,
+        rewardId: rewardId,
       );
       return;
     }
@@ -282,12 +311,30 @@ class MusicRequestManager implements MusicRequests {
     _queue.add(
       _PendingMusicRequest(
         id: id,
+        rewardId: rewardId,
         requestedBy: requester,
         sourceUrl: sourceUrl,
       ),
     );
     _emit();
     _ensurePreparing();
+  }
+
+  void _rejectRedemption(
+    MusicQueueError error, {
+    required String id,
+    required String rewardId,
+  }) {
+    _setError(error);
+    _requestSettlement(
+      redemptionId: id,
+      rewardId: rewardId,
+      status: TwitchRedemptionStatus.canceled,
+    );
+  }
+
+  void _rejectRequest(_PendingMusicRequest request, MusicQueueError error) {
+    _rejectRedemption(error, id: request.id, rewardId: request.rewardId);
   }
 
   bool _matchesReward(WsReward? reward) {
@@ -331,7 +378,8 @@ class MusicRequestManager implements MusicRequests {
           if (metadata.duration <= Duration.zero ||
               metadata.duration > _maxDuration) {
             _queue.remove(request);
-            _setError(
+            _rejectRequest(
+              request,
               MusicQueueError(
                 requester: request.requestedBy,
                 type: MusicQueueErrorType.trackTooLongOrLive,
@@ -364,7 +412,9 @@ class MusicRequestManager implements MusicRequests {
           _startIfPossible();
         } catch (error) {
           if (_queue.remove(request)) {
-            _setError(_operationError(request, error));
+            if (!_closed) {
+              _rejectRequest(request, _operationError(request, error));
+            }
           }
         } finally {
           if (identical(_preparingRequest, request)) {
@@ -406,17 +456,17 @@ class MusicRequestManager implements MusicRequests {
     _lastError = null;
     _emit();
 
-    unawaited(
-      _play(
-        request,
-        DownloadedMusicTrack(
-          itemId: request.id,
-          requestedBy: request.requestedBy,
-          metadata: metadata,
-          filePath: filePath,
-        ),
+    final playback = _play(
+      request,
+      DownloadedMusicTrack(
+        itemId: request.id,
+        requestedBy: request.requestedBy,
+        metadata: metadata,
+        filePath: filePath,
       ),
     );
+    _playbackFuture = playback;
+    unawaited(playback);
   }
 
   Future<void> _play(
@@ -425,8 +475,22 @@ class MusicRequestManager implements MusicRequests {
   ) async {
     try {
       await _player.play(track);
+      if (!_closed) {
+        _requestSettlement(
+          redemptionId: request.id,
+          rewardId: request.rewardId,
+          status: TwitchRedemptionStatus.fulfilled,
+        );
+      }
     } catch (error) {
-      _lastError = _operationError(request, error);
+      if (!_closed) {
+        _lastError = _operationError(request, error);
+        _requestSettlement(
+          redemptionId: request.id,
+          rewardId: request.rewardId,
+          status: TwitchRedemptionStatus.canceled,
+        );
+      }
     } finally {
       if (_nowPlaying == request) {
         _nowPlaying = null;
@@ -505,6 +569,11 @@ class MusicRequestManager implements MusicRequests {
 
     final request = _queue.removeAt(index);
     final cancelPreparation = identical(_preparingRequest, request);
+    _requestSettlement(
+      redemptionId: request.id,
+      rewardId: request.rewardId,
+      status: TwitchRedemptionStatus.canceled,
+    );
     _emit();
 
     if (cancelPreparation) {
@@ -517,6 +586,39 @@ class MusicRequestManager implements MusicRequests {
   void _setError(MusicQueueError error) {
     _lastError = error;
     _emit();
+  }
+
+  void _requestSettlement({
+    required String redemptionId,
+    required String rewardId,
+    required TwitchRedemptionStatus status,
+  }) {
+    final service = _redemptionService;
+    if (service == null || !_settlementRequestedIds.add(redemptionId)) return;
+
+    _trackBackgroundOperation(
+      service
+          .settle(
+            rewardId: rewardId,
+            redemptionId: redemptionId,
+            status: status,
+          )
+          .catchError((Object error, StackTrace stackTrace) {
+            debugPrint(
+              'Unable to update Twitch redemption $redemptionId; '
+              'it remains UNFULFILLED: $error',
+            );
+          }),
+    );
+  }
+
+  void _handleRewardIdChanged(String? rewardId) {
+    _rewardId = _normalizeRewardId(rewardId);
+  }
+
+  void _trackBackgroundOperation(Future<void> operation) {
+    _backgroundOperations.add(operation);
+    operation.whenComplete(() => _backgroundOperations.remove(operation));
   }
 
   static MusicQueueError _operationError(
@@ -556,6 +658,8 @@ class MusicRequestManager implements MusicRequests {
     await _fetcher.cancel();
     await _preparationFuture;
     await _player.stop();
+    await _playbackFuture;
+    await Future.wait(List.of(_backgroundOperations));
 
     await _stateController.close();
   }
@@ -563,6 +667,7 @@ class MusicRequestManager implements MusicRequests {
 
 class _PendingMusicRequest {
   final String id;
+  final String rewardId;
   final String requestedBy;
   final Uri sourceUrl;
 
@@ -577,6 +682,7 @@ class _PendingMusicRequest {
 
   _PendingMusicRequest({
     required this.id,
+    required this.rewardId,
     required this.requestedBy,
     required this.sourceUrl,
   });

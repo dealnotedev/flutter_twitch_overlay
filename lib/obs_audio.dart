@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:win32/win32.dart';
 
 class ObsAudio {
+  static const _nativeEventTimeout = Duration(seconds: 10);
+
   static void playWavAssetsDebug(String asset) {
     final file =
         '${File(Platform.resolvedExecutable).parent.path}\\data\\flutter_assets\\$asset';
@@ -61,17 +63,6 @@ class ObsAudio {
     throw StateError('All 256 audio slots are in use!');
   }
 
-  /// Loads an asset, returns a numeric handle.
-  static Future<int> loadAsset(String asset) async {
-    final id = _idFor(asset);
-
-    if (!id.$2) {
-      await _ch.send(jsonEncode({'cmd': 'load', 'id': id.$1, 'asset': asset}));
-    }
-
-    return id.$1;
-  }
-
   static (int, bool) _idFor(String file) {
     final previous = _slots[file];
 
@@ -91,55 +82,124 @@ class ObsAudio {
     return (id, reuse);
   }
 
-  /// Loads a file, returns a numeric handle.
-  static Future<int> loadFile(String path) async {
-    final id = _idFor(path);
+  /// Loads an asset, returns a numeric handle.
+  static Future<int> loadAsset(String asset, {String? sessionId}) async {
+    final id = _idFor(asset);
+    if (id.$2) return id.$1;
 
-    if (!id.$2) {
-      await _ch.send(
-        jsonEncode({'cmd': 'load', 'id': id.$1, 'absolute_path': path}),
-      );
-    }
-
-    return id.$1;
+    return _load(
+      slotKey: asset,
+      id: id.$1,
+      command: {
+        'cmd': 'load',
+        'id': id.$1,
+        'asset': asset,
+        if (sessionId != null) 'session_id': sessionId,
+      },
+      sessionId: sessionId,
+    );
   }
 
-  static Future<void> play(
+  /// Loads a file, returns a numeric handle.
+  static Future<int> loadFile(String path, {String? sessionId}) async {
+    final id = _idFor(path);
+    if (id.$2) return id.$1;
+
+    return _load(
+      slotKey: path,
+      id: id.$1,
+      command: {
+        'cmd': 'load',
+        'id': id.$1,
+        'absolute_path': path,
+        if (sessionId != null) 'session_id': sessionId,
+      },
+      sessionId: sessionId,
+    );
+  }
+
+  static Future<int> _load({
+    required String slotKey,
+    required int id,
+    required Map<String, Object?> command,
+    required String? sessionId,
+  }) async {
+    final eventCompleter = Completer<ObsAudioEvent>();
+    final subscription = events.listen((event) {
+      final matchingSession =
+          sessionId == null ||
+          event.sessionId == null ||
+          event.sessionId == sessionId;
+      if (event.id == id &&
+          matchingSession &&
+          (event.type == ObsAudioEventType.loaded ||
+              event.type == ObsAudioEventType.error) &&
+          !eventCompleter.isCompleted) {
+        eventCompleter.complete(event);
+      }
+    }, onError: eventCompleter.completeError);
+
+    try {
+      final result = await _sendCommand(command);
+      if (!result.eventsSupported) return id;
+
+      final event = await eventCompleter.future.timeout(
+        _nativeEventTimeout,
+        onTimeout:
+            () => throw StateError('Native audio load confirmation timed out'),
+      );
+      if (event.type == ObsAudioEventType.error) {
+        throw StateError(event.message ?? 'Native audio load failed');
+      }
+      return id;
+    } catch (_) {
+      if (_slots[slotKey] == id) _slots.remove(slotKey);
+      rethrow;
+    } finally {
+      await subscription.cancel();
+    }
+  }
+
+  /// Returns whether the native host promises lifecycle events for this play.
+  static Future<bool> play(
     int id, {
     double volume = 1,
     bool loop = false,
     String? sessionId,
   }) async {
-    await _ch.send(
-      jsonEncode({
-        'cmd': 'play',
-        'id': id,
-        'volume': volume,
-        'loop': loop,
-        if (sessionId != null) 'session_id': sessionId,
-      }),
-    );
+    final result = await _sendCommand({
+      'cmd': 'play',
+      'id': id,
+      'volume': volume,
+      'loop': loop,
+      if (sessionId != null) 'session_id': sessionId,
+    });
+    return result.eventsSupported;
   }
 
-  static Future<void> stop(int id) =>
-      _ch.send(jsonEncode({'cmd': 'stop', 'id': id}));
+  static Future<void> stop(int id) async {
+    await _sendCommand({'cmd': 'stop', 'id': id});
+  }
 
-  static Future<void> pause(int id) =>
-      _ch.send(jsonEncode({'cmd': 'pause', 'id': id}));
+  static Future<void> pause(int id) async {
+    await _sendCommand({'cmd': 'pause', 'id': id});
+  }
 
-  static Future<void> resume(int id) =>
-      _ch.send(jsonEncode({'cmd': 'resume', 'id': id}));
+  static Future<void> resume(int id) async {
+    await _sendCommand({'cmd': 'resume', 'id': id});
+  }
 
-  static Future<void> seek(int id, Duration position) => _ch.send(
-    jsonEncode({
+  static Future<void> seek(int id, Duration position) async {
+    await _sendCommand({
       'cmd': 'seek',
       'id': id,
       'position_ms': position.inMilliseconds,
-    }),
-  );
+    });
+  }
 
-  static Future<void> setVolume(int id, double v) =>
-      _ch.send(jsonEncode({'cmd': 'volume', 'id': id, 'volume': v}));
+  static Future<void> setVolume(int id, double volume) async {
+    await _sendCommand({'cmd': 'volume', 'id': id, 'volume': volume});
+  }
 
   static Future<void> release(int id) async {
     String? slotKey;
@@ -155,17 +215,49 @@ class ObsAudio {
     }
 
     try {
-      await _ch.send(jsonEncode({'cmd': 'release', 'id': id}));
+      await _sendCommand({'cmd': 'release', 'id': id});
     } on PlatformException {
       // Older native hosts do not implement release yet. The Dart slot is
       // already free, so playback can continue with the next file.
     } on MissingPluginException {
       // Keeps the Flutter-only queue usable with the duration fallback.
+    } on StateError {
+      // Release is best-effort with older hosts that reject this command.
+      // A later load into the same numeric slot replaces the native sound.
     }
+  }
+
+  static Future<_ObsAudioCommandResult> _sendCommand(
+    Map<String, Object?> command,
+  ) async {
+    final response = await _ch.send(jsonEncode(command));
+    if (response == null || response.isEmpty) {
+      return const _ObsAudioCommandResult(eventsSupported: false);
+    }
+
+    final decoded = jsonDecode(response);
+    if (decoded is! Map<String, dynamic>) {
+      throw StateError('Native audio returned an invalid response');
+    }
+    if (decoded['ok'] != true) {
+      final message = decoded['error'];
+      throw StateError(
+        message is String && message.isNotEmpty
+            ? 'Native audio command failed: $message'
+            : 'Native audio command failed',
+      );
+    }
+    return _ObsAudioCommandResult(eventsSupported: decoded['events'] == true);
   }
 }
 
-enum ObsAudioEventType { started, progress, ended, error }
+class _ObsAudioCommandResult {
+  final bool eventsSupported;
+
+  const _ObsAudioCommandResult({required this.eventsSupported});
+}
+
+enum ObsAudioEventType { loaded, started, progress, ended, error }
 
 class ObsAudioEvent {
   final ObsAudioEventType type;
@@ -187,6 +279,7 @@ class ObsAudioEvent {
   static ObsAudioEvent? fromJson(Map<String, dynamic> json) {
     final id = json['id'];
     final type = switch (json['event']) {
+      'loaded' => ObsAudioEventType.loaded,
       'started' => ObsAudioEventType.started,
       'progress' => ObsAudioEventType.progress,
       'ended' => ObsAudioEventType.ended,

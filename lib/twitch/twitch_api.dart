@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_creds_interceptor.dart';
+import 'package:obssource/twitch/twitch_redemption.dart';
 
 class TwitchApi {
   late final Dio dio;
@@ -126,6 +127,27 @@ class TwitchApi {
       );
     }
     return rewards.single;
+  }
+
+  Future<void> updateRedemptionStatus({
+    required String broadcasterUserId,
+    required String rewardId,
+    required String redemptionId,
+    required TwitchRedemptionStatus status,
+  }) async {
+    if (status == TwitchRedemptionStatus.unfulfilled) {
+      throw ArgumentError.value(status, 'status', 'Must be a terminal status');
+    }
+
+    await dio.patch(
+      '/channel_points/custom_rewards/redemptions',
+      queryParameters: {
+        'broadcaster_id': broadcasterUserId,
+        'reward_id': rewardId,
+        'id': redemptionId,
+      },
+      data: {'status': status.apiValue},
+    );
   }
 
   Future<UserDto> getUser({required String? id}) {

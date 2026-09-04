@@ -92,7 +92,7 @@
   "overlay_settings_player": "Плеєр",
   "overlay_settings_player_description": "Налаштуйте замовлення музики глядачами за бали каналу.",
   "overlay_settings_reward_title": "Кнопка винагороди",
-  "overlay_settings_reward_description": "Оберіть винагороду Twitch, якою керує застосунок. Оновіть список після змін у Twitch.",
+  "overlay_settings_reward_description": "Оберіть керовану винагороду, яка вимагає текст від глядача та залишає погашення в черзі. Оновіть список після змін у Twitch.",
   "overlay_settings_create_reward": "Створити",
   "overlay_settings_refresh_rewards": "Оновити",
   "overlay_settings_loading_rewards": "Завантажуємо винагороди Twitch…",

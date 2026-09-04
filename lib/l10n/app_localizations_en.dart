@@ -132,7 +132,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overlay_settings_reward_description =>
-      'Choose an app-managed Twitch reward. Refresh after editing rewards on Twitch.';
+      'Choose an app-managed reward that requires viewer input and keeps redemptions in the queue. Refresh after editing it on Twitch.';
 
   @override
   String get overlay_settings_create_reward => 'Create New';

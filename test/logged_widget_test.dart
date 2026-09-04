@@ -111,7 +111,14 @@ void main() {
       findsOneWidget,
     );
 
-    await tester.tap(find.byKey(const ValueKey('twitch_reward_reward-1')));
+    await tester.ensureVisible(
+      find.byKey(const ValueKey('twitch_reward_reward-1')),
+    );
+    await tester.pump();
+    final rewardTopLeft = tester.getTopLeft(
+      find.byKey(const ValueKey('twitch_reward_reward-1')),
+    );
+    await tester.tapAt(rewardTopLeft + const Offset(20, 20));
     await tester.pump();
     expect(settings.musicRewardId, 'reward-1');
 

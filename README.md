@@ -80,11 +80,19 @@ directory and never become cache hits.
 and updates the active track immediately when the OBS source configuration is
 changed.
 
-For precise queue advancement, the native audio host can publish JSON messages
-on `obs_audio_events` with `event` set to `started`, `progress`, `ended`, or
-`error`, plus the numeric `id` and optional `session_id`. Until that callback is
-implemented, the MVP advances using the duration reported by `yt-dlp` plus a
-small grace period.
+Choose the music Channel Points reward from the overlay settings next to the
+Twitch connection indicator. The reward must be managed by this application,
+require viewer input, and keep redemptions in Twitch's request queue. Invalid,
+unavailable, overlong, failed, or manually removed requests are canceled so
+Twitch refunds their points. A request is fulfilled after playback finishes or
+is skipped while playing. If Twitch cannot be updated, the redemption remains
+unfulfilled so the streamer can resolve it in Twitch's moderation interface.
+
+For precise queue advancement, the native audio host publishes JSON messages on
+`obs_audio_events` with `event` set to `loaded`, `started`, `progress`, `ended`,
+or `error`, plus the numeric `id` and optional `session_id`. The player waits for
+the native load and start confirmations, surfaces decoder failures, and advances
+the queue on `ended`. A duration-based watchdog remains for older native hosts.
 
 ## Optional Windows music controller
 
