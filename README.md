@@ -17,17 +17,18 @@ samples, guidance on mobile development, and a full API reference.
 
 ## OBS source configuration
 
-The OBS source JSON can select the renderer used by the complete follow
-animation:
+The OBS source JSON configures rendering for all user alerts, including
+follow and raid animations:
 
 ```json
 {
-  "follow_animation_renderer": "optimized",
-  "follow_avatar_resolution": 48
+  "alert_animation_renderer": "optimized",
+  "alert_avatar_resolution": 48
 }
 ```
 
-Supported values are `optimized` (the default `drawRawAtlas` renderer) and
+The settings apply to avatars, text, and pixel decorations. Changes also update
+alerts that are already visible. Supported renderer values are `optimized` (the default `drawRawAtlas` renderer) and
 `legacy` (the previous canvas renderer). The avatar resolution defaults to
 `48`; its pixel size remains fixed at `8`.
 

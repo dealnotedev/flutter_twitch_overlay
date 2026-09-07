@@ -72,7 +72,7 @@ void main() {
       final config = ObsConfig();
 
       expect(
-        config.getString('follow_animation_renderer', fallback: 'legacy'),
+        config.getString('alert_animation_renderer', fallback: 'legacy'),
         'optimized',
       );
     });
@@ -80,11 +80,11 @@ void main() {
     test('returns a configured string value', () {
       final config = ObsConfig();
       config.config.set(
-        Config(valid: true, json: {'follow_animation_renderer': 'legacy'}),
+        Config(valid: true, json: {'alert_animation_renderer': 'legacy'}),
       );
 
       expect(
-        config.getString('follow_animation_renderer', fallback: 'optimized'),
+        config.getString('alert_animation_renderer', fallback: 'optimized'),
         'legacy',
       );
     });
@@ -92,11 +92,11 @@ void main() {
     test('uses the fallback for a missing or malformed value', () {
       final config = ObsConfig();
       config.config.set(
-        Config(valid: true, json: {'follow_animation_renderer': true}),
+        Config(valid: true, json: {'alert_animation_renderer': true}),
       );
 
       expect(
-        config.getString('follow_animation_renderer', fallback: 'optimized'),
+        config.getString('alert_animation_renderer', fallback: 'optimized'),
         'optimized',
       );
     });
@@ -106,7 +106,7 @@ void main() {
     test('uses fallback JSON when configuration is invalid', () {
       final config = ObsConfig();
 
-      expect(config.getInt('follow_avatar_resolution', fallback: 24), 48);
+      expect(config.getInt('alert_avatar_resolution', fallback: 24), 48);
       expect(config.getInt('music_max_queue', fallback: 1), 10);
       expect(config.getInt('music_cache_max_mb', fallback: 1), 2048);
     });
@@ -114,19 +114,19 @@ void main() {
     test('returns a configured integer value', () {
       final config = ObsConfig();
       config.config.set(
-        Config(valid: true, json: {'follow_avatar_resolution': 40}),
+        Config(valid: true, json: {'alert_avatar_resolution': 40}),
       );
 
-      expect(config.getInt('follow_avatar_resolution', fallback: 48), 40);
+      expect(config.getInt('alert_avatar_resolution', fallback: 48), 40);
     });
 
     test('uses the fallback for a missing or malformed value', () {
       final config = ObsConfig();
       config.config.set(
-        Config(valid: true, json: {'follow_avatar_resolution': '40'}),
+        Config(valid: true, json: {'alert_avatar_resolution': '40'}),
       );
 
-      expect(config.getInt('follow_avatar_resolution', fallback: 48), 48);
+      expect(config.getInt('alert_avatar_resolution', fallback: 48), 48);
     });
   });
 }

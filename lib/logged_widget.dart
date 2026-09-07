@@ -58,8 +58,8 @@ class _State extends State<LoggedWidget> {
   late Settings _settings;
   late ObsConfig _obsConfig;
   late WsState _wsState;
-  late AvatarPixelRenderer _followRenderer;
-  late int _followAvatarResolution;
+  late AvatarPixelRenderer _alertRenderer;
+  late int _alertAvatarResolution;
   MusicRequests? _musicRequests;
   final _musicOverlayController = MusicQueueOverlayController();
   bool _overlayControlsHovered = false;
@@ -76,8 +76,8 @@ class _State extends State<LoggedWidget> {
 
     _settings = widget.locator.provide();
     _obsConfig = widget.locator.provide();
-    _followRenderer = _readFollowRenderer();
-    _followAvatarResolution = _readFollowAvatarResolution();
+    _alertRenderer = _readAlertRenderer();
+    _alertAvatarResolution = _readAlertAvatarResolution();
     try {
       _musicRequests = widget.locator.provide<MusicRequests>();
     } catch (_) {
@@ -117,8 +117,8 @@ class _State extends State<LoggedWidget> {
                 event: follow,
                 constraints: constraints,
                 key: ValueKey(follow),
-                renderer: _followRenderer,
-                avatarResolution: _followAvatarResolution,
+                renderer: _alertRenderer,
+                avatarResolution: _alertAvatarResolution,
               ),
             ),
             ..._raids.map(
@@ -126,8 +126,8 @@ class _State extends State<LoggedWidget> {
                 key: ValueKey(raid),
                 event: raid,
                 constraints: constraints,
-                renderer: _followRenderer,
-                avatarResolution: _followAvatarResolution,
+                renderer: _alertRenderer,
+                avatarResolution: _alertAvatarResolution,
               ),
             ),
             _createRewardsWidget(),
@@ -272,9 +272,9 @@ class _State extends State<LoggedWidget> {
     });
   }
 
-  AvatarPixelRenderer _readFollowRenderer() {
+  AvatarPixelRenderer _readAlertRenderer() {
     final value = _obsConfig.getString(
-      'follow_animation_renderer',
+      'alert_animation_renderer',
       fallback: 'optimized',
     );
 
@@ -283,9 +283,9 @@ class _State extends State<LoggedWidget> {
         : AvatarPixelRenderer.rawAtlas;
   }
 
-  int _readFollowAvatarResolution() {
+  int _readAlertAvatarResolution() {
     final resolution = _obsConfig.getInt(
-      'follow_avatar_resolution',
+      'alert_avatar_resolution',
       fallback: 48,
     );
 
@@ -293,17 +293,17 @@ class _State extends State<LoggedWidget> {
   }
 
   void _handleConfig(Config _) {
-    final renderer = _readFollowRenderer();
-    final avatarResolution = _readFollowAvatarResolution();
+    final renderer = _readAlertRenderer();
+    final avatarResolution = _readAlertAvatarResolution();
     if (!mounted ||
-        (renderer == _followRenderer &&
-            avatarResolution == _followAvatarResolution)) {
+        (renderer == _alertRenderer &&
+            avatarResolution == _alertAvatarResolution)) {
       return;
     }
 
     setState(() {
-      _followRenderer = renderer;
-      _followAvatarResolution = avatarResolution;
+      _alertRenderer = renderer;
+      _alertAvatarResolution = avatarResolution;
     });
   }
 

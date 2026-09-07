@@ -238,8 +238,8 @@ void main() {
         valid: true,
         json: {
           'followers': true,
-          'follow_animation_renderer': 'legacy',
-          'follow_avatar_resolution': 40,
+          'alert_animation_renderer': 'legacy',
+          'alert_avatar_resolution': 40,
         },
       ),
     );
@@ -304,6 +304,32 @@ void main() {
               .where((command) => command['cmd'] == 'play')
               .single['id'],
           load['id'],
+        );
+
+        config.config.set(
+          Config(
+            valid: true,
+            json: {
+              'alert_animation_renderer': 'legacy',
+              'alert_avatar_resolution': 40,
+            },
+          ),
+        );
+        await tester.pump();
+        final updated = tester.widget<RaidWidget>(find.byType(RaidWidget));
+        expect(updated.renderer, AvatarPixelRenderer.legacyCanvas);
+        expect(updated.avatarResolution, 40);
+        expect(
+          tester.widget<RainyAvatar>(find.byType(RainyAvatar)).renderer,
+          AvatarPixelRenderer.legacyCanvas,
+        );
+        expect(
+          tester.widget<RainyAvatar>(find.byType(RainyAvatar)).resolution,
+          40,
+        );
+        expect(
+          tester.widget<SubsWidget>(find.byType(SubsWidget)).renderer,
+          AvatarPixelRenderer.legacyCanvas,
         );
 
         // Twitch may deliver the same notification again.
