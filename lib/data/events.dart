@@ -17,6 +17,14 @@ class UserFollowEvent {
   });
 }
 
+class UserRaidEvent {
+  final String userName;
+  final int viewers;
+  final img.Image? avatar;
+
+  UserRaidEvent({required this.userName, required this.viewers, this.avatar});
+}
+
 class UserRedeemedEvent {
   final String id;
   final DateTime time;

@@ -5,6 +5,37 @@ import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
 
 void main() {
+  test('subscribes to incoming raids for the broadcaster websocket', () async {
+    final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+    RequestOptions? capturedRequest;
+    api.dio.interceptors
+      ..clear()
+      ..add(
+        InterceptorsWrapper(
+          onRequest: (options, handler) {
+            capturedRequest = options;
+            handler.resolve(
+              Response<void>(requestOptions: options, statusCode: 202),
+            );
+          },
+        ),
+      );
+
+    await api.subscribeRaidEvents(
+      broadcasterUserId: 'receiver-id',
+      sessionId: 'session-1',
+    );
+
+    expect(capturedRequest?.method, 'POST');
+    expect(capturedRequest?.path, '/eventsub/subscriptions');
+    expect(capturedRequest?.data, {
+      'version': '1',
+      'type': 'channel.raid',
+      'condition': {'to_broadcaster_user_id': 'receiver-id'},
+      'transport': {'session_id': 'session-1', 'method': 'websocket'},
+    });
+  });
+
   test('subscribes to chat messages for the broadcaster websocket', () async {
     final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
     RequestOptions? capturedRequest;

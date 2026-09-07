@@ -1,7 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:obssource/config/obs_config.dart';
@@ -10,6 +13,10 @@ import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/logged_widget.dart';
+import 'package:obssource/obs_audio.dart';
+import 'package:obssource/raid/raid_widget.dart';
+import 'package:obssource/subs/subs_widget.dart';
+import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
@@ -23,8 +30,16 @@ void main() {
   late ObsConfig config;
   late _FakeWebSocketManager websocket;
   late ServiceLocator locator;
+  late List<Map<String, dynamic>> audioCommands;
+  const audioChannel = BasicMessageChannel<String>('obs_audio', StringCodec());
 
   setUp(() async {
+    audioCommands = [];
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<String>(audioChannel, (message) {
+          audioCommands.add(jsonDecode(message!) as Map<String, dynamic>);
+          return SynchronousFuture('{"ok":true,"events":false}');
+        });
     SharedPreferences.setMockInitialValues({});
     settings = Settings();
     await settings.init();
@@ -39,6 +54,16 @@ void main() {
   });
 
   tearDown(() async {
+    final loadedIds =
+        audioCommands
+            .where((command) => command['cmd'] == 'load')
+            .map((command) => command['id'] as int)
+            .toSet();
+    for (final id in loadedIds) {
+      await ObsAudio.release(id);
+    }
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockDecodedMessageHandler<String>(audioChannel, null);
     await websocket.close();
   });
 
@@ -237,6 +262,117 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  for (final viewers in [1, 100, 101]) {
+    testWidgets(
+      'shows incoming raid and plays its audio for $viewers viewers',
+      (tester) async {
+        await _pumpLoggedWidget(tester, locator);
+        websocket.add(_raidMessage(viewers: viewers));
+        await tester.pump();
+        await tester.pump();
+
+        await tester.runAsync(() async {
+          await Future<void>.delayed(Duration.zero);
+        });
+        await tester.pump();
+
+        final widget = tester.widget<RaidWidget>(find.byType(RaidWidget));
+        expect(widget.event.userName, 'Raider');
+        expect(widget.event.viewers, viewers);
+        expect(widget.renderer, AvatarPixelRenderer.rawAtlas);
+        expect(widget.avatarResolution, 48);
+        expect(find.byType(RainyAvatar), findsOneWidget);
+        expect(
+          tester.widget<SubsWidget>(find.byType(SubsWidget)).description,
+          viewers == 1 ? 'brought 1 viewer' : 'brought $viewers viewers',
+        );
+        expect(
+          tester.widget<SubsWidget>(find.byType(SubsWidget)).who,
+          'Raider',
+        );
+        final load = audioCommands.singleWhere(
+          (command) => command['cmd'] == 'load',
+        );
+        expect(
+          load['asset'],
+          viewers > 100
+              ? 'assets/raid/raid_over_100.wav'
+              : 'assets/raid/raid_${viewers.toString().padLeft(3, '0')}.wav',
+        );
+        expect(
+          audioCommands
+              .where((command) => command['cmd'] == 'play')
+              .single['id'],
+          load['id'],
+        );
+
+        // Twitch may deliver the same notification again.
+        websocket.add(_raidMessage(viewers: viewers));
+        await tester.pump();
+        expect(find.byType(RaidWidget), findsOneWidget);
+        expect(
+          audioCommands.where((command) => command['cmd'] == 'play'),
+          hasLength(1),
+        );
+
+        await tester.pump(const Duration(seconds: 20));
+        expect(find.byType(RaidWidget), findsNothing);
+        await tester.pumpWidget(const SizedBox.shrink());
+      },
+    );
+  }
+
+  testWidgets('raid remains visible if profile lookup fails', (tester) async {
+    await _pumpLoggedWidget(
+      tester,
+      locator,
+      userLoader: (_) async => throw StateError('Profile unavailable'),
+    );
+    websocket.add(_raidMessage(viewers: 7));
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.byType(RaidWidget), findsOneWidget);
+    expect(find.byType(RainyAvatar), findsNothing);
+    await tester.runAsync(() async {
+      await Future<void>.delayed(Duration.zero);
+    });
+    await tester.pump();
+    expect(tester.widget<SubsWidget>(find.byType(SubsWidget)).who, 'Raider');
+    expect(
+      audioCommands.where((command) => command['cmd'] == 'play'),
+      hasLength(1),
+    );
+
+    await tester.pump(const Duration(seconds: 20));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('ignores outgoing raids and disabled raid notifications', (
+    tester,
+  ) async {
+    await _pumpLoggedWidget(tester, locator);
+    settings.twitchAuth = TwitchCreds(
+      accessToken: 'unused',
+      refreshToken: 'unused',
+      clientId: 'unused',
+      broadcasterId: 'receiver-id',
+    );
+    websocket.add(
+      _raidMessage(viewers: 20, toId: 'another-channel', messageId: 'outgoing'),
+    );
+    await tester.pump();
+    expect(find.byType(RaidWidget), findsNothing);
+    expect(audioCommands, isEmpty);
+
+    config.config.set(Config(valid: true, json: {'raids': false}));
+    websocket.add(_raidMessage(viewers: 20, messageId: 'disabled'));
+    await tester.pump();
+    expect(find.byType(RaidWidget), findsNothing);
+    expect(audioCommands, isEmpty);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
   testWidgets('shows any custom reward and ignores removed event types', (
     tester,
   ) async {
@@ -346,6 +482,7 @@ Future<void> _pumpLoggedWidget(
   WidgetTester tester,
   ServiceLocator locator, {
   TwitchRewardCatalog? rewardCatalog,
+  Future<UserDto?> Function(String id)? userLoader,
 }) async {
   const user = UserDto(
     id: 'user-id',
@@ -362,12 +499,15 @@ Future<void> _pumpLoggedWidget(
       home: LoggedWidget(
         locator: locator,
         userLoader:
+            userLoader ??
             (id) async => UserDto(
               id: id,
               login: user.login,
               displayName: user.displayName,
               profileImageUrl:
-                  id == 'follower-id' ? user.profileImageUrl : null,
+                  id == 'follower-id' || id == 'raider-id'
+                      ? user.profileImageUrl
+                      : null,
             ),
         avatarLoader: (_) async => img.Image(width: 64, height: 64),
         rewardCatalog: rewardCatalog,
@@ -410,6 +550,26 @@ class _FakeRewardCatalog implements TwitchRewardCatalog {
     return createdReward!;
   }
 }
+
+WsMessage _raidMessage({
+  required int viewers,
+  String messageId = 'raid-delivery',
+  String toId = 'receiver-id',
+}) => WsMessage.fromJson({
+  'metadata': {'message_id': messageId},
+  'payload': {
+    'subscription': {'type': 'channel.raid'},
+    'event': {
+      'from_broadcaster_user_id': 'raider-id',
+      'from_broadcaster_user_login': 'raider_login',
+      'from_broadcaster_user_name': 'Raider',
+      'to_broadcaster_user_id': toId,
+      'to_broadcaster_user_login': 'receiver_login',
+      'to_broadcaster_user_name': 'Receiver',
+      'viewers': viewers,
+    },
+  },
+});
 
 WsMessage _message({required String type, required Map<String, Object> event}) {
   return WsMessage.fromJson({

@@ -19,6 +19,8 @@ import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
+import 'package:obssource/raid/raid_audio.dart';
+import 'package:obssource/raid/raid_widget.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/settings/overlay_settings_dialog.dart';
 import 'package:obssource/span_util.dart';
@@ -46,6 +48,7 @@ class LoggedWidget extends StatefulWidget {
 
 class _State extends State<LoggedWidget> {
   static const _followDuration = Duration(seconds: 20);
+  static const _raidDuration = Duration(seconds: 20);
   static const _rewardDuration = Duration(milliseconds: 7500);
 
   StreamSubscription<WsMessage>? _eventsSubscription;
@@ -64,6 +67,7 @@ class _State extends State<LoggedWidget> {
   final _rewards = <UserRedeemedEvent>[];
   final _receivedEventIds = <String>{};
   final _follows = <UserFollowEvent>{};
+  final _raids = <UserRaidEvent>{};
   final _users = <String, UserDto>{};
 
   @override
@@ -113,6 +117,15 @@ class _State extends State<LoggedWidget> {
                 event: follow,
                 constraints: constraints,
                 key: ValueKey(follow),
+                renderer: _followRenderer,
+                avatarResolution: _followAvatarResolution,
+              ),
+            ),
+            ..._raids.map(
+              (raid) => RaidWidget(
+                key: ValueKey(raid),
+                event: raid,
+                constraints: constraints,
                 renderer: _followRenderer,
                 avatarResolution: _followAvatarResolution,
               ),
@@ -310,13 +323,20 @@ class _State extends State<LoggedWidget> {
 
   Future<void> _handleWebsocketMessage(WsMessage message) async {
     final event = message.payload.event;
-    final eventId = event?.id;
+    final eventId = event?.id ?? message.messageId;
 
     if (eventId != null && !_receivedEventIds.add(eventId)) {
       return;
     }
 
     switch (message.payload.subscription?.type) {
+      case 'channel.raid':
+        final raid = event?.raid;
+        if (raid != null && _obsConfig.getBool('raids', fallback: true)) {
+          await _handleUserRaid(raid);
+        }
+        return;
+
       case 'channel.follow':
         if (event != null && _obsConfig.getBool('followers')) {
           await _handleUserFollow(event);
@@ -365,6 +385,56 @@ class _State extends State<LoggedWidget> {
     });
   }
 
+  Future<void> _handleUserRaid(WsRaid event) async {
+    final broadcasterId = _settings.twitchAuth?.broadcasterId;
+    if (broadcasterId != null && event.toBroadcasterId != broadcasterId) return;
+
+    UserDto? user;
+    try {
+      user = await _getUser(event.fromBroadcaster.id);
+    } catch (_) {
+      // A profile lookup failure must not suppress the raid notification.
+    }
+    if (!mounted) return;
+    final avatar = await _loadAlertAvatar(user);
+    if (!mounted) return;
+
+    final raid = UserRaidEvent(
+      userName: event.fromBroadcaster.name,
+      viewers: event.viewers,
+      avatar: avatar,
+    );
+    setState(() => _raids.add(raid));
+    unawaited(_playRaidSound(event.viewers));
+
+    await Future<void>.delayed(_raidDuration);
+    if (!mounted) return;
+    setState(() => _raids.remove(raid));
+  }
+
+  Future<void> _playRaidSound(int viewers) async {
+    try {
+      final sound = await ObsAudio.loadAsset(
+        RaidAudio.assetForViewers(viewers),
+      );
+      if (mounted) await ObsAudio.play(sound);
+    } catch (error) {
+      debugPrint('Could not play raid audio: $error');
+    }
+  }
+
+  Future<img.Image?> _loadAlertAvatar(UserDto? user) async {
+    final url = user?.profileImageUrl;
+    if (url == null) return null;
+    try {
+      final loader = widget.avatarLoader ?? RainyAvatar.loadImageFromUrl;
+      return await loader(url);
+    } catch (_) {
+      // Both alerts can still run without an avatar.
+      return null;
+    }
+  }
+
   Future<void> _handleUserFollow(WsMessageEvent event) async {
     final userName = event.user?.name;
     if (userName == null) return;
@@ -379,17 +449,7 @@ class _State extends State<LoggedWidget> {
   }) async {
     if (!mounted) return;
 
-    img.Image? avatar;
-    final avatarUrl = user?.profileImageUrl;
-
-    if (avatarUrl != null) {
-      try {
-        final loader = widget.avatarLoader ?? RainyAvatar.loadImageFromUrl;
-        avatar = await loader(avatarUrl);
-      } catch (_) {
-        // The follow animation can still run without an avatar.
-      }
-    }
+    final avatar = await _loadAlertAvatar(user);
 
     if (!mounted) return;
 

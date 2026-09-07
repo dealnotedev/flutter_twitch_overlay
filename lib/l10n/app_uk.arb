@@ -21,6 +21,16 @@
     }
   },
   "follow_thanks": "Дякую за фолов!",
+  "raid_viewers": "{count, plural, one{привів {count} глядача} few{привів {count} глядачів} many{привів {count} глядачів} other{привів {count} глядачів}}",
+  "@raid_viewers": {
+    "description": "Number of viewers brought by the raiding broadcaster",
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "21"
+      }
+    }
+  },
   "config_invalid": "Неправильна конфігурація OBS",
   "music_queue_next": "ДАЛІ",
   "music_queue_more": "+{count} у черзі",

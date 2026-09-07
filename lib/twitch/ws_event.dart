@@ -1,10 +1,14 @@
 class WsMessage {
   final WsMessagePayload payload;
+  final String? messageId;
 
-  WsMessage({required this.payload});
+  WsMessage({required this.payload, this.messageId});
 
   factory WsMessage.fromJson(dynamic json) {
-    return WsMessage(payload: WsMessagePayload.fromJson(json['payload']));
+    return WsMessage(
+      payload: WsMessagePayload.fromJson(json['payload']),
+      messageId: json['metadata']?['message_id'] as String?,
+    );
   }
 }
 
@@ -51,6 +55,7 @@ class WsMessageEvent {
   final String? userInput;
   final String? messageText;
   final DateTime? redeemedAt;
+  final WsRaid? raid;
 
   WsMessageEvent({
     required this.id,
@@ -59,6 +64,7 @@ class WsMessageEvent {
     required this.userInput,
     required this.messageText,
     required this.redeemedAt,
+    this.raid,
   });
 
   factory WsMessageEvent.fromJson(dynamic json) {
@@ -72,6 +78,40 @@ class WsMessageEvent {
       userInput: json['user_input'] as String?,
       messageText: messageJson is Map ? messageJson['text'] as String? : null,
       redeemedAt: DateTime.tryParse(json['redeemed_at'] as String? ?? ''),
+      raid: WsRaid.tryParse(json),
+    );
+  }
+}
+
+class WsRaid {
+  final UserInfo fromBroadcaster;
+  final String toBroadcasterId;
+  final int viewers;
+
+  WsRaid({
+    required this.fromBroadcaster,
+    required this.toBroadcasterId,
+    required this.viewers,
+  });
+
+  static WsRaid? tryParse(dynamic json) {
+    final id = json['from_broadcaster_user_id'];
+    final login = json['from_broadcaster_user_login'];
+    final name = json['from_broadcaster_user_name'];
+    final toId = json['to_broadcaster_user_id'];
+    final viewers = json['viewers'];
+    if (id is! String ||
+        login is! String ||
+        name is! String ||
+        toId is! String ||
+        viewers is! int ||
+        viewers < 1) {
+      return null;
+    }
+    return WsRaid(
+      fromBroadcaster: UserInfo(id: id, login: login, name: name),
+      toBroadcasterId: toId,
+      viewers: viewers,
     );
   }
 }

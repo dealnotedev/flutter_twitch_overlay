@@ -2,6 +2,48 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/twitch/ws_event.dart';
 
 void main() {
+  test('parses a real raid payload and its delivery ID', () {
+    final message = WsMessage.fromJson({
+      'metadata': {'message_id': 'delivery-1'},
+      'payload': {
+        'subscription': {'type': 'channel.raid'},
+        'event': {
+          'from_broadcaster_user_id': '1234',
+          'from_broadcaster_user_login': 'cool_user',
+          'from_broadcaster_user_name': 'Cool_User',
+          'to_broadcaster_user_id': '1337',
+          'to_broadcaster_user_login': 'cooler_user',
+          'to_broadcaster_user_name': 'Cooler_User',
+          'viewers': 9001,
+        },
+      },
+    });
+
+    expect(message.messageId, 'delivery-1');
+    final raid = message.payload.event!.raid!;
+    expect(raid.fromBroadcaster.id, '1234');
+    expect(raid.fromBroadcaster.login, 'cool_user');
+    expect(raid.fromBroadcaster.name, 'Cool_User');
+    expect(raid.toBroadcasterId, '1337');
+    expect(raid.viewers, 9001);
+    expect(message.payload.event!.user, isNull);
+  });
+
+  test('ignores malformed raid counts and missing broadcaster fields', () {
+    final event = <String, Object>{
+      'from_broadcaster_user_id': 'raider',
+      'from_broadcaster_user_login': 'raider',
+      'from_broadcaster_user_name': 'Raider',
+      'to_broadcaster_user_id': 'receiver',
+      'viewers': 1,
+    };
+    for (final count in <Object>[0, -1, '20', 1.5]) {
+      expect(WsRaid.tryParse({...event, 'viewers': count}), isNull);
+    }
+    event.remove('from_broadcaster_user_id');
+    expect(WsRaid.tryParse(event), isNull);
+  });
+
   test('parses custom reward redemption music fields', () {
     final message = WsMessage.fromJson({
       'payload': {

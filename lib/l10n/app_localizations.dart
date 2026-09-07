@@ -115,6 +115,12 @@ abstract class AppLocalizations {
   /// **'Thanks for the follow!'**
   String get follow_thanks;
 
+  /// Number of viewers brought by the raiding broadcaster
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, one{brought {count} viewer} other{brought {count} viewers}}'**
+  String raid_viewers(int count);
+
   /// No description provided for @config_invalid.
   ///
   /// In en, this message translates to:

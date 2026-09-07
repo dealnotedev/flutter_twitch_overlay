@@ -18,6 +18,7 @@ class SubsWidget extends StatefulWidget {
   final BoxConstraints constraints;
   final VoidCallback? onLeaving;
   final AvatarPixelRenderer renderer;
+  final Radius pixelRadius;
 
   const SubsWidget({
     super.key,
@@ -26,6 +27,7 @@ class SubsWidget extends StatefulWidget {
     required this.description,
     this.onLeaving,
     this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.pixelRadius = const Radius.circular(2),
   });
 
   @override
@@ -312,6 +314,7 @@ class _State extends State<SubsWidget> {
             duration: Duration(seconds: 5),
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
+            pixelRadius: widget.pixelRadius,
             pixelPadding: 0.25,
             renderer: widget.renderer,
           ),
@@ -322,6 +325,7 @@ class _State extends State<SubsWidget> {
             duration: Duration(seconds: 5),
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
+            pixelRadius: widget.pixelRadius,
             pixelPadding: 0.25,
             renderer: widget.renderer,
           ),
@@ -333,6 +337,7 @@ class _State extends State<SubsWidget> {
             duration: _startDuration,
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
+            pixelRadius: widget.pixelRadius,
             pixelPadding: 0.5,
             renderer: widget.renderer,
           ),
@@ -343,6 +348,7 @@ class _State extends State<SubsWidget> {
             duration: _startDuration,
             fallDuration: Duration(milliseconds: 3000),
             pixelSize: _pixelSize,
+            pixelRadius: widget.pixelRadius,
             pixelPadding: 0.5,
             renderer: widget.renderer,
           ),

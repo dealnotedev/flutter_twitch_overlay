@@ -18,6 +18,7 @@ class ObsConfig {
     'music_control_server_enabled': true,
     'music_control_server_port': 47821,
     'followers': true,
+    'raids': true,
     'follow_animation_renderer': 'optimized',
     'follow_avatar_resolution': 48,
   };

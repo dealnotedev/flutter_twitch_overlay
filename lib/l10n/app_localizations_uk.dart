@@ -22,6 +22,19 @@ class AppLocalizationsUk extends AppLocalizations {
   String get follow_thanks => 'Дякую за фолов!';
 
   @override
+  String raid_viewers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'привів $count глядачів',
+      many: 'привів $count глядачів',
+      few: 'привів $count глядачів',
+      one: 'привів $count глядача',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get config_invalid => 'Неправильна конфігурація OBS';
 
   @override

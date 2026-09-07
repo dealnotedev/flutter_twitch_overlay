@@ -22,6 +22,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get follow_thanks => 'Thanks for the follow!';
 
   @override
+  String raid_viewers(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'brought $count viewers',
+      one: 'brought $count viewer',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get config_invalid => 'Invalid OBS config';
 
   @override
