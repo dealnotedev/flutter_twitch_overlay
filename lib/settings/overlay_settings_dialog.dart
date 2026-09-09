@@ -30,11 +30,17 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   Object? _error;
   bool _loading = true;
   bool _creating = false;
+  late int _collapseSeconds;
+  late bool _alwaysExpanded;
+  bool _savingPresentation = false;
+  bool _presentationSaveError = false;
 
   @override
   void initState() {
     super.initState();
     _selectedRewardId = widget.settings.musicRewardId;
+    _collapseSeconds = widget.settings.playerCollapseSeconds;
+    _alwaysExpanded = widget.settings.playerAlwaysExpanded;
     unawaited(_loadRewards());
   }
 
@@ -253,7 +259,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   }
 
   Widget _buildPlayerSettings(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.fromLTRB(28, 22, 28, 26),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -277,7 +283,164 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
             ),
           ),
           const Gap(18),
+          _buildPresentationSettings(context),
+          const Gap(16),
           _buildRewardSubsection(context),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _savePresentation() async {
+    setState(() {
+      _savingPresentation = true;
+      _presentationSaveError = false;
+    });
+    try {
+      await widget.settings.savePlayerPresentation(
+        collapseSeconds: _collapseSeconds,
+        alwaysExpanded: _alwaysExpanded,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _collapseSeconds = widget.settings.playerCollapseSeconds;
+        _alwaysExpanded = widget.settings.playerAlwaysExpanded;
+        _presentationSaveError = true;
+      });
+    } finally {
+      if (mounted) setState(() => _savingPresentation = false);
+    }
+  }
+
+  Widget _buildPresentationSettings(BuildContext context) {
+    final l10n = context.localizations;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+      decoration: BoxDecoration(
+        color: MusicPlayerPalette.midnight.withValues(alpha: 0.76),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: MusicPlayerPalette.neonPink.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.timer_outlined,
+                color: MusicPlayerPalette.neonPinkBright,
+                size: 22,
+              ),
+              const Gap(10),
+              Expanded(
+                child: Text(
+                  l10n.overlay_settings_collapse_title,
+                  style: const TextStyle(
+                    color: MusicPlayerPalette.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                l10n.overlay_settings_never_collapse,
+                style: const TextStyle(
+                  color: MusicPlayerPalette.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const Gap(8),
+              Switch(
+                key: const ValueKey('player_always_expanded_switch'),
+                value: _alwaysExpanded,
+                activeThumbColor: MusicPlayerPalette.neonPinkBright,
+                onChanged:
+                    _savingPresentation
+                        ? null
+                        : (value) {
+                          setState(() => _alwaysExpanded = value);
+                          unawaited(_savePresentation());
+                        },
+              ),
+            ],
+          ),
+          Text(
+            _alwaysExpanded
+                ? l10n.overlay_settings_stays_expanded
+                : l10n.overlay_settings_collapse_description,
+            style: const TextStyle(
+              color: MusicPlayerPalette.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          Row(
+            children: [
+              Text(
+                l10n.overlay_settings_seconds(1),
+                style: const TextStyle(
+                  color: MusicPlayerPalette.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              Expanded(
+                child: Slider(
+                  key: const ValueKey('player_collapse_slider'),
+                  value: _collapseSeconds.toDouble(),
+                  min: 1,
+                  max: 60,
+                  divisions: 59,
+                  label: l10n.overlay_settings_seconds(_collapseSeconds),
+                  activeColor: MusicPlayerPalette.neonPinkBright,
+                  inactiveColor: MusicPlayerPalette.neonPink.withValues(
+                    alpha: 0.15,
+                  ),
+                  onChanged:
+                      _alwaysExpanded || _savingPresentation
+                          ? null
+                          : (value) =>
+                              setState(() => _collapseSeconds = value.round()),
+                  onChangeEnd: (_) => unawaited(_savePresentation()),
+                ),
+              ),
+              Text(
+                l10n.overlay_settings_seconds(60),
+                style: const TextStyle(
+                  color: MusicPlayerPalette.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const Gap(16),
+              Container(
+                width: 72,
+                alignment: Alignment.center,
+                padding: const EdgeInsets.symmetric(vertical: 6),
+                decoration: BoxDecoration(
+                  color: MusicPlayerPalette.neonPink.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  _alwaysExpanded
+                      ? '∞'
+                      : l10n.overlay_settings_seconds(_collapseSeconds),
+                  style: const TextStyle(
+                    color: MusicPlayerPalette.neonPinkBright,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          if (_presentationSaveError)
+            Text(
+              l10n.overlay_settings_save_error,
+              style: const TextStyle(
+                color: MusicPlayerPalette.error,
+                fontSize: 12,
+              ),
+            ),
         ],
       ),
     );
@@ -286,7 +449,8 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   Widget _buildRewardSubsection(BuildContext context) {
     final actionsEnabled = !_loading && !_creating;
 
-    return Expanded(
+    return SizedBox(
+      height: 340,
       child: Container(
         decoration: BoxDecoration(
           color: MusicPlayerPalette.midnight.withValues(alpha: 0.76),

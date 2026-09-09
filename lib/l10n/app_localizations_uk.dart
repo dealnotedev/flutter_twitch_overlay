@@ -138,7 +138,30 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get overlay_settings_player_description =>
-      'Налаштуйте замовлення музики глядачами за бали каналу.';
+      'Налаштуйте вигляд плеєра та замовлення музики за бали каналу.';
+
+  @override
+  String get overlay_settings_collapse_title => 'Автозгортання';
+
+  @override
+  String get overlay_settings_never_collapse => 'Не згортати';
+
+  @override
+  String get overlay_settings_stays_expanded =>
+      'Плеєр залишається розгорнутим, поки має вміст.';
+
+  @override
+  String get overlay_settings_collapse_description =>
+      'Час до компактного режиму. Під курсором плеєр залишається розгорнутим.';
+
+  @override
+  String overlay_settings_seconds(int seconds) {
+    return '$seconds с';
+  }
+
+  @override
+  String get overlay_settings_save_error =>
+      'Не вдалося зберегти налаштування. Спробуйте ще раз.';
 
   @override
   String get overlay_settings_reward_title => 'Кнопка винагороди';

@@ -8,12 +8,38 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Settings {
   static const _kTwitchAuth = 'twitch_login';
   static const _kMusicRewardId = 'music_reward_id';
+  static const _kPlayerCollapseSeconds = 'player_collapse_seconds';
+  static const _kPlayerAlwaysExpanded = 'player_always_expanded';
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
 
     _initTwitchCreds(prefs);
     _initMusicRewardId(prefs);
+    playerCollapseSeconds = (prefs.getInt(_kPlayerCollapseSeconds) ?? 5).clamp(
+      1,
+      60,
+    );
+    playerAlwaysExpanded = prefs.getBool(_kPlayerAlwaysExpanded) ?? false;
+  }
+
+  int playerCollapseSeconds = 5;
+  bool playerAlwaysExpanded = false;
+  final _playerPresentationSubject = StreamController<void>.broadcast();
+  Stream<void> get playerPresentationChanges =>
+      _playerPresentationSubject.stream;
+
+  Future<void> savePlayerPresentation({
+    required int collapseSeconds,
+    required bool alwaysExpanded,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final seconds = collapseSeconds.clamp(1, 60);
+    await prefs.setInt(_kPlayerCollapseSeconds, seconds);
+    await prefs.setBool(_kPlayerAlwaysExpanded, alwaysExpanded);
+    playerCollapseSeconds = seconds;
+    playerAlwaysExpanded = alwaysExpanded;
+    _playerPresentationSubject.add(null);
   }
 
   Future<void> saveTwitchAuth(TwitchCreds? creds) async {

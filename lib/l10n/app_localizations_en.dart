@@ -136,7 +136,30 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overlay_settings_player_description =>
-      'Configure how viewers request music with Channel Points.';
+      'Configure the player appearance and music requests with Channel Points.';
+
+  @override
+  String get overlay_settings_collapse_title => 'Auto-collapse';
+
+  @override
+  String get overlay_settings_never_collapse => 'Never collapse';
+
+  @override
+  String get overlay_settings_stays_expanded =>
+      'The player stays expanded while it has content.';
+
+  @override
+  String get overlay_settings_collapse_description =>
+      'Time before switching to compact mode. Hovering keeps the player expanded.';
+
+  @override
+  String overlay_settings_seconds(int seconds) {
+    return '$seconds s';
+  }
+
+  @override
+  String get overlay_settings_save_error =>
+      'Could not save the setting. Please try again.';
 
   @override
   String get overlay_settings_reward_title => 'Reward button';

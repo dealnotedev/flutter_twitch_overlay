@@ -298,8 +298,44 @@ abstract class AppLocalizations {
   /// No description provided for @overlay_settings_player_description.
   ///
   /// In en, this message translates to:
-  /// **'Configure how viewers request music with Channel Points.'**
+  /// **'Configure the player appearance and music requests with Channel Points.'**
   String get overlay_settings_player_description;
+
+  /// No description provided for @overlay_settings_collapse_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Auto-collapse'**
+  String get overlay_settings_collapse_title;
+
+  /// No description provided for @overlay_settings_never_collapse.
+  ///
+  /// In en, this message translates to:
+  /// **'Never collapse'**
+  String get overlay_settings_never_collapse;
+
+  /// No description provided for @overlay_settings_stays_expanded.
+  ///
+  /// In en, this message translates to:
+  /// **'The player stays expanded while it has content.'**
+  String get overlay_settings_stays_expanded;
+
+  /// No description provided for @overlay_settings_collapse_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Time before switching to compact mode. Hovering keeps the player expanded.'**
+  String get overlay_settings_collapse_description;
+
+  /// No description provided for @overlay_settings_seconds.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String overlay_settings_seconds(int seconds);
+
+  /// No description provided for @overlay_settings_save_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not save the setting. Please try again.'**
+  String get overlay_settings_save_error;
 
   /// No description provided for @overlay_settings_reward_title.
   ///

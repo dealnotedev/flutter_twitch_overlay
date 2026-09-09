@@ -73,7 +73,14 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
       widget.controller?.addListener(_handleExpandRequest);
     }
 
-    if (oldWidget.requests == widget.requests) return;
+    if (oldWidget.requests == widget.requests) {
+      if (oldWidget.collapseDelay != widget.collapseDelay ||
+          oldWidget.alwaysExpanded != widget.alwaysExpanded) {
+        _expanded = true;
+        _scheduleCollapse();
+      }
+      return;
+    }
 
     unawaited(_subscription?.cancel());
     _collapseTimer?.cancel();
@@ -106,14 +113,12 @@ class _MusicQueueOverlayState extends State<MusicQueueOverlay> {
   }
 
   void _handlePointerEnter(PointerEnterEvent event) {
-    if (widget.alwaysExpanded) return;
     _hovered = true;
     _collapseTimer?.cancel();
     if (!_expanded) setState(() => _expanded = true);
   }
 
   void _handlePointerExit(PointerExitEvent event) {
-    if (widget.alwaysExpanded) return;
     _hovered = false;
     _scheduleCollapse();
   }

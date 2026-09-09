@@ -54,6 +54,7 @@ class _State extends State<LoggedWidget> {
   StreamSubscription<WsMessage>? _eventsSubscription;
   StreamSubscription<WsStateEvent>? _stateSubscription;
   StreamSubscription<Config>? _configSubscription;
+  StreamSubscription<void>? _playerSettingsSubscription;
   late Timer _rewardCleanupTimer;
   late Settings _settings;
   late ObsConfig _obsConfig;
@@ -75,6 +76,11 @@ class _State extends State<LoggedWidget> {
     super.initState();
 
     _settings = widget.locator.provide();
+    _playerSettingsSubscription = _settings.playerPresentationChanges.listen((
+      _,
+    ) {
+      if (mounted) setState(() {});
+    });
     _obsConfig = widget.locator.provide();
     _alertRenderer = _readAlertRenderer();
     _alertAvatarResolution = _readAlertAvatarResolution();
@@ -101,6 +107,7 @@ class _State extends State<LoggedWidget> {
     _eventsSubscription?.cancel();
     _stateSubscription?.cancel();
     _configSubscription?.cancel();
+    _playerSettingsSubscription?.cancel();
     _musicOverlayController.dispose();
     super.dispose();
   }
@@ -145,6 +152,10 @@ class _State extends State<LoggedWidget> {
                   child: MusicQueueOverlay(
                     requests: musicRequests,
                     controller: _musicOverlayController,
+                    collapseDelay: Duration(
+                      seconds: _settings.playerCollapseSeconds,
+                    ),
+                    alwaysExpanded: _settings.playerAlwaysExpanded,
                   ),
                 ),
               ),

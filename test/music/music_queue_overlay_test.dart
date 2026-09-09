@@ -11,6 +11,37 @@ void main() {
   const collapseDelay = Duration(seconds: 1);
   const animationDuration = Duration(milliseconds: 200);
 
+  testWidgets('updates delay and disables collapse without recreating player', (
+    tester,
+  ) async {
+    final requests = _FakeMusicRequests(_snapshot());
+    addTearDown(requests.dispose);
+    Future<void> configure(int seconds, {bool alwaysExpanded = false}) =>
+        tester.pumpWidget(
+          _TestSurface(
+            requests: requests,
+            collapseDelay: Duration(seconds: seconds),
+            animationDuration: animationDuration,
+            alwaysExpanded: alwaysExpanded,
+          ),
+        );
+    await configure(1);
+    await tester.pump(const Duration(milliseconds: 500));
+    await configure(60);
+    await tester.pump(const Duration(seconds: 59));
+    expect(find.byKey(const ValueKey('music_player_compact')), findsNothing);
+    await tester.pump(const Duration(seconds: 1));
+    await tester.pump(animationDuration);
+    await configure(60, alwaysExpanded: true);
+    await tester.pump(const Duration(seconds: 61));
+    expect(find.byKey(const ValueKey('music_player_compact')), findsNothing);
+    expect(find.byKey(const ValueKey('music_player_expanded')), findsOneWidget);
+    await configure(1);
+    await _collapse(tester, collapseDelay, animationDuration);
+    expect(find.byKey(const ValueKey('music_player_expanded')), findsNothing);
+    expect(find.byKey(const ValueKey('music_player_compact')), findsOneWidget);
+  });
+
   testWidgets('collapses to an artwork square and expands on hover', (
     tester,
   ) async {
