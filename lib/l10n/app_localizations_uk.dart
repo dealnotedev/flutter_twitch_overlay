@@ -22,6 +22,45 @@ class AppLocalizationsUk extends AppLocalizations {
   String get follow_thanks => 'Дякую за фолов!';
 
   @override
+  String get subscription_anonymous => 'Анонім';
+
+  @override
+  String subscription_thanks(int tier) {
+    return 'дякую за T$tier підписку!';
+  }
+
+  @override
+  String subscription_resub_thanks(int months, int tier) {
+    String _temp0 = intl.Intl.pluralLogic(
+      months,
+      locale: localeName,
+      other: 'місяців',
+      many: 'місяців',
+      few: 'місяці',
+      one: 'місяць',
+    );
+    return 'дякую за $months $_temp0 T$tier підписки!';
+  }
+
+  @override
+  String subscription_gift(int tier) {
+    return 'дарує T$tier підписку!';
+  }
+
+  @override
+  String subscription_gifts(int count, int tier) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'підписок',
+      many: 'підписок',
+      few: 'підписки',
+      one: 'підписку',
+    );
+    return 'дарує $count T$tier $_temp0!';
+  }
+
+  @override
   String raid_viewers(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

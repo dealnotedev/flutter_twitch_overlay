@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:obssource/config/obs_config.dart';
+import 'package:obssource/alerts/user_alert_widget.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/follow/follow_widget.dart';
@@ -66,6 +67,197 @@ void main() {
         .setMockDecodedMessageHandler<String>(audioChannel, null);
     await websocket.close();
   });
+
+  testWidgets(
+    'subscription alert uses shared avatar settings and deduplicates deliveries',
+    (tester) async {
+      config.config.set(
+        Config(
+          valid: true,
+          json: {
+            'subscriptions': true,
+            'alert_avatar_resolution': 32,
+            'alert_animation_renderer': 'legacy',
+          },
+        ),
+      );
+      await _pumpLoggedWidget(tester, locator);
+      final message = WsMessage.fromJson({
+        'metadata': {'message_id': 'sub-delivery'},
+        'payload': {
+          'subscription': {'type': 'channel.subscription.message'},
+          'event': {
+            'user_id': 'follower-id',
+            'user_login': 'subscriber',
+            'user_name': 'Subscriber',
+            'tier': '2000',
+            'cumulative_months': 22,
+          },
+        },
+      });
+      websocket.add(message);
+      websocket.add(message);
+      await tester.pump();
+      await tester.pump();
+      final alert = tester.widget<UserAlertWidget>(
+        find.byType(UserAlertWidget),
+      );
+      expect(alert.userName, 'Subscriber');
+      expect(alert.description, 'thanks for 22 months of T2 subscription!');
+      expect(alert.avatar, isNotNull);
+      expect(alert.avatarResolution, 32);
+      expect(alert.renderer, AvatarPixelRenderer.legacyCanvas);
+      await tester.pump(const Duration(seconds: 21));
+      expect(find.byType(UserAlertWidget), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'anonymous gifts avoid profile lookup and honor disabled subscriptions',
+    (tester) async {
+      var lookups = 0;
+      await _pumpLoggedWidget(
+        tester,
+        locator,
+        userLoader: (_) async {
+          lookups++;
+          throw StateError('unavailable');
+        },
+      );
+      WsMessage gift(String id) => WsMessage.fromJson({
+        'metadata': {'message_id': id},
+        'payload': {
+          'subscription': {'type': 'channel.subscription.gift'},
+          'event': {'tier': '1000', 'total': 5, 'is_anonymous': true},
+        },
+      });
+      websocket.add(gift('gift-one'));
+      await tester.pump();
+      await tester.pump();
+      final alert = tester.widget<UserAlertWidget>(
+        find.byType(UserAlertWidget),
+      );
+      expect(alert.userName, 'Anonymous');
+      expect(alert.description, 'gifts 5 T1 subscriptions!');
+      expect(alert.avatar, isNull);
+      expect(lookups, 0);
+      await tester.pump(const Duration(seconds: 21));
+      config.config.set(Config(valid: true, json: {'subscriptions': false}));
+      websocket.add(gift('gift-two'));
+      await tester.pump();
+      expect(find.byType(UserAlertWidget), findsNothing);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'queues subscriptions in arrival order including slow and failed profiles',
+    (tester) async {
+      final firstProfile = Completer<UserDto?>();
+      final lookups = <String>[];
+      await _pumpLoggedWidget(
+        tester,
+        locator,
+        userLoader: (id) {
+          lookups.add(id);
+          if (id == 'first') return firstProfile.future;
+          throw StateError('profile unavailable');
+        },
+      );
+      WsMessage sub(String id) => WsMessage.fromJson({
+        'metadata': {'message_id': id},
+        'payload': {
+          'subscription': {'type': 'channel.subscribe'},
+          'event': {
+            'user_id': id,
+            'user_login': id,
+            'user_name': id,
+            'tier': '1000',
+            'is_gift': false,
+          },
+        },
+      });
+      int plays() =>
+          audioCommands.where((command) => command['cmd'] == 'play').length;
+      for (final id in ['first', 'second', 'third']) {
+        websocket.add(sub(id));
+      }
+      await tester.pump();
+      expect(lookups, ['first']);
+      expect(find.byType(UserAlertWidget), findsNothing);
+      expect(plays(), 0);
+      firstProfile.complete(null);
+      await tester.pump();
+      await tester.pump();
+      for (var index = 0; index < 3; index++) {
+        await tester.runAsync(() async {
+          await Future<void>.delayed(Duration.zero);
+        });
+        await tester.pump();
+        final name = ['first', 'second', 'third'][index];
+        expect(find.byType(UserAlertWidget), findsOneWidget);
+        expect(
+          tester.widget<UserAlertWidget>(find.byType(UserAlertWidget)).userName,
+          name,
+        );
+        expect(plays(), index + 1);
+        await tester.pump(const Duration(seconds: 19));
+        expect(
+          tester.widget<UserAlertWidget>(find.byType(UserAlertWidget)).userName,
+          name,
+        );
+        await tester.pump(const Duration(seconds: 1));
+        await tester.pump();
+      }
+      expect(find.byType(UserAlertWidget), findsNothing);
+      expect(lookups, ['first', 'second', 'third']);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
+  testWidgets(
+    'disposal discards queued subscriptions before profile loading finishes',
+    (tester) async {
+      final profile = Completer<UserDto?>();
+      var lookups = 0;
+      await _pumpLoggedWidget(
+        tester,
+        locator,
+        userLoader: (_) {
+          lookups++;
+          return profile.future;
+        },
+      );
+      for (final id in ['first', 'second']) {
+        websocket.add(
+          WsMessage.fromJson({
+            'metadata': {'message_id': id},
+            'payload': {
+              'subscription': {'type': 'channel.subscribe'},
+              'event': {
+                'user_id': id,
+                'user_login': id,
+                'user_name': id,
+                'tier': '1000',
+                'is_gift': false,
+              },
+            },
+          }),
+        );
+      }
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      profile.complete(null);
+      await tester.pump();
+      expect(lookups, 1);
+      expect(
+        audioCommands.where((command) => command['cmd'] == 'play'),
+        isEmpty,
+      );
+      expect(tester.takeException(), isNull);
+    },
+  );
 
   testWidgets('shows the invalid OBS config indicator only while invalid', (
     tester,

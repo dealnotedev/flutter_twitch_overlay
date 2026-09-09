@@ -21,6 +21,15 @@
     }
   },
   "follow_thanks": "Thanks for the follow!",
+  "subscription_anonymous": "Anonymous",
+  "subscription_thanks": "thanks for the T{tier} subscription!",
+  "@subscription_thanks": {"placeholders": {"tier": {"type": "int"}}},
+  "subscription_resub_thanks": "thanks for {months} {months, plural, one{month} other{months}} of T{tier} subscription!",
+  "@subscription_resub_thanks": {"placeholders": {"months": {"type": "int"}, "tier": {"type": "int"}}},
+  "subscription_gift": "gifts a T{tier} subscription!",
+  "@subscription_gift": {"placeholders": {"tier": {"type": "int"}}},
+  "subscription_gifts": "gifts {count} T{tier} {count, plural, one{subscription} other{subscriptions}}!",
+  "@subscription_gifts": {"placeholders": {"count": {"type": "int"}, "tier": {"type": "int"}}},
   "raid_viewers": "{count, plural, one{brought {count} viewer} other{brought {count} viewers}}",
   "@raid_viewers": {
     "description": "Number of viewers brought by the raiding broadcaster",

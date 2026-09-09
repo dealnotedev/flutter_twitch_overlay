@@ -19,6 +19,7 @@ class ObsConfig {
     'music_control_server_port': 47821,
     'followers': true,
     'raids': true,
+    'subscriptions': true,
     'alert_animation_renderer': 'optimized',
     'alert_avatar_resolution': 48,
   };

@@ -22,6 +22,41 @@ class AppLocalizationsEn extends AppLocalizations {
   String get follow_thanks => 'Thanks for the follow!';
 
   @override
+  String get subscription_anonymous => 'Anonymous';
+
+  @override
+  String subscription_thanks(int tier) {
+    return 'thanks for the T$tier subscription!';
+  }
+
+  @override
+  String subscription_resub_thanks(int months, int tier) {
+    String _temp0 = intl.Intl.pluralLogic(
+      months,
+      locale: localeName,
+      other: 'months',
+      one: 'month',
+    );
+    return 'thanks for $months $_temp0 of T$tier subscription!';
+  }
+
+  @override
+  String subscription_gift(int tier) {
+    return 'gifts a T$tier subscription!';
+  }
+
+  @override
+  String subscription_gifts(int count, int tier) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'subscriptions',
+      one: 'subscription',
+    );
+    return 'gifts $count T$tier $_temp0!';
+  }
+
+  @override
   String raid_viewers(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

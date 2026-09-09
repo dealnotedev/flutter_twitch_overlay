@@ -3,8 +3,39 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
+import 'package:obssource/twitch/ws_subscription.dart';
 
 void main() {
+  for (final type in SubscriptionEventType.values) {
+    test('registers ${type.wireName} for the broadcaster session', () async {
+      final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+      RequestOptions? request;
+      api.dio.interceptors
+        ..clear()
+        ..add(
+          InterceptorsWrapper(
+            onRequest: (options, handler) {
+              request = options;
+              handler.resolve(
+                Response<void>(requestOptions: options, statusCode: 202),
+              );
+            },
+          ),
+        );
+      await api.subscribeSubscriptionEvents(
+        type: type,
+        broadcasterUserId: 'owner',
+        sessionId: 'session',
+      );
+      expect(request?.path, '/eventsub/subscriptions');
+      expect(request?.data, {
+        'type': type.wireName,
+        'version': '1',
+        'condition': {'broadcaster_user_id': 'owner'},
+        'transport': {'method': 'websocket', 'session_id': 'session'},
+      });
+    });
+  }
   test('subscribes to incoming raids for the broadcaster websocket', () async {
     final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
     RequestOptions? capturedRequest;

@@ -21,6 +21,11 @@
     }
   },
   "follow_thanks": "Дякую за фолов!",
+  "subscription_anonymous": "Анонім",
+  "subscription_thanks": "дякую за T{tier} підписку!",
+  "subscription_resub_thanks": "дякую за {months} {months, plural, one{місяць} few{місяці} many{місяців} other{місяців}} T{tier} підписки!",
+  "subscription_gift": "дарує T{tier} підписку!",
+  "subscription_gifts": "дарує {count} T{tier} {count, plural, one{підписку} few{підписки} many{підписок} other{підписок}}!",
   "raid_viewers": "{count, plural, one{привів {count} глядача} few{привів {count} глядачів} many{привів {count} глядачів} other{привів {count} глядачів}}",
   "@raid_viewers": {
     "description": "Number of viewers brought by the raiding broadcaster",

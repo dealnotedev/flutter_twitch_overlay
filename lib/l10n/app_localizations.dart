@@ -115,6 +115,36 @@ abstract class AppLocalizations {
   /// **'Thanks for the follow!'**
   String get follow_thanks;
 
+  /// No description provided for @subscription_anonymous.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous'**
+  String get subscription_anonymous;
+
+  /// No description provided for @subscription_thanks.
+  ///
+  /// In en, this message translates to:
+  /// **'thanks for the T{tier} subscription!'**
+  String subscription_thanks(int tier);
+
+  /// No description provided for @subscription_resub_thanks.
+  ///
+  /// In en, this message translates to:
+  /// **'thanks for {months} {months, plural, one{month} other{months}} of T{tier} subscription!'**
+  String subscription_resub_thanks(int months, int tier);
+
+  /// No description provided for @subscription_gift.
+  ///
+  /// In en, this message translates to:
+  /// **'gifts a T{tier} subscription!'**
+  String subscription_gift(int tier);
+
+  /// No description provided for @subscription_gifts.
+  ///
+  /// In en, this message translates to:
+  /// **'gifts {count} T{tier} {count, plural, one{subscription} other{subscriptions}}!'**
+  String subscription_gifts(int count, int tier);
+
   /// Number of viewers brought by the raiding broadcaster
   ///
   /// In en, this message translates to:

@@ -1,10 +1,12 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
+import 'package:obssource/alerts/user_alert_widget.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
@@ -13,8 +15,8 @@ import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/generated/assets.dart';
-import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:obssource/music/music_player_visuals.dart';
+import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
@@ -24,6 +26,7 @@ import 'package:obssource/raid/raid_widget.dart';
 import 'package:obssource/secrets.dart';
 import 'package:obssource/settings/overlay_settings_dialog.dart';
 import 'package:obssource/span_util.dart';
+import 'package:obssource/subs/subscription_text.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/ws_event.dart';
 import 'package:obssource/twitch/ws_manager.dart';
@@ -49,6 +52,7 @@ class LoggedWidget extends StatefulWidget {
 class _State extends State<LoggedWidget> {
   static const _followDuration = Duration(seconds: 20);
   static const _raidDuration = Duration(seconds: 20);
+  static const _subscriptionDuration = Duration(seconds: 20);
   static const _rewardDuration = Duration(milliseconds: 7500);
 
   StreamSubscription<WsMessage>? _eventsSubscription;
@@ -69,6 +73,9 @@ class _State extends State<LoggedWidget> {
   final _receivedEventIds = <String>{};
   final _follows = <UserFollowEvent>{};
   final _raids = <UserRaidEvent>{};
+  UserSubscriptionEvent? _currentSubscription;
+  final _subscriptionQueue = Queue<WsMessageEvent>();
+  bool _processingSubscriptions = false;
   final _users = <String, UserDto>{};
 
   @override
@@ -103,6 +110,7 @@ class _State extends State<LoggedWidget> {
 
   @override
   void dispose() {
+    _subscriptionQueue.clear();
     _rewardCleanupTimer.cancel();
     _eventsSubscription?.cancel();
     _stateSubscription?.cancel();
@@ -138,6 +146,21 @@ class _State extends State<LoggedWidget> {
               ),
             ),
             _createRewardsWidget(),
+            if (_currentSubscription case final subscription?)
+              UserAlertWidget(
+                key: ValueKey(subscription),
+                userName:
+                    subscription.subscription.isAnonymous
+                        ? context.localizations.subscription_anonymous
+                        : subscription.userName!,
+                description: subscription.subscription.description(
+                  context.localizations,
+                ),
+                avatar: subscription.avatar,
+                constraints: constraints,
+                renderer: _alertRenderer,
+                avatarResolution: _alertAvatarResolution,
+              ),
             if (_musicRequests case final musicRequests?)
               Positioned(
                 right: 24,
@@ -341,6 +364,14 @@ class _State extends State<LoggedWidget> {
     }
 
     switch (message.payload.subscription?.type) {
+      case 'channel.subscribe':
+      case 'channel.subscription.message':
+      case 'channel.subscription.gift':
+        if (event?.subscription != null &&
+            _obsConfig.getBool('subscriptions', fallback: true)) {
+          await _handleUserSubscription(event!);
+        }
+        return;
       case 'channel.raid':
         final raid = event?.raid;
         if (raid != null && _obsConfig.getBool('raids', fallback: true)) {
@@ -396,6 +427,74 @@ class _State extends State<LoggedWidget> {
     });
   }
 
+  Future<void> _handleUserSubscription(WsMessageEvent event) async {
+    _subscriptionQueue.addLast(event);
+    if (_processingSubscriptions) return;
+    _processingSubscriptions = true;
+    try {
+      while (mounted && _subscriptionQueue.isNotEmpty) {
+        final next = _subscriptionQueue.removeFirst();
+        try {
+          await _showUserSubscription(next);
+        } catch (error) {
+          debugPrint('Could not show subscription alert: $error');
+        }
+      }
+    } finally {
+      _processingSubscriptions = false;
+    }
+  }
+
+  Future<void> _showUserSubscription(WsMessageEvent event) async {
+    final subscription = event.subscription!;
+    final name = event.user?.name;
+    if (!subscription.isAnonymous && (name == null || name.isEmpty)) return;
+
+    UserDto? user;
+    if (!subscription.isAnonymous) {
+      try {
+        user = await _getUser(event.user?.id);
+      } catch (_) {
+        // A failed profile lookup must not suppress the notification.
+      }
+    }
+
+    if (!mounted) return;
+
+    final avatar = await _loadAlertAvatar(user);
+
+    if (!mounted) return;
+
+    final alert = UserSubscriptionEvent(
+      userName: name,
+      subscription: subscription,
+      avatar: avatar,
+    );
+
+    setState(() {
+      _currentSubscription = alert;
+    });
+
+    unawaited(_playSubscriptionSound());
+
+    await Future<void>.delayed(_subscriptionDuration);
+
+    if (!mounted) return;
+
+    setState(() {
+      _currentSubscription = null;
+    });
+  }
+
+  Future<void> _playSubscriptionSound() async {
+    try {
+      final sound = await ObsAudio.loadAsset(Assets.assetsFollowSound);
+      if (mounted) await ObsAudio.play(sound);
+    } catch (error) {
+      debugPrint('Could not play subscription audio: $error');
+    }
+  }
+
   Future<void> _handleUserRaid(WsRaid event) async {
     final broadcasterId = _settings.twitchAuth?.broadcasterId;
     if (broadcasterId != null && event.toBroadcasterId != broadcasterId) return;
@@ -441,7 +540,7 @@ class _State extends State<LoggedWidget> {
       final loader = widget.avatarLoader ?? RainyAvatar.loadImageFromUrl;
       return await loader(url);
     } catch (_) {
-      // Both alerts can still run without an avatar.
+      // Alerts can still run without an avatar.
       return null;
     }
   }

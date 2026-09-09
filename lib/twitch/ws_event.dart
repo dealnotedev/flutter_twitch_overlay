@@ -1,3 +1,5 @@
+import 'package:obssource/twitch/ws_subscription.dart';
+
 class WsMessage {
   final WsMessagePayload payload;
   final String? messageId;
@@ -27,7 +29,13 @@ class WsMessagePayload {
           subscriptionJson != null
               ? WsMessageSubscription.fromJson(subscriptionJson)
               : null,
-      event: eventJson != null ? WsMessageEvent.fromJson(eventJson) : null,
+      event:
+          eventJson != null
+              ? WsMessageEvent.fromJson(
+                eventJson,
+                eventType: subscriptionJson?['type'] as String?,
+              )
+              : null,
     );
   }
 }
@@ -56,6 +64,7 @@ class WsMessageEvent {
   final String? messageText;
   final DateTime? redeemedAt;
   final WsRaid? raid;
+  final WsSubscription? subscription;
 
   WsMessageEvent({
     required this.id,
@@ -65,9 +74,10 @@ class WsMessageEvent {
     required this.messageText,
     required this.redeemedAt,
     this.raid,
+    this.subscription,
   });
 
-  factory WsMessageEvent.fromJson(dynamic json) {
+  factory WsMessageEvent.fromJson(dynamic json, {String? eventType}) {
     final rewardJson = json['reward'];
     final messageJson = json['message'];
 
@@ -79,6 +89,7 @@ class WsMessageEvent {
       messageText: messageJson is Map ? messageJson['text'] as String? : null,
       redeemedAt: DateTime.tryParse(json['redeemed_at'] as String? ?? ''),
       raid: WsRaid.tryParse(json),
+      subscription: WsSubscription.tryParse(json, eventType),
     );
   }
 }

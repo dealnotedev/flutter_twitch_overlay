@@ -9,6 +9,7 @@ import 'package:obssource/secrets.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/twitch/ws_event.dart';
+import 'package:obssource/twitch/ws_subscription.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:web_socket_channel/io.dart';
 
@@ -239,6 +240,20 @@ class WebSocketManager {
           broadcasterId: broadcasterId,
         ),
       );
+      for (final type in [
+        _RegistrationType.subscribe,
+        _RegistrationType.resubscribe,
+        _RegistrationType.subscriptionGift,
+      ]) {
+        await _registerInternal(
+          api,
+          _Registration(
+            type,
+            sessionId: sessionId,
+            broadcasterId: broadcasterId,
+          ),
+        );
+      }
     } on DioException catch (e) {
       debugPrint(
         'Api Error ${e.response?.statusCode} with message ${e.message}',
@@ -256,6 +271,19 @@ class WebSocketManager {
     if (_registrations.contains(registration)) return;
 
     switch (registration.type) {
+      case _RegistrationType.subscribe:
+      case _RegistrationType.resubscribe:
+      case _RegistrationType.subscriptionGift:
+        await api.subscribeSubscriptionEvents(
+          type: switch (registration.type) {
+            _RegistrationType.subscribe => SubscriptionEventType.subscribe,
+            _RegistrationType.resubscribe => SubscriptionEventType.message,
+            _ => SubscriptionEventType.gift,
+          },
+          broadcasterUserId: registration.broadcasterId,
+          sessionId: registration.sessionId,
+        );
+        break;
       case _RegistrationType.rewards:
         await api.subscribeCustomRewards(
           broadcasterUserId: registration.broadcasterId,
@@ -298,7 +326,15 @@ class _Channel {
   _Channel({required this.channel});
 }
 
-enum _RegistrationType { rewards, follow, raid, chatMessages }
+enum _RegistrationType {
+  rewards,
+  follow,
+  raid,
+  chatMessages,
+  subscribe,
+  resubscribe,
+  subscriptionGift,
+}
 
 class _Registration {
   final _RegistrationType type;

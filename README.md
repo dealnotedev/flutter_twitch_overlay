@@ -18,7 +18,7 @@ samples, guidance on mobile development, and a full API reference.
 ## OBS source configuration
 
 The OBS source JSON configures rendering for all user alerts, including
-follow and raid animations:
+follow, raid, and subscription animations:
 
 ```json
 {
@@ -31,6 +31,16 @@ The settings apply to avatars, text, and pixel decorations. Changes also update
 alerts that are already visible. Supported renderer values are `optimized` (the default `drawRawAtlas` renderer) and
 `legacy` (the previous canvas renderer). The avatar resolution defaults to
 `48`; its pixel size remains fixed at `8`.
+
+Subscription alerts are enabled by default; set `"subscriptions": false` in
+the OBS source JSON to disable them. They handle new subscriptions, shared
+resubscription messages (total months), and single or bulk gifts. Gift recipients
+do not trigger duplicate alerts. Anonymous givers appear as `Анонім`.
+The alerts use l10n translations (Ukrainian and English), the shared avatar animation, a
+20-second lifetime, and the existing follow sound. Subscription alerts play in
+arrival order, one at a time, with audio starting when each alert is shown.
+Twitch authorization requires
+`channel:read:subscriptions`; older tokens without this scope need a new login.
 
 ## Twitch music requests MVP
 

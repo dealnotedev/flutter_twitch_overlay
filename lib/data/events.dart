@@ -1,5 +1,6 @@
 import 'package:image/image.dart' as img;
 import 'package:obssource/twitch/twitch_api.dart';
+import 'package:obssource/twitch/ws_subscription.dart';
 
 class UserFollowEvent {
   final DateTime time;
@@ -14,6 +15,18 @@ class UserFollowEvent {
     this.avatar,
     required this.time,
     required this.end,
+  });
+}
+
+class UserSubscriptionEvent {
+  final String? userName;
+  final WsSubscription subscription;
+  final img.Image? avatar;
+
+  UserSubscriptionEvent({
+    required this.userName,
+    required this.subscription,
+    this.avatar,
   });
 }
 

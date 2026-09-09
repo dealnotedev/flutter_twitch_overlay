@@ -36,7 +36,7 @@ void main() {
         config.getBool('music_control_server_enabled', fallback: false),
         isTrue,
       );
-      expect(config.getBool('subscriptions'), isFalse);
+      expect(config.getBool('subscriptions'), isTrue);
       expect(config.getBool('subscriptions', fallback: true), isTrue);
     });
 

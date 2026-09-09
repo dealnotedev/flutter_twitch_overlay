@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_creds_interceptor.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
+import 'package:obssource/twitch/ws_subscription.dart';
 
 class TwitchApi {
   late final Dio dio;
@@ -83,6 +84,20 @@ class TwitchApi {
       },
     );
   }
+
+  Future<void> subscribeSubscriptionEvents({
+    required SubscriptionEventType type,
+    required String broadcasterUserId,
+    required String sessionId,
+  }) => dio.post(
+    '/eventsub/subscriptions',
+    data: {
+      'version': '1',
+      'type': type.wireName,
+      'condition': {'broadcaster_user_id': broadcasterUserId},
+      'transport': {'session_id': sessionId, 'method': 'websocket'},
+    },
+  );
 
   Future<void> subscribeChatMessages({
     required String broadcasterUserId,
