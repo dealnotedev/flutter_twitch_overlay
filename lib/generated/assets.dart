@@ -3,6 +3,12 @@
 class Assets {
   Assets._();
 
+  static const String subscriptionsSubscriptionPurchase =
+      'assets/subscriptions/subscription_purchase.wav';
+  static const String subscriptionsSubscriptionRenewal =
+      'assets/subscriptions/subscription_renewal.wav';
+  static const String subscriptionsSubscriptionGift =
+      'assets/subscriptions/subscription_gift.wav';
   static const String assetsHeart = 'assets/heart.png';
   static const String assetsFollowSound = 'assets/follow_sound.mp3';
   static const String assetsIcDefaultAvatar96dp =

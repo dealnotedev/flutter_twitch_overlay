@@ -37,8 +37,11 @@ the OBS source JSON to disable them. They handle new subscriptions, shared
 resubscription messages (total months), and single or bulk gifts. Gift recipients
 do not trigger duplicate alerts. Anonymous givers appear as `Анонім`.
 The alerts use l10n translations (Ukrainian and English), the shared avatar animation, a
-20-second lifetime, and the existing follow sound. Subscription alerts play in
+20-second lifetime, and a dedicated sound for each subscription event. Subscription alerts play in
 arrival order, one at a time, with audio starting when each alert is shown.
+The bundled sounds in `assets/subscriptions/` are `subscription_purchase.wav`
+for a new subscription, `subscription_renewal.wav` for a shared resubscription
+message, and `subscription_gift.wav` for a single or bulk gift.
 Twitch authorization requires
 `channel:read:subscriptions`; older tokens without this scope need a new login.
 

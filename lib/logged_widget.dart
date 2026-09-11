@@ -30,6 +30,7 @@ import 'package:obssource/subs/subscription_text.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/ws_event.dart';
 import 'package:obssource/twitch/ws_manager.dart';
+import 'package:obssource/twitch/ws_subscription.dart';
 
 class LoggedWidget extends StatefulWidget {
   final ServiceLocator locator;
@@ -475,7 +476,7 @@ class _State extends State<LoggedWidget> {
       _currentSubscription = alert;
     });
 
-    unawaited(_playSubscriptionSound());
+    unawaited(_playSubscriptionSound(subscription.type));
 
     await Future<void>.delayed(_subscriptionDuration);
 
@@ -486,9 +487,16 @@ class _State extends State<LoggedWidget> {
     });
   }
 
-  Future<void> _playSubscriptionSound() async {
+  Future<void> _playSubscriptionSound(SubscriptionEventType type) async {
     try {
-      final sound = await ObsAudio.loadAsset(Assets.assetsFollowSound);
+      final asset = switch (type) {
+        SubscriptionEventType.subscribe =>
+          Assets.subscriptionsSubscriptionPurchase,
+        SubscriptionEventType.message =>
+          Assets.subscriptionsSubscriptionRenewal,
+        SubscriptionEventType.gift => Assets.subscriptionsSubscriptionGift,
+      };
+      final sound = await ObsAudio.loadAsset(asset);
       if (mounted) await ObsAudio.play(sound);
     } catch (error) {
       debugPrint('Could not play subscription audio: $error');

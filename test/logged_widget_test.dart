@@ -107,6 +107,13 @@ void main() {
       expect(alert.avatar, isNotNull);
       expect(alert.avatarResolution, 32);
       expect(alert.renderer, AvatarPixelRenderer.legacyCanvas);
+      await tester.runAsync(() async {
+        await Future<void>.delayed(Duration.zero);
+      });
+      expect(
+        audioCommands.where((command) => command['cmd'] == 'play'),
+        hasLength(1),
+      );
       await tester.pump(const Duration(seconds: 21));
       expect(find.byType(UserAlertWidget), findsNothing);
       await tester.pumpWidget(const SizedBox.shrink());
@@ -143,16 +150,30 @@ void main() {
       expect(alert.avatar, isNull);
       expect(lookups, 0);
       await tester.pump(const Duration(seconds: 21));
+      await tester.runAsync(() async {
+        await Future<void>.delayed(Duration.zero);
+      });
+      final giftLoad = audioCommands.singleWhere(
+        (command) => command['cmd'] == 'load',
+      );
+      expect(giftLoad['asset'], 'assets/subscriptions/subscription_gift.wav');
+      expect(
+        audioCommands.where((command) => command['cmd'] == 'play').single['id'],
+        giftLoad['id'],
+      );
+      audioCommands.clear();
       config.config.set(Config(valid: true, json: {'subscriptions': false}));
       websocket.add(gift('gift-two'));
       await tester.pump();
       expect(find.byType(UserAlertWidget), findsNothing);
+      expect(audioCommands, isEmpty);
+      await ObsAudio.release(giftLoad['id'] as int);
       await tester.pumpWidget(const SizedBox.shrink());
     },
   );
 
   testWidgets(
-    'queues subscriptions in arrival order including slow and failed profiles',
+    'queues mixed subscriptions with matching sounds despite slow or failed profiles',
     (tester) async {
       final firstProfile = Completer<UserDto?>();
       final lookups = <String>[];
@@ -165,11 +186,23 @@ void main() {
           throw StateError('profile unavailable');
         },
       );
+      const types = {
+        'first': 'channel.subscribe',
+        'second': 'channel.subscription.message',
+        'third': 'channel.subscription.gift',
+      };
+      const assets = [
+        'assets/subscriptions/subscription_purchase.wav',
+        'assets/subscriptions/subscription_renewal.wav',
+        'assets/subscriptions/subscription_gift.wav',
+      ];
       WsMessage sub(String id) => WsMessage.fromJson({
         'metadata': {'message_id': id},
         'payload': {
-          'subscription': {'type': 'channel.subscribe'},
+          'subscription': {'type': types[id]},
           'event': {
+            'cumulative_months': 2,
+            'total': 1,
             'user_id': id,
             'user_login': id,
             'user_name': id,
@@ -202,6 +235,15 @@ void main() {
           name,
         );
         expect(plays(), index + 1);
+        final loads = audioCommands.where(
+          (command) => command['cmd'] == 'load',
+        );
+        expect(loads, hasLength(index + 1));
+        expect(loads.last['asset'], assets[index]);
+        expect(
+          audioCommands.lastWhere((command) => command['cmd'] == 'play')['id'],
+          loads.last['id'],
+        );
         await tester.pump(const Duration(seconds: 19));
         expect(
           tester.widget<UserAlertWidget>(find.byType(UserAlertWidget)).userName,
