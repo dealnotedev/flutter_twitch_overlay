@@ -281,7 +281,14 @@ class MusicRequestManager implements MusicRequests {
       return;
     }
 
-    final sourceUrl = Uri.tryParse(normalizedInput);
+    var sourceUrl = Uri.tryParse(normalizedInput);
+    if (sourceUrl != null && !sourceUrl.hasScheme) {
+      sourceUrl = Uri.tryParse(
+        normalizedInput.startsWith('//')
+            ? 'https:$normalizedInput'
+            : 'https://$normalizedInput',
+      );
+    }
     if (sourceUrl == null || !_isYouTubeUrl(sourceUrl)) {
       _rejectRedemption(
         MusicQueueError(

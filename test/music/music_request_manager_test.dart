@@ -97,31 +97,85 @@ void main() {
     expect(subject.current.nowPlaying?.item.id, 'accepted');
   });
 
-  test('rejects an invalid YouTube URL without invoking yt-dlp', () async {
-    final subject = createManager();
+  for (final (input, expected) in [
+    (
+      'youtube.com/watch?v=qsQXPIqfXUk',
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    (
+      '  www.youtube.com/watch?v=qsQXPIqfXUk&t=42  ',
+      'https://www.youtube.com/watch?v=qsQXPIqfXUk&t=42',
+    ),
+    (
+      'm.youtube.com/watch?v=qsQXPIqfXUk',
+      'https://m.youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    ('youtu.be/qsQXPIqfXUk', 'https://youtu.be/qsQXPIqfXUk'),
+    (
+      '//youtube.com/watch?v=qsQXPIqfXUk',
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    (
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    ('http://youtu.be/qsQXPIqfXUk', 'http://youtu.be/qsQXPIqfXUk'),
+  ]) {
+    test('accepts YouTube URL: $input', () async {
+      final subject = createManager();
+      final expectedUrl = Uri.parse(expected);
 
-    events.add(
-      _redemption(id: 'one', input: 'https://example.com/not-youtube'),
-    );
-    await _waitUntil(
-      () =>
-          subject.current.lastError != null &&
-          redemptions.settlements.isNotEmpty,
-    );
+      events.add(_redemption(id: 'one', input: input));
+      await _waitUntil(
+        () => subject.current.lastError != null || player.played.isNotEmpty,
+      );
 
-    expect(
-      subject.current.lastError?.type,
-      MusicQueueErrorType.invalidYoutubeUrl,
+      expect(subject.current.lastError, isNull);
+      expect(fetcher.inspected, [expectedUrl]);
+      expect(fetcher.downloaded, [expectedUrl]);
+      expect(subject.current.nowPlaying?.item.sourceUrl, expectedUrl);
+      expect(player.played.single.metadata.sourceUrl, expectedUrl);
+      expect(redemptions.settlements, isEmpty);
+    });
+  }
+
+  for (final input in [
+    'https://example.com/not-youtube',
+    'example.com/watch?v=qsQXPIqfXUk',
+    'youtube.com.example.com/watch?v=qsQXPIqfXUk',
+    'notyoutube.com/watch?v=qsQXPIqfXUk',
+    'youtube.com@example.com/watch?v=qsQXPIqfXUk',
+    'ftp://youtube.com/watch?v=qsQXPIqfXUk',
+    'not a YouTube URL',
+    'https://[invalid',
+  ]) {
+    test(
+      'rejects invalid YouTube URL without invoking yt-dlp: $input',
+      () async {
+        final subject = createManager();
+
+        events.add(_redemption(id: 'one', input: input));
+        await _waitUntil(
+          () =>
+              subject.current.lastError != null &&
+              redemptions.settlements.isNotEmpty,
+        );
+
+        expect(
+          subject.current.lastError?.type,
+          MusicQueueErrorType.invalidYoutubeUrl,
+        );
+        expect(subject.current.lastError?.requester, 'Viewer one');
+        expect(fetcher.inspected, isEmpty);
+        expect(player.played, isEmpty);
+        expect(redemptions.settlements.single.redemptionId, 'one');
+        expect(
+          redemptions.settlements.single.status,
+          TwitchRedemptionStatus.canceled,
+        );
+      },
     );
-    expect(subject.current.lastError?.requester, 'Viewer one');
-    expect(fetcher.inspected, isEmpty);
-    expect(player.played, isEmpty);
-    expect(redemptions.settlements.single.redemptionId, 'one');
-    expect(
-      redemptions.settlements.single.status,
-      TwitchRedemptionStatus.canceled,
-    );
-  });
+  }
 
   test('refunds a redemption with missing viewer input', () async {
     final subject = createManager();
