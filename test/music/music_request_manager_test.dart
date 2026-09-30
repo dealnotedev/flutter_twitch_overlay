@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/twitch_redemption_service.dart';
 import 'package:obssource/twitch/ws_event.dart';
@@ -46,6 +47,77 @@ void main() {
       redemptionService: redemptions,
     );
   }
+
+  test(
+    'disabling refunds new requests and preserves accepted playback',
+    () async {
+      final subject = createManager();
+      events.add(_redemption(id: 'playing'));
+      await _waitUntil(() => subject.current.nowPlaying != null);
+      subject.updateSettings(const MusicSettings(enabled: false));
+      events.add(_redemption(id: 'disabled'));
+      events.add(_redemption(id: 'disabled'));
+      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      expect(subject.current.nowPlaying?.item.id, 'playing');
+      expect(redemptions.settlements.single.redemptionId, 'disabled');
+      expect(
+        redemptions.settlements.single.status,
+        TwitchRedemptionStatus.canceled,
+      );
+      subject.updateSettings(const MusicSettings());
+      events.add(_redemption(id: 'enabled'));
+      await _waitUntil(
+        () => subject.current.queue.any((item) => item.id == 'enabled'),
+      );
+      expect(fetcher.inspected, hasLength(2));
+    },
+  );
+
+  test(
+    'new queue limit counts playing track without removing accepted tracks',
+    () async {
+      final subject = createManager();
+      events.add(_redemption(id: 'playing'));
+      events.add(_redemption(id: 'queued'));
+      await _waitUntil(
+        () =>
+            subject.current.nowPlaying != null &&
+            subject.current.queue.length == 1,
+      );
+      subject.updateSettings(const MusicSettings(maxQueue: 1));
+      events.add(_redemption(id: 'over-limit'));
+      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      expect(subject.current.nowPlaying?.item.id, 'playing');
+      expect(subject.current.queue.single.id, 'queued');
+      expect(redemptions.settlements.single.redemptionId, 'over-limit');
+      expect(subject.current.lastError?.type, MusicQueueErrorType.queueFull);
+    },
+  );
+
+  test(
+    'duration changes apply only to requests accepted after the change',
+    () async {
+      final subject = createManager();
+      fetcher.blockedDownloads.add('first');
+      events.add(_redemption(id: 'first', input: 'https://youtu.be/first'));
+      events.add(
+        _redemption(id: 'accepted', input: 'https://youtu.be/accepted'),
+      );
+      await _waitUntil(() => fetcher.activeBlocks.containsKey('first'));
+      subject.updateSettings(const MusicSettings(maxDurationSeconds: 60));
+      events.add(
+        _redemption(id: 'too-long', input: 'https://youtu.be/too-long'),
+      );
+      fetcher.activeBlocks['first']!.complete();
+      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      expect(subject.current.queue.single.id, 'accepted');
+      expect(redemptions.settlements.single.redemptionId, 'too-long');
+      expect(
+        subject.current.lastError?.type,
+        MusicQueueErrorType.trackTooLongOrLive,
+      );
+    },
+  );
 
   test('ignores redemptions for a different reward', () async {
     final subject = createManager(rewardId: 'reward-1');

@@ -328,8 +328,164 @@ abstract class AppLocalizations {
   /// No description provided for @overlay_settings_player_description.
   ///
   /// In en, this message translates to:
-  /// **'Configure the player appearance and music requests with Channel Points.'**
+  /// **'Music requests, playback, appearance and the local controller.'**
   String get overlay_settings_player_description;
+
+  /// No description provided for @music_settings_enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Accept music requests'**
+  String get music_settings_enabled;
+
+  /// No description provided for @music_settings_enabled_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Turning this off pauses the Twitch reward. Accepted tracks keep playing; late requests are refunded.'**
+  String get music_settings_enabled_hint;
+
+  /// No description provided for @music_settings_volume.
+  ///
+  /// In en, this message translates to:
+  /// **'Music volume'**
+  String get music_settings_volume;
+
+  /// No description provided for @music_settings_tts_volume.
+  ///
+  /// In en, this message translates to:
+  /// **'Music volume during TTS'**
+  String get music_settings_tts_volume;
+
+  /// No description provided for @music_settings_tts_volume_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Percentage of the music volume above. 0% mutes music during TTS; 100% keeps it unchanged.'**
+  String get music_settings_tts_volume_hint;
+
+  /// No description provided for @music_settings_limits.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue and cache'**
+  String get music_settings_limits;
+
+  /// No description provided for @music_settings_queue.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum number of tracks'**
+  String get music_settings_queue;
+
+  /// No description provided for @music_settings_queue_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Includes the playing track. Changing the limit keeps accepted requests.'**
+  String get music_settings_queue_hint;
+
+  /// No description provided for @music_settings_duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum track duration (seconds)'**
+  String get music_settings_duration;
+
+  /// No description provided for @music_settings_duration_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to new requests. 600 seconds = 10 minutes.'**
+  String get music_settings_duration_hint;
+
+  /// No description provided for @music_settings_cache.
+  ///
+  /// In en, this message translates to:
+  /// **'Cache size (MB)'**
+  String get music_settings_cache;
+
+  /// No description provided for @music_settings_cache_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'0 = unlimited. Old unused files are removed first; tracks used this session are kept.'**
+  String get music_settings_cache_hint;
+
+  /// No description provided for @music_settings_server.
+  ///
+  /// In en, this message translates to:
+  /// **'Local music controller server'**
+  String get music_settings_server;
+
+  /// No description provided for @music_settings_server_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Allows the separate music controller to connect on this computer. Playback continues when the server is off.'**
+  String get music_settings_server_hint;
+
+  /// No description provided for @music_settings_port.
+  ///
+  /// In en, this message translates to:
+  /// **'Server port'**
+  String get music_settings_port;
+
+  /// No description provided for @music_settings_port_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Use the same port in the controller. Applying a new port reconnects the server immediately.'**
+  String get music_settings_port_hint;
+
+  /// No description provided for @music_settings_apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get music_settings_apply;
+
+  /// No description provided for @music_settings_retry.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get music_settings_retry;
+
+  /// No description provided for @music_settings_invalid_positive.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number greater than 0.'**
+  String get music_settings_invalid_positive;
+
+  /// No description provided for @music_settings_invalid_nonnegative.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a whole number of 0 or more.'**
+  String get music_settings_invalid_nonnegative;
+
+  /// No description provided for @music_settings_invalid_port.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a port from 1 to 65535.'**
+  String get music_settings_invalid_port;
+
+  /// No description provided for @music_settings_server_stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'Server is off'**
+  String get music_settings_server_stopped;
+
+  /// No description provided for @music_settings_server_starting.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting server…'**
+  String get music_settings_server_starting;
+
+  /// No description provided for @music_settings_server_running.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening at {address}'**
+  String music_settings_server_running(String address);
+
+  /// No description provided for @music_settings_server_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not start the server. Check whether another app or OBS source is using this port, or choose another port.'**
+  String get music_settings_server_failed;
+
+  /// No description provided for @music_settings_reward_error.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the Twitch reward. Check the connection and retry.'**
+  String get music_settings_reward_error;
 
   /// No description provided for @overlay_settings_collapse_title.
   ///

@@ -13,9 +13,6 @@ class MusicToolPaths {
 
   factory MusicToolPaths.resolve({
     required Directory executableDirectory,
-    String ytDlpOverride = '',
-    String ffmpegOverride = '',
-    String denoOverride = '',
     Map<String, String>? environment,
     bool Function(String path)? fileExists,
   }) {
@@ -38,20 +35,14 @@ class MusicToolPaths {
     final processEnvironment = environment ?? Platform.environment;
 
     return MusicToolPaths(
-      ytDlpExecutable: _override(ytDlpOverride) ?? bundledYtDlp ?? 'yt-dlp.exe',
-      ffmpegLocation: _override(ffmpegOverride) ?? bundledFfmpegDirectory,
+      ytDlpExecutable: bundledYtDlp ?? 'yt-dlp.exe',
+      ffmpegLocation: bundledFfmpegDirectory,
       denoPath:
-          _override(denoOverride) ??
           (bundledDeno ??
               (_isOnPath('deno.exe', processEnvironment, exists)
                   ? 'deno.exe'
                   : null)),
     );
-  }
-
-  static String? _override(String value) {
-    final trimmed = value.trim();
-    return trimmed.isEmpty ? null : trimmed;
   }
 
   static String _obsPluginToolsDirectory(Directory executableDirectory) {

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:flutter/services.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 
@@ -90,7 +91,7 @@ class _NeonSettingsButtonState extends State<NeonSettingsButton> {
                           ),
                         ),
                       ),
-                      const SizedBox(width: 7),
+                      const Gap(7),
                       Flexible(
                         child: Text(
                           widget.label,
@@ -141,7 +142,7 @@ class _NeonSettingsButtonState extends State<NeonSettingsButton> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(widget.icon, size: 17, color: color),
-          const SizedBox(width: 7),
+          const Gap(7),
           Flexible(
             child: Text(
               widget.label,

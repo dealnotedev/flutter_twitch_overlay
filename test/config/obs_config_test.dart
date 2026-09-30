@@ -21,9 +21,11 @@ void main() {
     await config.init();
 
     expect(config.config.current.valid, isFalse);
-    expect(config.getInt('music_max_queue', fallback: 1), 10);
-    expect(config.getInt('music_cache_max_mb', fallback: 1), 2048);
-    expect(config.getInt('music_control_server_port', fallback: 1), 47821);
+    expect(config.getInt('alert_avatar_resolution', fallback: 1), 48);
+    expect(
+      config.config.current.json.keys,
+      isNot(contains(startsWith('music_'))),
+    );
   });
 
   group('ObsConfig.getBool', () {
@@ -31,11 +33,6 @@ void main() {
       final config = ObsConfig();
 
       expect(config.getBool('followers'), isTrue);
-      expect(config.getBool('music_enabled', fallback: false), isTrue);
-      expect(
-        config.getBool('music_control_server_enabled', fallback: false),
-        isTrue,
-      );
       expect(config.getBool('subscriptions'), isTrue);
       expect(config.getBool('subscriptions', fallback: true), isTrue);
     });
@@ -107,8 +104,6 @@ void main() {
       final config = ObsConfig();
 
       expect(config.getInt('alert_avatar_resolution', fallback: 24), 48);
-      expect(config.getInt('music_max_queue', fallback: 1), 10);
-      expect(config.getInt('music_cache_max_mb', fallback: 1), 2048);
     });
 
     test('returns a configured integer value', () {

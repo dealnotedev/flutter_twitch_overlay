@@ -10,13 +10,6 @@ class ObsConfig {
   );
 
   static const Map<String, Object> _fallbackJson = {
-    'music_enabled': true,
-    'music_max_queue': 10,
-    'music_max_duration_seconds': 600,
-    'music_cache_max_mb': 2048,
-    'music_volume_percent': 70,
-    'music_control_server_enabled': true,
-    'music_control_server_port': 47821,
     'followers': true,
     'raids': true,
     'subscriptions': true,

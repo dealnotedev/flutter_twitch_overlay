@@ -177,7 +177,98 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get overlay_settings_player_description =>
-      'Налаштуйте вигляд плеєра та замовлення музики за бали каналу.';
+      'Замовлення музики, відтворення, вигляд і локальне керування.';
+
+  @override
+  String get music_settings_enabled => 'Приймати замовлення музики';
+
+  @override
+  String get music_settings_enabled_hint =>
+      'Вимкнення призупиняє нагороду Twitch. Прийняті треки продовжують грати; запізнілі замовлення повертають бали.';
+
+  @override
+  String get music_settings_volume => 'Гучність музики';
+
+  @override
+  String get music_settings_tts_volume => 'Гучність музики під час TTS';
+
+  @override
+  String get music_settings_tts_volume_hint =>
+      'Відсоток від основної гучності музики. 0% вимикає музику під час TTS; 100% залишає її без змін.';
+
+  @override
+  String get music_settings_limits => 'Черга та кеш';
+
+  @override
+  String get music_settings_queue => 'Максимальна кількість треків';
+
+  @override
+  String get music_settings_queue_hint =>
+      'Включає поточний трек. Зміна ліміту зберігає прийняті замовлення.';
+
+  @override
+  String get music_settings_duration =>
+      'Максимальна тривалість треку (секунди)';
+
+  @override
+  String get music_settings_duration_hint =>
+      'Застосовується до нових замовлень. 600 секунд = 10 хвилин.';
+
+  @override
+  String get music_settings_cache => 'Розмір кешу (МБ)';
+
+  @override
+  String get music_settings_cache_hint =>
+      '0 = без обмежень. Спочатку видаляються старі невикористані файли; треки поточного сеансу зберігаються.';
+
+  @override
+  String get music_settings_server => 'Локальний сервер керування музикою';
+
+  @override
+  String get music_settings_server_hint =>
+      'Дозволяє окремому контролеру підключитися на цьому комп’ютері. Відтворення триває, коли сервер вимкнений.';
+
+  @override
+  String get music_settings_port => 'Порт сервера';
+
+  @override
+  String get music_settings_port_hint =>
+      'Укажіть цей самий порт у контролері. Новий порт застосовується одразу з перезапуском сервера.';
+
+  @override
+  String get music_settings_apply => 'Застосувати';
+
+  @override
+  String get music_settings_retry => 'Спробувати ще раз';
+
+  @override
+  String get music_settings_invalid_positive =>
+      'Введіть ціле число більше за 0.';
+
+  @override
+  String get music_settings_invalid_nonnegative => 'Введіть ціле число від 0.';
+
+  @override
+  String get music_settings_invalid_port => 'Введіть порт від 1 до 65535.';
+
+  @override
+  String get music_settings_server_stopped => 'Сервер вимкнений';
+
+  @override
+  String get music_settings_server_starting => 'Запуск сервера…';
+
+  @override
+  String music_settings_server_running(String address) {
+    return 'Сервер працює: $address';
+  }
+
+  @override
+  String get music_settings_server_failed =>
+      'Не вдалося запустити сервер. Перевірте, чи порт не зайнятий іншою програмою або джерелом OBS, або виберіть інший порт.';
+
+  @override
+  String get music_settings_reward_error =>
+      'Не вдалося оновити нагороду Twitch. Перевірте з’єднання та спробуйте ще раз.';
 
   @override
   String get overlay_settings_collapse_title => 'Автозгортання';

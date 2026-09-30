@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/twitch_redemption_service.dart';
 import 'package:obssource/twitch/ws_event.dart';
@@ -185,9 +186,9 @@ class MusicRequestManager implements MusicRequests {
   final MusicTrackFetcher _fetcher;
   final MusicTrackPlayer _player;
   final TwitchRedemptionService? _redemptionService;
-  final int _maxQueueLength;
-  final Duration _maxDuration;
-  final bool _enabled;
+  int _maxQueueLength;
+  Duration _maxDuration;
+  bool _enabled;
 
   final _stateController = StreamController<MusicQueueSnapshot>.broadcast();
   final _processedRedemptionIds = <String>{};
@@ -233,6 +234,13 @@ class MusicRequestManager implements MusicRequests {
   @override
   MusicQueueSnapshot get current => _current;
 
+  void updateSettings(MusicSettings settings) {
+    final value = settings.normalized();
+    _enabled = value.enabled;
+    _maxQueueLength = value.maxQueue;
+    _maxDuration = Duration(seconds: value.maxDurationSeconds);
+  }
+
   @override
   Stream<MusicQueueSnapshot> get states async* {
     yield _current;
@@ -240,7 +248,7 @@ class MusicRequestManager implements MusicRequests {
   }
 
   void _handleMessage(WsMessage message) {
-    if (!_enabled || _closed) return;
+    if (_closed) return;
     if (message.payload.subscription?.type != _redemptionType) return;
 
     final event = message.payload.event;
@@ -267,6 +275,15 @@ class MusicRequestManager implements MusicRequests {
     required String? input,
   }) {
     if (!_processedRedemptionIds.add(id)) return;
+
+    if (!_enabled) {
+      _requestSettlement(
+        redemptionId: id,
+        rewardId: rewardId,
+        status: TwitchRedemptionStatus.canceled,
+      );
+      return;
+    }
 
     final normalizedInput = input?.trim();
     if (normalizedInput == null || normalizedInput.isEmpty) {
@@ -321,6 +338,7 @@ class MusicRequestManager implements MusicRequests {
         rewardId: rewardId,
         requestedBy: requester,
         sourceUrl: sourceUrl,
+        maxDuration: _maxDuration,
       ),
     );
     _emit();
@@ -383,7 +401,7 @@ class MusicRequestManager implements MusicRequests {
           if (!_queue.contains(request) || _closed) continue;
 
           if (metadata.duration <= Duration.zero ||
-              metadata.duration > _maxDuration) {
+              metadata.duration > request.maxDuration) {
             _queue.remove(request);
             _rejectRequest(
               request,
@@ -677,6 +695,7 @@ class _PendingMusicRequest {
   final String rewardId;
   final String requestedBy;
   final Uri sourceUrl;
+  final Duration maxDuration;
 
   MusicQueueItemPhase phase = MusicQueueItemPhase.resolving;
   MusicTrackMetadata? metadata;
@@ -692,6 +711,7 @@ class _PendingMusicRequest {
     required this.rewardId,
     required this.requestedBy,
     required this.sourceUrl,
+    required this.maxDuration,
   });
 
   void startPlayback(DateTime now) {

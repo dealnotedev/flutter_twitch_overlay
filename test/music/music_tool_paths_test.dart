@@ -32,20 +32,6 @@ void main() {
     expect(paths.denoPath, '$pluginDirectory${separator}deno.exe');
   });
 
-  test('explicit configuration overrides bundled tools', () {
-    final paths = MusicToolPaths.resolve(
-      executableDirectory: appDirectory,
-      ytDlpOverride: '${separator}custom${separator}yt-dlp.exe',
-      ffmpegOverride: '${separator}custom${separator}ffmpeg',
-      denoOverride: '${separator}custom${separator}deno.exe',
-      fileExists: (_) => true,
-    );
-
-    expect(paths.ytDlpExecutable, '${separator}custom${separator}yt-dlp.exe');
-    expect(paths.ffmpegLocation, '${separator}custom${separator}ffmpeg');
-    expect(paths.denoPath, '${separator}custom${separator}deno.exe');
-  });
-
   test('uses complete tools directory beside the application', () {
     final bundledFiles = {
       '$bundledDirectory${separator}yt-dlp.exe',

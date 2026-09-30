@@ -5,9 +5,10 @@ import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/music/music_file_cache.dart';
-import 'package:obssource/music/control/music_control_protocol.dart';
-import 'package:obssource/music/control/music_control_server.dart';
+import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/music_reward_controller.dart';
+import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/music/music_tool_paths.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
 import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
@@ -39,8 +40,10 @@ class AppServiceLocator extends ServiceLocator {
   final Settings settings;
   final ObsConfig config;
   final Map<Type, Object> map = {};
-  late final StreamSubscription<Config> _musicVolumeSubscription;
-  MusicControlServer? _musicControlServer;
+  late final StreamSubscription<MusicSettings> _musicSettingsSubscription;
+  MusicControlServerController? musicControlServer;
+  late final MusicRewardController musicRewardController;
+  Future<void> _musicUpdates = Future.value();
 
   AppServiceLocator._(
     this.settings,
@@ -51,26 +54,17 @@ class AppServiceLocator extends ServiceLocator {
       'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30',
       settings,
     );
-    final maxQueue = config.getInt('music_max_queue', fallback: 10);
-    final maxDurationSeconds = config.getInt(
-      'music_max_duration_seconds',
-      fallback: 600,
-    );
-    final configuredCacheMaxMb = config.getInt(
-      'music_cache_max_mb',
-      fallback: 2048,
-    );
-    final cacheMaxMb = configuredCacheMaxMb < 0 ? 2048 : configuredCacheMaxMb;
+
+    final music = settings.music;
     final tools = MusicToolPaths.resolve(
       executableDirectory: File(Platform.resolvedExecutable).parent,
-      ytDlpOverride: config.getString('music_ytdlp_path', fallback: ''),
-      ffmpegOverride: config.getString('music_ffmpeg_location', fallback: ''),
-      denoOverride: config.getString('music_deno_path', fallback: ''),
     );
+
     final musicCache = MusicFileCache(
       rootDirectory: defaultMusicCacheDirectory(),
-      maxBytes: cacheMaxMb * 1024 * 1024,
+      maxBytes: music.cacheMaxMb * 1024 * 1024,
     );
+
     final trackFetcher = YtDlpMusicTrackFetcher(
       executable: tools.ytDlpExecutable,
       ffmpegLocation: tools.ffmpegLocation,
@@ -78,14 +72,28 @@ class AppServiceLocator extends ServiceLocator {
       cache: musicCache,
     );
 
-    final musicPlayer = ObsAudioMusicTrackPlayer(volume: _musicVolume(config));
+    final musicPlayer = ObsAudioMusicTrackPlayer(
+      volume: music.volumePercent / 100,
+    );
 
     var ttsDucking = false;
-    Future<void> applyMusicVolume() =>
-        musicPlayer.setVolume(_musicVolume(config) * (ttsDucking ? 0.25 : 1));
+    Future<void> applyMusicVolume() => musicPlayer.setVolume(
+      settings.music.volumePercent /
+          100 *
+          (ttsDucking ? settings.music.ttsVolumePercent / 100 : 1),
+    );
+
+    final musicApi = TwitchApi(
+      settings: settings,
+      clientSecret: twitchClientSecret,
+    );
+    musicApi.dio.options
+      ..connectTimeout = const Duration(seconds: 10)
+      ..receiveTimeout = const Duration(seconds: 10)
+      ..sendTimeout = const Duration(seconds: 10);
 
     final redemptionService = TwitchApiRedemptionService(
-      api: TwitchApi(settings: settings, clientSecret: twitchClientSecret),
+      api: musicApi,
       settings: settings,
     );
 
@@ -93,11 +101,9 @@ class AppServiceLocator extends ServiceLocator {
       events: wsManager.messages,
       fetcher: trackFetcher,
       player: musicPlayer,
-      enabled: config.getBool('music_enabled', fallback: true),
-      maxQueueLength: maxQueue > 0 ? maxQueue : 10,
-      maxDuration: Duration(
-        seconds: maxDurationSeconds > 0 ? maxDurationSeconds : 600,
-      ),
+      enabled: music.enabled,
+      maxQueueLength: music.maxQueue,
+      maxDuration: Duration(seconds: music.maxDurationSeconds),
       rewardId: settings.musicRewardId,
       rewardIdChanges: settings.musicRewardIdChanges,
       redemptionService: redemptionService,
@@ -110,6 +116,20 @@ class AppServiceLocator extends ServiceLocator {
     map[ObsAudioMusicTrackPlayer] = musicPlayer;
     map[TwitchRedemptionService] = redemptionService;
     map[MusicRequests] = musicRequests;
+
+    musicRewardController = MusicRewardController(
+      settings: settings,
+      connected: wsManager.rewardsReady,
+      connectionChanges: wsManager.rewardsReadyChanges,
+      pauseReward: (channel, reward, paused) async {
+        if (settings.twitchAuth?.broadcasterId != channel) return;
+        await musicApi.updateCustomReward(
+          broadcasterUserId: channel,
+          rewardId: reward,
+          paused: paused,
+        );
+      },
+    );
 
     final ttsApi = TwitchApi(
       settings: settings,
@@ -134,30 +154,38 @@ class AppServiceLocator extends ServiceLocator {
     map[TtsController] = tts;
     map[TtsRewardCatalog] = TtsRewardCatalog(api: ttsApi, settings: settings);
 
-    if (startMusicControlServer &&
-        config.getBool('music_control_server_enabled', fallback: true)) {
-      final configuredPort = config.getInt(
-        'music_control_server_port',
-        fallback: MusicControlProtocol.defaultPort,
-      );
-      final server = MusicControlServer(
+    if (startMusicControlServer) {
+      musicControlServer = MusicControlServerController(
         requests: musicRequests,
-        requestedPort:
-            configuredPort > 0 && configuredPort <= 65535
-                ? configuredPort
-                : MusicControlProtocol.defaultPort,
       );
-      _musicControlServer = server;
-      map[MusicControlServer] = server;
       unawaited(
-        server.start().catchError((Object error) {
-          stderr.writeln('Unable to start music control server: $error');
-        }),
+        musicControlServer!.configure(
+          enabled: music.controlServerEnabled,
+          port: music.controlServerPort,
+        ),
       );
     }
 
-    _musicVolumeSubscription = config.config.changes.listen((_) {
-      unawaited(applyMusicVolume());
+    _musicSettingsSubscription = settings.musicChanges.listen((value) {
+      musicRequests.updateSettings(value);
+      unawaited(
+        applyMusicVolume().catchError((Object error) {
+          stderr.writeln('Unable to change music volume: $error');
+        }),
+      );
+      _musicUpdates = _musicUpdates
+          .then((_) async {
+            await musicCache.updateLimit(value.cacheMaxMb * 1024 * 1024);
+          })
+          .catchError((Object error) {
+            stderr.writeln('Unable to update music cache limit: $error');
+          });
+      unawaited(
+        musicControlServer?.configure(
+          enabled: value.controlServerEnabled,
+          port: value.controlServerPort,
+        ),
+      );
     });
   }
 
@@ -165,15 +193,12 @@ class AppServiceLocator extends ServiceLocator {
   T provide<T>() => map[T] as T;
 
   Future<void> close() async {
-    await _musicVolumeSubscription.cancel();
+    await _musicSettingsSubscription.cancel();
+    await _musicUpdates;
+    await musicRewardController.close();
     await (map[TtsController]! as TtsController).close();
     await (map[WebSocketManager]! as WebSocketManager).close();
-    await _musicControlServer?.close();
+    await musicControlServer?.close();
     await (map[MusicRequests]! as MusicRequests).close();
   }
-}
-
-double _musicVolume(ObsConfig config) {
-  final percent = config.getInt('music_volume_percent', fallback: 70);
-  return (percent / 100).clamp(0.0, 1.0).toDouble();
 }

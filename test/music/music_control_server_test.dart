@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/music/control/music_control_protocol.dart';
 import 'package:obssource/music/control/music_control_server.dart';
+import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_requests.dart';
 
 void main() {
@@ -23,6 +24,88 @@ void main() {
     httpClient.close(force: true);
     await server.close();
     await requests.close();
+  });
+
+  test(
+    'controller changes port, stops and restarts without changing playback',
+    () async {
+      final controller = MusicControlServerController(requests: requests);
+      addTearDown(controller.close);
+      await controller.configure(enabled: true, port: 0);
+      final firstPort = controller.port!;
+      final firstHealth = await _requestJson(
+        httpClient,
+        firstPort,
+        'GET',
+        '/v1/health',
+      );
+      await controller.configure(enabled: true, port: firstPort);
+      final sameHealth = await _requestJson(
+        httpClient,
+        firstPort,
+        'GET',
+        '/v1/health',
+      );
+      expect(sameHealth.body['serverId'], firstHealth.body['serverId']);
+      final free = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
+      final nextPort = free.port;
+      await free.close(force: true);
+      await controller.configure(enabled: true, port: nextPort);
+      expect(controller.port, nextPort);
+      expect(controller.status, MusicControlServerStatus.running);
+      final response = await _requestJson(
+        httpClient,
+        nextPort,
+        'GET',
+        '/v1/player',
+      );
+      expect(
+        MusicControlProtocol.snapshotEnvelopeFromJson(
+          response.body,
+        ).snapshot.nowPlaying?.item.title,
+        'Track 1',
+      );
+      final released = await HttpServer.bind(
+        InternetAddress.loopbackIPv4,
+        firstPort,
+      );
+      await released.close(force: true);
+      await controller.configure(enabled: false, port: nextPort);
+      expect(controller.status, MusicControlServerStatus.stopped);
+      expect(controller.port, isNull);
+      await controller.configure(enabled: true, port: nextPort);
+      expect(controller.status, MusicControlServerStatus.running);
+      expect(requests.current.nowPlaying?.item.title, 'Track 1');
+      expect(requests.skipCount, 0);
+    },
+  );
+
+  test('controller reports occupied ports and can retry', () async {
+    final controller = MusicControlServerController(requests: requests);
+    addTearDown(controller.close);
+    final port = server.port!;
+    await controller.configure(enabled: true, port: port);
+    expect(controller.status, MusicControlServerStatus.failed);
+    expect(controller.error, isNotNull);
+    await server.close();
+    await controller.configure(enabled: true, port: port);
+    expect(controller.status, MusicControlServerStatus.running);
+    expect(controller.error, isNull);
+  });
+
+  test('rapid changes and shutdown release all listeners', () async {
+    final controller = MusicControlServerController(requests: requests);
+    await Future.wait([
+      controller.configure(enabled: true, port: 0),
+      controller.configure(enabled: false, port: 0),
+      controller.configure(enabled: true, port: 0),
+    ]);
+    final port = controller.port!;
+    final restart = controller.configure(enabled: true, port: 0);
+    await controller.close();
+    await restart;
+    final released = await HttpServer.bind(InternetAddress.loopbackIPv4, port);
+    await released.close(force: true);
   });
 
   test('serves health and the current snapshot over HTTP', () async {

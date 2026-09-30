@@ -171,7 +171,98 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get overlay_settings_player_description =>
-      'Configure the player appearance and music requests with Channel Points.';
+      'Music requests, playback, appearance and the local controller.';
+
+  @override
+  String get music_settings_enabled => 'Accept music requests';
+
+  @override
+  String get music_settings_enabled_hint =>
+      'Turning this off pauses the Twitch reward. Accepted tracks keep playing; late requests are refunded.';
+
+  @override
+  String get music_settings_volume => 'Music volume';
+
+  @override
+  String get music_settings_tts_volume => 'Music volume during TTS';
+
+  @override
+  String get music_settings_tts_volume_hint =>
+      'Percentage of the music volume above. 0% mutes music during TTS; 100% keeps it unchanged.';
+
+  @override
+  String get music_settings_limits => 'Queue and cache';
+
+  @override
+  String get music_settings_queue => 'Maximum number of tracks';
+
+  @override
+  String get music_settings_queue_hint =>
+      'Includes the playing track. Changing the limit keeps accepted requests.';
+
+  @override
+  String get music_settings_duration => 'Maximum track duration (seconds)';
+
+  @override
+  String get music_settings_duration_hint =>
+      'Applies to new requests. 600 seconds = 10 minutes.';
+
+  @override
+  String get music_settings_cache => 'Cache size (MB)';
+
+  @override
+  String get music_settings_cache_hint =>
+      '0 = unlimited. Old unused files are removed first; tracks used this session are kept.';
+
+  @override
+  String get music_settings_server => 'Local music controller server';
+
+  @override
+  String get music_settings_server_hint =>
+      'Allows the separate music controller to connect on this computer. Playback continues when the server is off.';
+
+  @override
+  String get music_settings_port => 'Server port';
+
+  @override
+  String get music_settings_port_hint =>
+      'Use the same port in the controller. Applying a new port reconnects the server immediately.';
+
+  @override
+  String get music_settings_apply => 'Apply';
+
+  @override
+  String get music_settings_retry => 'Retry';
+
+  @override
+  String get music_settings_invalid_positive =>
+      'Enter a whole number greater than 0.';
+
+  @override
+  String get music_settings_invalid_nonnegative =>
+      'Enter a whole number of 0 or more.';
+
+  @override
+  String get music_settings_invalid_port => 'Enter a port from 1 to 65535.';
+
+  @override
+  String get music_settings_server_stopped => 'Server is off';
+
+  @override
+  String get music_settings_server_starting => 'Starting server…';
+
+  @override
+  String music_settings_server_running(String address) {
+    return 'Listening at $address';
+  }
+
+  @override
+  String get music_settings_server_failed =>
+      'Could not start the server. Check whether another app or OBS source is using this port, or choose another port.';
+
+  @override
+  String get music_settings_reward_error =>
+      'Could not update the Twitch reward. Check the connection and retry.';
 
   @override
   String get overlay_settings_collapse_title => 'Auto-collapse';

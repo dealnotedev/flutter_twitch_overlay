@@ -11,6 +11,9 @@ import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/settings/tts_settings_pane.dart';
+import 'package:obssource/settings/music_settings_controls.dart';
+import 'package:obssource/music/control/music_control_server_controller.dart';
+import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/tts/tts_controller.dart';
 
 class OverlaySettingsDialog extends StatefulWidget {
@@ -18,6 +21,8 @@ class OverlaySettingsDialog extends StatefulWidget {
   final TwitchRewardCatalog rewardCatalog;
   final TwitchRewardCatalog? ttsRewardCatalog;
   final TtsController? ttsController;
+  final MusicControlServerController? musicServer;
+  final MusicRewardController? musicRewardController;
 
   const OverlaySettingsDialog({
     super.key,
@@ -25,6 +30,8 @@ class OverlaySettingsDialog extends StatefulWidget {
     required this.rewardCatalog,
     this.ttsRewardCatalog,
     this.ttsController,
+    this.musicServer,
+    this.musicRewardController,
   });
 
   @override
@@ -260,33 +267,14 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
 
   Widget _buildPlayerSettings(BuildContext context) {
     return SingleChildScrollView(
+      key: const ValueKey('music_settings_scroll'),
       padding: const EdgeInsets.fromLTRB(28, 22, 28, 26),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            context.localizations.overlay_settings_player,
-            style: const TextStyle(
-              color: MusicPlayerPalette.neonPinkBright,
-              fontFamily: 'Segoe Script',
-              fontSize: 22,
-              fontStyle: FontStyle.italic,
-              shadows: MusicPlayerPalette.pinkTextGlow,
-            ),
-          ),
-          const Gap(4),
-          Text(
-            context.localizations.overlay_settings_player_description,
-            style: const TextStyle(
-              color: MusicPlayerPalette.textSecondary,
-              fontSize: 13,
-            ),
-          ),
-          const Gap(18),
-          _buildPresentationSettings(context),
-          const Gap(16),
-          _buildRewardSubsection(context),
-        ],
+      child: MusicSettingsControls(
+        settings: widget.settings,
+        server: widget.musicServer,
+        rewardController: widget.musicRewardController,
+        presentationSettings: _buildPresentationSettings(context),
+        rewardSettings: _buildRewardSubsection(context),
       ),
     );
   }

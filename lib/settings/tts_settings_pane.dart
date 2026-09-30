@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:intl/intl.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/extensions.dart';
@@ -201,7 +202,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                 ),
               ),
               Text(l.tts_enabled, style: _secondary),
-              const SizedBox(width: 12),
+              const Gap(12),
               NeonSettingsButton(
                 key: const ValueKey('tts_enabled'),
                 label: options.enabled ? l.tts_on : l.tts_off,
@@ -218,15 +219,15 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const Gap(6),
           Text(l.tts_description, style: _secondary),
-          const SizedBox(height: 18),
+          const Gap(18),
           _panel(
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 _label(l.tts_base_url),
-                const SizedBox(height: 10),
+                const Gap(10),
                 Row(
                   children: [
                     Expanded(
@@ -239,7 +240,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                             () => _save(options.copyWith(baseUrl: _url.text)),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const Gap(10),
                     NeonSettingsButton(
                       key: const ValueKey('tts_apply_url'),
                       label: l.tts_apply,
@@ -252,11 +253,11 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                     ),
                   ],
                 ),
-                const SizedBox(height: 7),
+                const Gap(7),
                 Text(l.tts_url_hint, style: _secondary.copyWith(fontSize: 11)),
-                const SizedBox(height: 16),
+                const Gap(16),
                 _label(l.tts_mood),
-                const SizedBox(height: 10),
+                const Gap(10),
                 Wrap(
                   spacing: 9,
                   runSpacing: 9,
@@ -277,7 +278,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                       ),
                   ],
                 ),
-                const SizedBox(height: 18),
+                const Gap(18),
                 _label(l.tts_volume),
                 Row(
                   children: [
@@ -341,7 +342,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const Gap(14),
           _panel(
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -358,7 +359,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                               ? const Color(0xFF74E4B4)
                               : MusicPlayerPalette.error,
                     ),
-                    const SizedBox(width: 9),
+                    const Gap(9),
                     Expanded(
                       child: _label(
                         '${l.tts_service}: ${health == null
@@ -381,7 +382,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                   ],
                 ),
                 if (health != null) ...[
-                  const SizedBox(height: 8),
+                  const Gap(8),
                   Text(
                     health.reason == TtsIssue.serviceUnavailable
                         ? l.tts_agents_unknown
@@ -393,7 +394,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                   ),
                 ],
                 if (checked != null) ...[
-                  const SizedBox(height: 5),
+                  const Gap(5),
                   Text(
                     l.tts_last_check(
                       DateFormat('HH:mm:ss').format(checked.toLocal()),
@@ -402,7 +403,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                   ),
                 ],
                 if (controller?.pauseReason != null) ...[
-                  const SizedBox(height: 8),
+                  const Gap(8),
                   Text(
                     ttsStatusText(l, controller!.pauseReason!),
                     style: _secondary,
@@ -411,7 +412,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
               ],
             ),
           ),
-          const SizedBox(height: 14),
+          const Gap(14),
           TwitchRewardPicker(
             rewards: _rewards,
             selectedId: options.rewardId,
@@ -435,19 +436,19 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
             onCreate: widget.catalog == null ? null : _create,
             onRefresh: widget.catalog == null ? null : _load,
           ),
-          const SizedBox(height: 14),
+          const Gap(14),
           _panel(
             Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(l.tts_announcement, style: _secondary),
-                const SizedBox(height: 12),
+                const Gap(12),
                 NeonSettingsInput(
                   key: const ValueKey('tts_test_text'),
                   controller: _testText,
                   label: l.tts_test_text,
                 ),
-                const SizedBox(height: 12),
+                const Gap(12),
                 Wrap(
                   spacing: 10,
                   children: [

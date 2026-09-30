@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/tts/tts_settings.dart';
 import 'package:rxdart/rxdart.dart';
@@ -9,6 +10,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class Settings {
   static const _kTwitchAuth = 'twitch_login';
   static const _kMusicRewardId = 'music_reward_id';
+  static const _kMusicSettings = 'music_settings';
   static const _kPlayerCollapseSeconds = 'player_collapse_seconds';
   static const _kPlayerAlwaysExpanded = 'player_always_expanded';
 
@@ -17,6 +19,18 @@ class Settings {
 
     _initTwitchCreds(prefs);
     _initMusicRewardId(prefs);
+    if (prefs.containsKey(_kMusicSettings)) {
+      try {
+        final raw = prefs.get(_kMusicSettings);
+        final json = jsonDecode(raw is String ? raw : '{}');
+        music =
+            json is Map<String, dynamic>
+                ? MusicSettings.fromJson(json)
+                : const MusicSettings();
+      } on FormatException {
+        music = const MusicSettings();
+      }
+    }
     final ttsJson = prefs.getString('tts_settings');
     if (ttsJson != null) {
       try {
@@ -37,6 +51,23 @@ class Settings {
   final _playerPresentationSubject = StreamController<void>.broadcast();
   Stream<void> get playerPresentationChanges =>
       _playerPresentationSubject.stream;
+
+  MusicSettings music = const MusicSettings();
+  final _musicSubject = StreamController<MusicSettings>.broadcast();
+  Stream<MusicSettings> get musicChanges => _musicSubject.stream;
+
+  Future<void> saveMusic(MusicSettings value) async {
+    final normalized = value.normalized();
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setString(
+      _kMusicSettings,
+      jsonEncode(normalized.toJson()),
+    )) {
+      throw StateError('Could not save music settings');
+    }
+    music = normalized;
+    _musicSubject.add(music);
+  }
 
   Future<void> savePlayerPresentation({
     required int collapseSeconds,

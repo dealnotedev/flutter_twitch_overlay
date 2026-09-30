@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/music/control/music_control_protocol.dart';
@@ -135,11 +136,7 @@ class _PlayerStatusDivider extends StatelessWidget {
       child: DecoratedBox(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              Color(0x003F4160),
-              Color(0x993F4160),
-              Color(0x003F4160),
-            ],
+            colors: [Color(0x003F4160), Color(0x993F4160), Color(0x003F4160)],
           ),
         ),
       ),
@@ -205,7 +202,7 @@ class _ConnectionStatus extends StatelessWidget {
               color: color,
               size: 20,
             ),
-            const SizedBox(width: 10),
+            const Gap(10),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -219,7 +216,7 @@ class _ConnectionStatus extends StatelessWidget {
                       fontWeight: FontWeight.w700,
                     ),
                   ),
-                  const SizedBox(height: 2),
+                  const Gap(2),
                   Text(
                     endpoint.toString(),
                     style: const TextStyle(
@@ -228,7 +225,7 @@ class _ConnectionStatus extends StatelessWidget {
                     ),
                   ),
                   if (state.lastError case final error?) ...[
-                    const SizedBox(height: 4),
+                    const Gap(4),
                     Text(
                       error,
                       key: const ValueKey('connection_last_error'),

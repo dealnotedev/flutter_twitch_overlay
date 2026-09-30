@@ -14,6 +14,38 @@ void main() {
     if (await root.exists()) await root.delete(recursive: true);
   });
 
+  test(
+    'changing the limit prunes old files but keeps tracks used this session',
+    () async {
+      final seed = MusicFileCache(rootDirectory: root, maxBytes: 0);
+      final old = await seed.obtain(
+        videoId: 'old',
+        produce: (dir) => _writeFile(dir, [1, 2, 3]),
+      );
+      final playing = await seed.obtain(
+        videoId: 'playing',
+        produce: (dir) => _writeFile(dir, [4, 5, 6]),
+      );
+      final cache = MusicFileCache(rootDirectory: root, maxBytes: 0);
+      await Future.wait([
+        cache.updateLimit(1),
+        cache.obtain(
+          videoId: 'playing',
+          produce: (_) => throw StateError('cache miss'),
+        ),
+      ]);
+      expect(await File(old).exists(), isFalse);
+      expect(await File(playing).exists(), isTrue);
+      await cache.updateLimit(0);
+      final added = await cache.obtain(
+        videoId: 'added',
+        produce: (dir) => _writeFile(dir, [7, 8, 9]),
+      );
+      expect(await File(added).exists(), isTrue);
+      expect(await File(playing).exists(), isTrue);
+    },
+  );
+
   test('reuses a completed file for the same YouTube video ID', () async {
     final cache = MusicFileCache(rootDirectory: root, maxBytes: 0);
     var producerCalls = 0;

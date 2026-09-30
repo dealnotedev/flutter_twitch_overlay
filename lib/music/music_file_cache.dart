@@ -8,24 +8,37 @@ class MusicFileCache {
   static const _stagingMaxAge = Duration(days: 1);
 
   final Directory rootDirectory;
-  final int maxBytes;
+  int _maxBytes;
+  int get maxBytes => _maxBytes;
 
   final Set<String> _usedThisSession = {};
   Future<void>? _initialization;
+  Future<void> _maintenance = Future.value();
 
-  MusicFileCache({required this.rootDirectory, required this.maxBytes});
+  MusicFileCache({required this.rootDirectory, required int maxBytes})
+    : _maxBytes = maxBytes;
+
+  Future<void> updateLimit(int maxBytes) async {
+    if (_maxBytes == maxBytes) return;
+    _maxBytes = maxBytes;
+    await _ensureInitialized();
+    await _prune();
+  }
 
   Future<String> obtain({
     required String videoId,
     required MusicFileProducer produce,
   }) async {
     _validateVideoId(videoId);
-    await _ensureInitialized();
-
     final target = _fileFor(videoId);
+    // Protect a requested cache hit before yielding to concurrent maintenance.
+    _usedThisSession.add(_normalize(target.path));
+    await _ensureInitialized();
+    // A deletion issued before the reservation must finish before a cache hit.
+    await _maintenance;
+
     if (await _isValid(target)) {
       await _touch(target);
-      _usedThisSession.add(_normalize(target.path));
       return target.path;
     }
 
@@ -53,7 +66,6 @@ class MusicFileCache {
       }
 
       await _touch(target);
-      _usedThisSession.add(_normalize(target.path));
       await _prune();
       return target.path;
     } finally {
@@ -99,7 +111,16 @@ class MusicFileCache {
     }
   }
 
-  Future<void> _prune() async {
+  Future<void> _prune() {
+    final operation = _maintenance.then((_) => _pruneUnused());
+    _maintenance = operation.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+    return operation;
+  }
+
+  Future<void> _pruneUnused() async {
     if (maxBytes <= 0) return;
 
     final entries = <_CacheFile>[];
@@ -128,7 +149,7 @@ class MusicFileCache {
     entries.sort((a, b) => a.modified.compareTo(b.modified));
 
     for (final entry in entries) {
-      if (totalBytes <= maxBytes) break;
+      if (maxBytes <= 0 || totalBytes <= maxBytes) break;
       if (_usedThisSession.contains(_normalize(entry.file.path))) continue;
 
       try {

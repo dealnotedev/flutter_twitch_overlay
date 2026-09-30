@@ -422,9 +422,12 @@ void main() {
     await tester.pump();
     await tester.pump();
 
-    await tester.tap(
-      find.byKey(const ValueKey('overlay_settings_create_reward')),
+    final createReward = find.byKey(
+      const ValueKey('overlay_settings_create_reward'),
     );
+    await tester.ensureVisible(createReward);
+    await tester.pump();
+    await tester.tap(createReward);
     await tester.pump();
     await tester.pump();
 

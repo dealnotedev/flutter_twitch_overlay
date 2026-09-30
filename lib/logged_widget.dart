@@ -266,6 +266,14 @@ class _State extends State<LoggedWidget> {
           (_) => OverlaySettingsDialog(
             settings: _settings,
             rewardCatalog: rewardCatalog,
+            musicServer:
+                appLocator is AppServiceLocator
+                    ? appLocator.musicControlServer
+                    : null,
+            musicRewardController:
+                appLocator is AppServiceLocator
+                    ? appLocator.musicRewardController
+                    : null,
             ttsController:
                 appLocator is AppServiceLocator
                     ? appLocator.provide<TtsController>()
