@@ -16,11 +16,26 @@ import 'package:web_socket_channel/io.dart';
 class WebSocketManager {
   final String _url;
   final Settings _settings;
+  final TwitchApi Function()? _apiFactory;
+  StreamSubscription<TwitchCreds?>? _authSubscription;
+  Timer? _reconnectTimer;
+  bool _closed = false;
 
   final _registrations = <_Registration>{};
 
   final _messagesSubject = StreamController<WsMessage>.broadcast();
   final _stateSubject = StreamController<WsStateEvent>.broadcast();
+  final _rewardsReadySubject = StreamController<bool>.broadcast();
+  bool _rewardsReady = false;
+  bool get rewardsReady => _rewardsReady;
+  Stream<bool> get rewardsReadyChanges => _rewardsReadySubject.stream;
+  Timer? _keepaliveTimer;
+
+  void _setRewardsReady(bool value) {
+    if (_rewardsReady == value) return;
+    _rewardsReady = value;
+    _rewardsReadySubject.add(value);
+  }
 
   WsState _state = WsState.idle;
 
@@ -38,8 +53,12 @@ class WebSocketManager {
 
   Stream<WsMessage> get messages => _messagesSubject.stream;
 
-  WebSocketManager(this._url, this._settings) {
-    _settings.twitchAuthStream.listen(_handleAuth);
+  WebSocketManager(
+    this._url,
+    this._settings, {
+    TwitchApi Function()? apiFactory,
+  }) : _apiFactory = apiFactory {
+    _authSubscription = _settings.twitchAuthStream.listen(_handleAuth);
   }
 
   void _changeState(WsState state) {
@@ -83,6 +102,7 @@ class WebSocketManager {
       _stateSubject.stream.map((event) => event.current);
 
   void _connectInternal() async {
+    if (_closed || _settings.twitchAuth == null) return;
     switch (_state) {
       case WsState.connected:
       case WsState.initialConnecting:
@@ -102,7 +122,10 @@ class WebSocketManager {
 
     try {
       final ws = await WebSocket.connect(_url);
-      ws.pingInterval = const Duration(seconds: 10);
+      if (_closed) {
+        await ws.close();
+        return;
+      }
 
       channel = _channel = _Channel(channel: IOWebSocketChannel(ws));
       _changeState(WsState.connected);
@@ -111,23 +134,49 @@ class WebSocketManager {
       return;
     }
 
-    _subscription = channel.channel.stream.listen((dynamic event) {
-      final json = jsonDecode(event);
-      final sessionId = json['payload']?['session']?['id'] as String?;
+    _subscription = channel.channel.stream.listen(
+      (dynamic event) {
+        final json = jsonDecode(event);
+        final messageType = json['metadata']?['message_type'];
+        if (messageType == 'session_reconnect') {
+          // Re-establish subscriptions before accepting new redemptions.
+          _onClosed();
+          return;
+        }
+        if (messageType == 'revocation') {
+          final type =
+              json['payload']?['subscription']?['type'] as String? ?? '';
+          if (type.startsWith(
+            'channel.channel_points_custom_reward_redemption.',
+          )) {
+            _setRewardsReady(false);
+          }
+          return;
+        }
+        if (messageType == 'session_welcome' ||
+            messageType == 'session_keepalive' ||
+            messageType == 'notification') {
+          _keepaliveTimer?.cancel();
+          _keepaliveTimer = Timer(const Duration(seconds: 35), _onClosed);
+        }
+        final sessionId = json['payload']?['session']?['id'] as String?;
 
-      if (sessionId != null) {
-        channel.sessionId = sessionId;
+        if (sessionId != null) {
+          channel.sessionId = sessionId;
 
-        _checkWsRegistration();
-        return;
-      }
+          _checkWsRegistration();
+          return;
+        }
 
-      final encoded = jsonEncode(json);
-      debugPrint('WEBSOCKET $encoded');
+        final encoded = jsonEncode(json);
+        debugPrint('WEBSOCKET $encoded');
 
-      final msg = WsMessage.fromJson(json);
-      _messagesSubject.add(msg);
-    }, onDone: _onClosed);
+        final msg = WsMessage.fromJson(json);
+        _messagesSubject.add(msg);
+      },
+      onDone: _onClosed,
+      onError: (Object _) => _onClosed(),
+    );
   }
 
   void write(String message) {
@@ -135,6 +184,8 @@ class WebSocketManager {
   }
 
   void _destroyCurrentConnection(WsState state) {
+    _setRewardsReady(false);
+    _keepaliveTimer?.cancel();
     _subscription?.cancel();
 
     _channel?.channel.sink.close(1000);
@@ -144,6 +195,7 @@ class WebSocketManager {
   }
 
   void _onClosed() {
+    if (_closed) return;
     _destroyCurrentConnection(WsState.disconnected);
 
     if (_waitReconnect) {
@@ -152,13 +204,14 @@ class WebSocketManager {
 
     _waitReconnect = true;
 
-    Future.delayed(const Duration(seconds: 5), () {
+    _reconnectTimer = Timer(const Duration(seconds: 5), () {
       _waitReconnect = false;
       _connectInternal();
     });
   }
 
   void _handleAuth(TwitchCreds? auth) {
+    if (_closed) return;
     if (auth == null) {
       _destroyCurrentConnection(WsState.idle);
       return;
@@ -190,10 +243,9 @@ class WebSocketManager {
 
     final completer = _registrationCompleter = Completer<void>();
 
-    final api = TwitchApi(
-      settings: _settings,
-      clientSecret: twitchClientSecret,
-    );
+    final api =
+        _apiFactory?.call() ??
+        TwitchApi(settings: _settings, clientSecret: twitchClientSecret);
 
     try {
       final cleaned = await api.cleanupInactiveEventSubs();
@@ -222,6 +274,18 @@ class WebSocketManager {
           broadcasterId: broadcasterId,
         ),
       );
+      await _registerInternal(
+        api,
+        _Registration(
+          _RegistrationType.rewardUpdates,
+          sessionId: sessionId,
+          broadcasterId: broadcasterId,
+        ),
+      );
+      if (_channel?.sessionId == sessionId &&
+          _settings.twitchAuth?.broadcasterId == broadcasterId) {
+        _setRewardsReady(true);
+      }
 
       await _registerInternal(
         api,
@@ -258,7 +322,6 @@ class WebSocketManager {
       debugPrint(
         'Api Error ${e.response?.statusCode} with message ${e.message}',
       );
-      rethrow;
     } finally {
       completer.complete();
     }
@@ -268,6 +331,7 @@ class WebSocketManager {
     TwitchApi api,
     _Registration registration,
   ) async {
+    if (_closed) return;
     if (_registrations.contains(registration)) return;
 
     switch (registration.type) {
@@ -285,9 +349,11 @@ class WebSocketManager {
         );
         break;
       case _RegistrationType.rewards:
+      case _RegistrationType.rewardUpdates:
         await api.subscribeCustomRewards(
           broadcasterUserId: registration.broadcasterId,
           sessionId: registration.sessionId,
+          updates: registration.type == _RegistrationType.rewardUpdates,
         );
         break;
 
@@ -316,6 +382,17 @@ class WebSocketManager {
 
     _registrations.add(registration);
   }
+
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    _reconnectTimer?.cancel();
+    await _authSubscription?.cancel();
+    _destroyCurrentConnection(WsState.idle);
+    await _messagesSubject.close();
+    await _stateSubject.close();
+    await _rewardsReadySubject.close();
+  }
 }
 
 class _Channel {
@@ -328,6 +405,7 @@ class _Channel {
 
 enum _RegistrationType {
   rewards,
+  rewardUpdates,
   follow,
   raid,
   chatMessages,

@@ -15,6 +15,10 @@ import 'package:obssource/secrets.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_redemption_service.dart';
 import 'package:obssource/twitch/ws_manager.dart';
+import 'package:obssource/tts/tts_api.dart';
+import 'package:obssource/tts/tts_controller.dart';
+import 'package:obssource/tts/tts_player.dart';
+import 'package:obssource/tts/tts_twitch.dart';
 
 class AppServiceLocator extends ServiceLocator {
   static late final AppServiceLocator instance;
@@ -73,11 +77,18 @@ class AppServiceLocator extends ServiceLocator {
       denoPath: tools.denoPath,
       cache: musicCache,
     );
+
     final musicPlayer = ObsAudioMusicTrackPlayer(volume: _musicVolume(config));
+
+    var ttsDucking = false;
+    Future<void> applyMusicVolume() =>
+        musicPlayer.setVolume(_musicVolume(config) * (ttsDucking ? 0.25 : 1));
+
     final redemptionService = TwitchApiRedemptionService(
       api: TwitchApi(settings: settings, clientSecret: twitchClientSecret),
       settings: settings,
     );
+
     final musicRequests = MusicRequestManager(
       events: wsManager.messages,
       fetcher: trackFetcher,
@@ -99,6 +110,29 @@ class AppServiceLocator extends ServiceLocator {
     map[ObsAudioMusicTrackPlayer] = musicPlayer;
     map[TwitchRedemptionService] = redemptionService;
     map[MusicRequests] = musicRequests;
+
+    final ttsApi = TwitchApi(
+      settings: settings,
+      clientSecret: twitchClientSecret,
+    );
+
+    final tts = TtsController(
+      settings: settings,
+      api: HttpTtsGateway(),
+      twitch: ApiTtsTwitch(ttsApi, settings),
+      player: ObsTtsPlayback(
+        duckMusic: (active) {
+          ttsDucking = active;
+          return applyMusicVolume();
+        },
+      ),
+      events: wsManager.messages,
+      connected: wsManager.rewardsReady,
+      connectionChanges: wsManager.rewardsReadyChanges,
+    );
+
+    map[TtsController] = tts;
+    map[TtsRewardCatalog] = TtsRewardCatalog(api: ttsApi, settings: settings);
 
     if (startMusicControlServer &&
         config.getBool('music_control_server_enabled', fallback: true)) {
@@ -123,7 +157,7 @@ class AppServiceLocator extends ServiceLocator {
     }
 
     _musicVolumeSubscription = config.config.changes.listen((_) {
-      unawaited(musicPlayer.setVolume(_musicVolume(config)));
+      unawaited(applyMusicVolume());
     });
   }
 
@@ -132,6 +166,8 @@ class AppServiceLocator extends ServiceLocator {
 
   Future<void> close() async {
     await _musicVolumeSubscription.cancel();
+    await (map[TtsController]! as TtsController).close();
+    await (map[WebSocketManager]! as WebSocketManager).close();
     await _musicControlServer?.close();
     await (map[MusicRequests]! as MusicRequests).close();
   }

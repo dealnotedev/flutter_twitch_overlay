@@ -1,3 +1,4 @@
+import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/ws_subscription.dart';
 
 class WsMessage {
@@ -63,6 +64,8 @@ class WsMessageEvent {
   final String? userInput;
   final String? messageText;
   final DateTime? redeemedAt;
+  final TwitchRedemptionStatus? redemptionStatus;
+  final String? broadcasterId;
   final WsRaid? raid;
   final WsSubscription? subscription;
 
@@ -75,6 +78,8 @@ class WsMessageEvent {
     required this.redeemedAt,
     this.raid,
     this.subscription,
+    this.redemptionStatus,
+    this.broadcasterId,
   });
 
   factory WsMessageEvent.fromJson(dynamic json, {String? eventType}) {
@@ -88,6 +93,10 @@ class WsMessageEvent {
       userInput: json['user_input'] as String?,
       messageText: messageJson is Map ? messageJson['text'] as String? : null,
       redeemedAt: DateTime.tryParse(json['redeemed_at'] as String? ?? ''),
+      redemptionStatus: TwitchRedemptionStatus.fromApi(
+        json['status'] as String?,
+      ),
+      broadcasterId: json['broadcaster_user_id'] as String?,
       raid: WsRaid.tryParse(json),
       subscription: WsSubscription.tryParse(json, eventType),
     );

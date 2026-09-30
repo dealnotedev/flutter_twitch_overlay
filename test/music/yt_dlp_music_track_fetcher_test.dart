@@ -6,6 +6,43 @@ import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
 
 void main() {
+  test('keeps the failure reason before a long cookie help URL', () async {
+    final fetcher = YtDlpMusicTrackFetcher(
+      executable: 'fake-yt-dlp',
+      ffmpegLocation: null,
+      denoPath: null,
+      cache: MusicFileCache(rootDirectory: Directory.systemTemp, maxBytes: 0),
+      processStarter:
+          (_, __) async => _FakeProcess(
+            const [],
+            errorOutput:
+                'WARNING: preliminary diagnostic\n'
+                'ERROR: [youtube] video: Sign in to confirm you are not a bot. '
+                'Use --cookies-from-browser or --cookies for authentication. '
+                'See https://github.com/yt-dlp/yt-dlp/wiki/FAQ#how-do-i-pass-cookies-to-yt-dlp '
+                'for instructions. Also see '
+                'https://github.com/yt-dlp/yt-dlp/wiki/Extractors#exporting-youtube-cookies '
+                'for tips on exporting YouTube cookies.\n',
+            status: 1,
+          ),
+    );
+
+    await expectLater(
+      fetcher.inspect(Uri.parse('https://youtu.be/video')),
+      throwsA(
+        isA<YtDlpException>()
+            .having(
+              (error) => error.message,
+              'message',
+              startsWith(
+                'Unable to inspect YouTube URL: ERROR: [youtube] video: '
+                'Sign in to confirm you are not a bot.',
+              ),
+            )
+            .having((error) => error.exitCode, 'exit code', 1),
+      ),
+    );
+  });
   test('requests UTF-8 output from yt-dlp', () async {
     final cacheDirectory = await Directory.systemTemp.createTemp(
       'yt_dlp_encoding_test_',
@@ -52,16 +89,19 @@ List<int> _metadataBytes({required bool utf8Requested}) {
 class _FakeProcess implements Process {
   final List<int> output;
 
-  const _FakeProcess(this.output);
+  final String errorOutput;
+  final int status;
+
+  const _FakeProcess(this.output, {this.errorOutput = '', this.status = 0});
 
   @override
-  Future<int> get exitCode async => 0;
+  Future<int> get exitCode async => status;
 
   @override
   int get pid => 1;
 
   @override
-  Stream<List<int>> get stderr => const Stream.empty();
+  Stream<List<int>> get stderr => Stream.value(utf8.encode(errorOutput));
 
   @override
   IOSink get stdin => throw UnsupportedError('stdin is unused');

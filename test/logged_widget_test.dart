@@ -366,24 +366,35 @@ void main() {
       findsOneWidget,
     );
     expect(
-      find.byKey(const ValueKey('twitch_reward_reward-1')),
+      find.byKey(const ValueKey('overlay_settings_reward_reward-1')),
       findsOneWidget,
     );
 
     await tester.ensureVisible(
-      find.byKey(const ValueKey('twitch_reward_reward-1')),
+      find.byKey(const ValueKey('overlay_settings_reward_reward-1')),
     );
     await tester.pump();
     final rewardTopLeft = tester.getTopLeft(
-      find.byKey(const ValueKey('twitch_reward_reward-1')),
+      find.byKey(const ValueKey('overlay_settings_reward_reward-1')),
     );
     await tester.tapAt(rewardTopLeft + const Offset(20, 20));
     await tester.pump();
     expect(settings.musicRewardId, 'reward-1');
 
-    await tester.tap(
-      find.byKey(const ValueKey('overlay_settings_refresh_rewards')),
+    await tester.tapAt(rewardTopLeft + const Offset(20, 20));
+    await tester.pump();
+    expect(settings.musicRewardId, isNull);
+
+    await tester.tapAt(rewardTopLeft + const Offset(20, 20));
+    await tester.pump();
+    expect(settings.musicRewardId, 'reward-1');
+
+    final refresh = find.byKey(
+      const ValueKey('overlay_settings_refresh_rewards'),
     );
+    await tester.ensureVisible(refresh);
+    await tester.pump();
+    await tester.tap(refresh);
     await tester.pump();
     await tester.pump();
     expect(catalog.loadCount, 2);
@@ -420,7 +431,7 @@ void main() {
     expect(catalog.createCount, 1);
     expect(settings.musicRewardId, 'created-reward');
     expect(
-      find.byKey(const ValueKey('twitch_reward_created-reward')),
+      find.byKey(const ValueKey('overlay_settings_reward_created-reward')),
       findsOneWidget,
     );
 

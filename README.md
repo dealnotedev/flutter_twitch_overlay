@@ -108,6 +108,56 @@ or `error`, plus the numeric `id` and optional `session_id`. The player waits fo
 the native load and start confirmations, surfaces decoder failures, and advances
 the queue on `ended`. A duration-based watchdog remains for older native hosts.
 
+## TTS Channel Points
+
+Open **Overlay settings → TTS** to enable processing, enter the service URL
+(default https://api.teamplay.com.ua/tts/v1), select a mood, and create or select
+an app-managed reward. Voice and language use the server defaults. Rewards must
+require text and retain redemptions in Twitch's queue, and cannot also be
+assigned to music. New rewards cost 1000 points; edit their name and price on
+Twitch and refresh the list.
+
+The base URL includes the full API prefix and version. The overlay appends
+/health on startup and once per minute. Settings show the
+last result, check time, and connected/healthy agent counts. The reward is
+automatically paused when the service, Twitch subscription, local audio, or
+queue is unavailable. The overlay controls the selected reward's paused state,
+including after a restart. To turn it off manually, disable TTS processing or
+disable the reward on Twitch; disabled rewards are never automatically enabled.
+
+Requests run in order, up to ten including the active request, with a
+1024 Unicode code-point limit (inclusive). The client uses synchronous POST /audio/speech
+relative to the base URL,
+with a 100-second HTTP deadline and a two-minute limit for queueing plus
+generation. Any timeout is terminal: cancel/refund the Twitch redemption,
+discard late audio, and never poll or resubmit the synthesis job. The server
+may finish its work independently.
+
+Before each speech file, assets/tts_notification.wav plays to completion,
+followed by one second of silence. The notification is a dedicated sound
+stored as 16-bit PCM WAV, 44.1 kHz stereo. Both files use the OBS audio host; music is temporarily at 25%
+of its configured volume. Native audio completion events are required.
+The test button uses the same audio path without spending Channel Points.
+The speech volume slider (0–200%, initially 100%) is saved in TTS settings and
+applies immediately to current speech, including test playback. It does not
+change the notification sound's volume.
+
+Redemption IDs are kept only in memory for the current session to ignore duplicate
+events. Each request gets one Twitch fulfillment/refund attempt. Failed updates
+and requests interrupted by a crash are left for moderators to resolve on Twitch.
+There are no retries, persisted request records, or recovery of pending requests
+on startup or reconnection. Use one active overlay for a channel.
+Orderly shutdown pauses the reward. Abrupt termination or loss of internet
+cannot immediately pause it.
+
+Validation:
+
+    flutter test test/tts
+    dart run tools/check_tts.dart https://api.teamplay.com.ua/tts/v1
+
+The second command performs one real short synthesis, validates WAV and SHA-256,
+and removes the temporary audio; it does not modify Twitch rewards.
+
 ## Optional Windows music controller
 
 The overlay owns the music queue, playback, and a loopback-only control server.

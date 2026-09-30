@@ -1,7 +1,25 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/ws_event.dart';
 
 void main() {
+  test(
+    'parses redemption statuses and tolerates unknown or missing status',
+    () {
+      for (final (wireValue, expected) in <(String?, TwitchRedemptionStatus?)>[
+        ('unfulfilled', TwitchRedemptionStatus.unfulfilled),
+        ('fulfilled', TwitchRedemptionStatus.fulfilled),
+        ('canceled', TwitchRedemptionStatus.canceled),
+        ('CANCELED', TwitchRedemptionStatus.canceled),
+        ('unknown', null),
+        (null, null),
+      ]) {
+        final event = WsMessageEvent.fromJson({'status': wireValue});
+        expect(event.redemptionStatus, expected);
+      }
+    },
+  );
+
   test('parses a real raid payload and its delivery ID', () {
     final message = WsMessage.fromJson({
       'metadata': {'message_id': 'delivery-1'},

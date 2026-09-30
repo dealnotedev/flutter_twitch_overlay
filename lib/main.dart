@@ -1,3 +1,5 @@
+import 'dart:async';
+import 'dart:ui' show AppExitResponse;
 import 'package:flutter/material.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
@@ -61,11 +63,28 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late final Settings _settings;
+  AppLifecycleListener? _lifecycle;
 
   @override
   void initState() {
     _settings = widget.locator.provide();
+    final locator = widget.locator;
+    if (locator is AppServiceLocator) {
+      _lifecycle = AppLifecycleListener(
+        onExitRequested: () async {
+          await locator.close();
+          return AppExitResponse.exit;
+        },
+        onDetach: () => unawaited(locator.close()),
+      );
+    }
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    super.dispose();
   }
 
   Widget _createRoot(BuildContext context) {

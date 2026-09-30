@@ -320,9 +320,17 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
   static String _errorMessage(String prefix, String stderr) {
     final detail = stderr.trim();
     if (detail.isEmpty) return prefix;
-    final compact = detail.replaceAll(RegExp(r'\s+'), ' ');
+    // Warnings may precede the failure, and long help URLs may follow it.
+    // Keep the actual error and its beginning so the reason stays visible.
+    final errorStart = RegExp(
+      r'^\s*ERROR:',
+      multiLine: true,
+    ).firstMatch(detail);
+    final relevant =
+        errorStart == null ? detail : detail.substring(errorStart.start);
+    final compact = relevant.trim().replaceAll(RegExp(r'\s+'), ' ');
     if (compact.length <= 240) return '$prefix: $compact';
-    return '$prefix: ${compact.substring(compact.length - 240)}';
+    return '$prefix: ${compact.substring(0, 237)}...';
   }
 
   @override

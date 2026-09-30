@@ -230,4 +230,155 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get overlay_settings_load_error =>
       'Не вдалося завантажити винагороди Twitch';
+
+  @override
+  String get tts_description =>
+      'Озвучення повідомлень глядачів за бали каналу.';
+
+  @override
+  String get tts_enabled => 'Обробка TTS';
+
+  @override
+  String get tts_on => 'Увімкнено';
+
+  @override
+  String get tts_off => 'Вимкнено';
+
+  @override
+  String get tts_base_url => 'Адреса сервісу';
+
+  @override
+  String get tts_url_hint =>
+      'Разом із версією API, наприклад https://api.teamplay.com.ua/tts/v1';
+
+  @override
+  String get tts_apply => 'Застосувати';
+
+  @override
+  String get tts_invalid_url =>
+      'Введіть HTTP(S) адресу без параметрів запиту та фрагмента.';
+
+  @override
+  String get tts_mood => 'Настрій';
+
+  @override
+  String get tts_volume => 'Гучність озвучення';
+
+  @override
+  String get tts_volume_hint =>
+      'Лише озвучення. Гучність звуку сповіщення не змінюється.';
+
+  @override
+  String get tts_neutral => 'Звичайний';
+
+  @override
+  String get tts_calm => 'Спокійний';
+
+  @override
+  String get tts_lively => 'Енергійний';
+
+  @override
+  String get tts_service => 'Останній стан сервісу';
+
+  @override
+  String get tts_available => 'Доступний';
+
+  @override
+  String get tts_unavailable => 'Недоступний';
+
+  @override
+  String get tts_unknown => 'Ще не перевірено';
+
+  @override
+  String get tts_check => 'Перевірити';
+
+  @override
+  String tts_agents(int healthy, int connected) {
+    return 'Агенти: $healthy готові / $connected підключені';
+  }
+
+  @override
+  String tts_last_check(String time) {
+    return 'Перевірено о $time · оновлення щохвилини';
+  }
+
+  @override
+  String get tts_reward_description =>
+      'Оберіть винагороду з введенням тексту. Вона призупиняється, коли TTS недоступний.';
+
+  @override
+  String get tts_reward_empty =>
+      'Створіть винагороду TTS або оберіть доступну цьому застосунку.';
+
+  @override
+  String get tts_music_conflict => 'Використовується для замовлення музики';
+
+  @override
+  String get tts_reward_conflict => 'Використовується для TTS';
+
+  @override
+  String get tts_announcement =>
+      'Звук сповіщення → пауза 1 секунда → озвучення';
+
+  @override
+  String get tts_disabled => 'Обробку TTS вимкнено';
+
+  @override
+  String get tts_no_reward => 'Оберіть винагороду Twitch';
+
+  @override
+  String get tts_twitch_unavailable => 'Немає з’єднання з подіями Twitch';
+
+  @override
+  String get tts_audio_unavailable => 'Аудіо OBS недоступне';
+
+  @override
+  String get tts_queue_full => 'Черга TTS заповнена';
+
+  @override
+  String get tts_reward_unavailable =>
+      'Винагорода призупинена, вимкнена або несумісна';
+
+  @override
+  String get tts_no_agents => 'Немає готових агентів';
+
+  @override
+  String get tts_timeout => 'Час очікування озвучення вичерпано';
+
+  @override
+  String get tts_invalid_text => 'Введіть від 1 до 1024 символів';
+
+  @override
+  String get tts_failed => 'Не вдалося озвучити текст';
+
+  @override
+  String get tts_canceled => 'Озвучення скасовано';
+
+  @override
+  String get tts_agents_unknown => 'Кількість агентів невідома';
+
+  @override
+  String get tts_settlement_failed =>
+      'Не вдалося оновити заявку у Twitch. Потрібне втручання модератора.';
+
+  @override
+  String get tts_operation_failed =>
+      'Не вдалося виконати дію. Спробуйте ще раз.';
+
+  @override
+  String get tts_test => 'Перевірити через OBS';
+
+  @override
+  String get tts_test_text => 'Текст для озвучення';
+
+  @override
+  String get tts_test_default => 'Привіт! Це перевірка озвучення.';
+
+  @override
+  String get tts_stop => 'Зупинити';
+
+  @override
+  String tts_working(String name) {
+    return 'Обробляється: $name';
+  }
 }

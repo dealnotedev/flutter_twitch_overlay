@@ -1,4 +1,7 @@
 import 'dart:async';
+import 'package:obssource/di/app_service_locator.dart';
+import 'package:obssource/tts/tts_controller.dart';
+import 'package:obssource/tts/tts_twitch.dart';
 import 'dart:collection';
 
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
@@ -249,6 +252,7 @@ class _State extends State<LoggedWidget> {
   }
 
   void _showOverlaySettings() {
+    final appLocator = widget.locator;
     final rewardCatalog =
         widget.rewardCatalog ??
         TwitchApiRewardCatalog(
@@ -262,6 +266,14 @@ class _State extends State<LoggedWidget> {
           (_) => OverlaySettingsDialog(
             settings: _settings,
             rewardCatalog: rewardCatalog,
+            ttsController:
+                appLocator is AppServiceLocator
+                    ? appLocator.provide<TtsController>()
+                    : null,
+            ttsRewardCatalog:
+                appLocator is AppServiceLocator
+                    ? appLocator.provide<TtsRewardCatalog>()
+                    : null,
           ),
     );
   }

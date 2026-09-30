@@ -414,6 +414,276 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Could not load Twitch rewards'**
   String get overlay_settings_load_error;
+
+  /// No description provided for @tts_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Read viewers’ messages aloud for Channel Points.'**
+  String get tts_description;
+
+  /// No description provided for @tts_enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'TTS processing'**
+  String get tts_enabled;
+
+  /// No description provided for @tts_on.
+  ///
+  /// In en, this message translates to:
+  /// **'On'**
+  String get tts_on;
+
+  /// No description provided for @tts_off.
+  ///
+  /// In en, this message translates to:
+  /// **'Off'**
+  String get tts_off;
+
+  /// No description provided for @tts_base_url.
+  ///
+  /// In en, this message translates to:
+  /// **'Service URL'**
+  String get tts_base_url;
+
+  /// No description provided for @tts_url_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Include the API version, for example https://api.teamplay.com.ua/tts/v1'**
+  String get tts_url_hint;
+
+  /// No description provided for @tts_apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get tts_apply;
+
+  /// No description provided for @tts_invalid_url.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid HTTP(S) URL without a query or fragment.'**
+  String get tts_invalid_url;
+
+  /// No description provided for @tts_mood.
+  ///
+  /// In en, this message translates to:
+  /// **'Mood'**
+  String get tts_mood;
+
+  /// No description provided for @tts_volume.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech volume'**
+  String get tts_volume;
+
+  /// No description provided for @tts_volume_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Applies to speech only. The notification sound keeps its volume.'**
+  String get tts_volume_hint;
+
+  /// No description provided for @tts_neutral.
+  ///
+  /// In en, this message translates to:
+  /// **'Neutral'**
+  String get tts_neutral;
+
+  /// No description provided for @tts_calm.
+  ///
+  /// In en, this message translates to:
+  /// **'Calm'**
+  String get tts_calm;
+
+  /// No description provided for @tts_lively.
+  ///
+  /// In en, this message translates to:
+  /// **'Lively'**
+  String get tts_lively;
+
+  /// No description provided for @tts_service.
+  ///
+  /// In en, this message translates to:
+  /// **'Last service status'**
+  String get tts_service;
+
+  /// No description provided for @tts_available.
+  ///
+  /// In en, this message translates to:
+  /// **'Available'**
+  String get tts_available;
+
+  /// No description provided for @tts_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Unavailable'**
+  String get tts_unavailable;
+
+  /// No description provided for @tts_unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Not checked yet'**
+  String get tts_unknown;
+
+  /// No description provided for @tts_check.
+  ///
+  /// In en, this message translates to:
+  /// **'Check now'**
+  String get tts_check;
+
+  /// No description provided for @tts_agents.
+  ///
+  /// In en, this message translates to:
+  /// **'{healthy} healthy / {connected} connected agents'**
+  String tts_agents(int healthy, int connected);
+
+  /// No description provided for @tts_last_check.
+  ///
+  /// In en, this message translates to:
+  /// **'Checked at {time} · updates every minute'**
+  String tts_last_check(String time);
+
+  /// No description provided for @tts_reward_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a text-input reward. It pauses automatically when TTS is unavailable.'**
+  String get tts_reward_description;
+
+  /// No description provided for @tts_reward_empty.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a TTS reward, or choose one managed by this app.'**
+  String get tts_reward_empty;
+
+  /// No description provided for @tts_music_conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for music requests'**
+  String get tts_music_conflict;
+
+  /// No description provided for @tts_reward_conflict.
+  ///
+  /// In en, this message translates to:
+  /// **'Used for TTS'**
+  String get tts_reward_conflict;
+
+  /// No description provided for @tts_announcement.
+  ///
+  /// In en, this message translates to:
+  /// **'Notification sound → 1 second pause → speech'**
+  String get tts_announcement;
+
+  /// No description provided for @tts_disabled.
+  ///
+  /// In en, this message translates to:
+  /// **'TTS processing is off'**
+  String get tts_disabled;
+
+  /// No description provided for @tts_no_reward.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose a Twitch reward'**
+  String get tts_no_reward;
+
+  /// No description provided for @tts_twitch_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Twitch event connection is unavailable'**
+  String get tts_twitch_unavailable;
+
+  /// No description provided for @tts_audio_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'OBS audio is unavailable'**
+  String get tts_audio_unavailable;
+
+  /// No description provided for @tts_queue_full.
+  ///
+  /// In en, this message translates to:
+  /// **'TTS queue is full'**
+  String get tts_queue_full;
+
+  /// No description provided for @tts_reward_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward is paused, disabled or incompatible'**
+  String get tts_reward_unavailable;
+
+  /// No description provided for @tts_no_agents.
+  ///
+  /// In en, this message translates to:
+  /// **'No healthy agents available'**
+  String get tts_no_agents;
+
+  /// No description provided for @tts_timeout.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech request timed out'**
+  String get tts_timeout;
+
+  /// No description provided for @tts_invalid_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter between 1 and 1024 characters'**
+  String get tts_invalid_text;
+
+  /// No description provided for @tts_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the text aloud'**
+  String get tts_failed;
+
+  /// No description provided for @tts_canceled.
+  ///
+  /// In en, this message translates to:
+  /// **'Speech canceled'**
+  String get tts_canceled;
+
+  /// No description provided for @tts_agents_unknown.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent count is unknown'**
+  String get tts_agents_unknown;
+
+  /// No description provided for @tts_settlement_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not update the request on Twitch. A moderator needs to resolve it.'**
+  String get tts_settlement_failed;
+
+  /// No description provided for @tts_operation_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not complete the operation. Please try again.'**
+  String get tts_operation_failed;
+
+  /// No description provided for @tts_test.
+  ///
+  /// In en, this message translates to:
+  /// **'Test through OBS'**
+  String get tts_test;
+
+  /// No description provided for @tts_test_text.
+  ///
+  /// In en, this message translates to:
+  /// **'Text to read aloud'**
+  String get tts_test_text;
+
+  /// No description provided for @tts_test_default.
+  ///
+  /// In en, this message translates to:
+  /// **'Hello! This is a text-to-speech test.'**
+  String get tts_test_default;
+
+  /// No description provided for @tts_stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get tts_stop;
+
+  /// No description provided for @tts_working.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing: {name}'**
+  String tts_working(String name);
 }
 
 class _AppLocalizationsDelegate

@@ -41,10 +41,12 @@ class TwitchApi {
   Future<void> subscribeCustomRewards({
     required String? broadcasterUserId,
     required String sessionId,
+    bool updates = false,
   }) {
     final data = {
       'version': '1',
-      'type': 'channel.channel_points_custom_reward_redemption.add',
+      'type':
+          'channel.channel_points_custom_reward_redemption.${updates ? 'update' : 'add'}',
       'condition': {'broadcaster_user_id': broadcasterUserId},
       'transport': {'session_id': sessionId, 'method': 'websocket'},
     };
@@ -137,6 +139,7 @@ class TwitchApi {
     required int cost,
     required String prompt,
     required String backgroundColor,
+    bool isEnabled = true,
   }) async {
     final response = await dio.post(
       '/channel_points/custom_rewards',
@@ -146,7 +149,7 @@ class TwitchApi {
         'cost': cost,
         'prompt': prompt,
         'background_color': backgroundColor,
-        'is_enabled': true,
+        'is_enabled': isEnabled,
         'is_user_input_required': true,
         'should_redemptions_skip_request_queue': false,
       },
@@ -179,6 +182,43 @@ class TwitchApi {
       },
       data: {'status': status.apiValue},
     );
+  }
+
+  Future<TwitchCustomReward> updateCustomReward({
+    required String broadcasterUserId,
+    required String rewardId,
+    bool? paused,
+    bool? enabled,
+  }) async {
+    final response = await dio.patch(
+      '/channel_points/custom_rewards',
+      queryParameters: {'broadcaster_id': broadcasterUserId, 'id': rewardId},
+      data: {
+        if (paused != null) 'is_paused': paused,
+        if (enabled != null) 'is_enabled': enabled,
+      },
+    );
+    return _customRewardsFromResponse(response.data).single;
+  }
+
+  Future<TwitchRedemptionStatus?> getRewardRedemptionStatus({
+    required String broadcasterUserId,
+    required String rewardId,
+    required String redemptionId,
+  }) async {
+    final response = await dio.get<Map<String, dynamic>>(
+      '/channel_points/custom_rewards/redemptions',
+      queryParameters: {
+        'broadcaster_id': broadcasterUserId,
+        'reward_id': rewardId,
+        'id': redemptionId,
+      },
+    );
+    final entries =
+        (response.data!['data'] as List).cast<Map<String, dynamic>>();
+    return entries.isEmpty
+        ? null
+        : TwitchRedemptionStatus.fromApi(entries.single['status'] as String?);
   }
 
   Future<UserDto> getUser({required String? id}) {
