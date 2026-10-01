@@ -160,6 +160,89 @@ class _NeonSettingsButtonState extends State<NeonSettingsButton> {
   }
 }
 
+class NeonSettingsSlider extends StatelessWidget {
+  static const _trackHeight = 4.0;
+
+  final Key sliderKey;
+  final String label;
+  final int value;
+  final int min;
+  final int max;
+  final int step;
+  final String Function(int) formatValue;
+  final String? valueLabel;
+  final ValueChanged<int>? onChanged;
+  final ValueChanged<int>? onChangeEnd;
+
+  const NeonSettingsSlider({
+    super.key,
+    required this.sliderKey,
+    required this.label,
+    required this.value,
+    required this.min,
+    required this.max,
+    this.step = 1,
+    required this.formatValue,
+    this.valueLabel,
+    required this.onChanged,
+    required this.onChangeEnd,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      // Flutter places the end ticks half a track height inside rounded caps.
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: _trackHeight / 2),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(
+                  color: MusicPlayerPalette.textPrimary,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+            const Gap(12),
+            Text(
+              valueLabel ?? formatValue(value),
+              style: const TextStyle(
+                color: MusicPlayerPalette.textSecondary,
+                fontSize: 12,
+              ),
+            ),
+          ],
+        ),
+      ),
+      SliderTheme(
+        data: SliderTheme.of(context).copyWith(trackHeight: _trackHeight),
+        child: Slider(
+          key: sliderKey,
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          value: value.toDouble(),
+          min: min.toDouble(),
+          max: max.toDouble(),
+          divisions: (max - min) ~/ step,
+          label: formatValue(value),
+          semanticFormatterCallback: (value) => formatValue(value.round()),
+          activeColor: MusicPlayerPalette.neonPinkBright,
+          inactiveColor: MusicPlayerPalette.neonPink.withValues(alpha: 0.15),
+          onChanged:
+              onChanged == null ? null : (value) => onChanged!(value.round()),
+          onChangeEnd:
+              onChangeEnd == null
+                  ? null
+                  : (value) => onChangeEnd!(value.round()),
+        ),
+      ),
+    ],
+  );
+}
+
 class NeonSettingsInput extends StatefulWidget {
   final TextEditingController controller;
   final String label;
@@ -176,12 +259,31 @@ class NeonSettingsInput extends StatefulWidget {
   State<NeonSettingsInput> createState() => _NeonSettingsInputState();
 }
 
-class _NeonSettingsInputState extends State<NeonSettingsInput> {
+class _NeonSettingsInputState extends State<NeonSettingsInput>
+    implements TextSelectionGestureDetectorBuilderDelegate {
   final _focus = FocusNode();
+  @override
+  final editableTextKey = GlobalKey<EditableTextState>();
+  late final _selectionGestures = TextSelectionGestureDetectorBuilder(
+    delegate: this,
+  );
+
+  @override
+  bool get forcePressEnabled => false;
+  @override
+  bool get selectionEnabled => widget.enabled;
+
   @override
   void initState() {
     super.initState();
+    _focus.canRequestFocus = widget.enabled;
     _focus.addListener(_changed);
+  }
+
+  @override
+  void didUpdateWidget(NeonSettingsInput oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _focus.canRequestFocus = widget.enabled;
   }
 
   void _changed() => setState(() {});
@@ -196,8 +298,8 @@ class _NeonSettingsInputState extends State<NeonSettingsInput> {
   Widget build(BuildContext context) => Semantics(
     label: widget.label,
     textField: true,
-    child: GestureDetector(
-      onTap: widget.enabled ? _focus.requestFocus : null,
+    child: _selectionGestures.buildGestureDetector(
+      behavior: HitTestBehavior.opaque,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 120),
         padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 12),
@@ -212,8 +314,11 @@ class _NeonSettingsInputState extends State<NeonSettingsInput> {
           ),
         ),
         child: EditableText(
+          key: editableTextKey,
           controller: widget.controller,
           focusNode: _focus,
+          // The surrounding builder handles clicks and drag selection.
+          rendererIgnoresPointer: true,
           readOnly: !widget.enabled,
           style: const TextStyle(
             color: MusicPlayerPalette.textPrimary,

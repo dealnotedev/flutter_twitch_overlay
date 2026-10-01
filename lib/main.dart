@@ -18,11 +18,7 @@ void main() async {
   final obsConfig = ObsConfig();
   await obsConfig.init();
 
-  final locator = AppServiceLocator.init(
-    settings,
-    obsConfig,
-    startMusicControlServer: true,
-  );
+  final locator = AppServiceLocator.init(settings, obsConfig);
 
   runApp(MyApp(locator: locator));
 }

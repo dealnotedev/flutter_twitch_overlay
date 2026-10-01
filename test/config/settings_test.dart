@@ -29,7 +29,7 @@ void main() {
       ttsVolumePercent: 15,
       maxQueue: 23,
       maxDurationSeconds: 321,
-      cacheMaxMb: 0,
+      cacheMaxMb: 512,
       controlServerEnabled: false,
       controlServerPort: 50123,
     );
@@ -70,6 +70,65 @@ void main() {
         final restored = Settings();
         await restored.init();
         expect(restored.music.toJson(), const MusicSettings().toJson());
+      }
+    },
+  );
+
+  test(
+    'cache limits stay within 128 MB and 2 GB when saved or restored',
+    () async {
+      for (final (stored, expected) in [
+        (0, 2048),
+        (64, 128),
+        (128, 128),
+        (1024, 1024),
+        (2048, 2048),
+        (4096, 2048),
+      ]) {
+        SharedPreferences.setMockInitialValues({
+          'music_settings': jsonEncode({'cache_max_mb': stored}),
+        });
+        final settings = Settings();
+        await settings.init();
+        expect(settings.music.cacheMaxMb, expected);
+        await settings.saveMusic(settings.music.copyWith(cacheMaxMb: stored));
+        final restored = Settings();
+        await restored.init();
+        expect(restored.music.cacheMaxMb, expected);
+      }
+    },
+  );
+
+  test(
+    'queue and duration limits stay in the slider ranges when saved or restored',
+    () async {
+      for (final (queue, duration, expectedQueue, expectedDuration) in [
+        (1, 1, 1, 60),
+        (1, 60, 1, 60),
+        (24, 451, 24, 451),
+        (50, 1200, 50, 1200),
+        (51, 1201, 50, 1200),
+      ]) {
+        SharedPreferences.setMockInitialValues({
+          'music_settings': jsonEncode({
+            'max_queue': queue,
+            'max_duration_seconds': duration,
+          }),
+        });
+        final settings = Settings();
+        await settings.init();
+        expect(settings.music.maxQueue, expectedQueue);
+        expect(settings.music.maxDurationSeconds, expectedDuration);
+        await settings.saveMusic(
+          settings.music.copyWith(
+            maxQueue: queue,
+            maxDurationSeconds: duration,
+          ),
+        );
+        final restored = Settings();
+        await restored.init();
+        expect(restored.music.maxQueue, expectedQueue);
+        expect(restored.music.maxDurationSeconds, expectedDuration);
       }
     },
   );

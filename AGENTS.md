@@ -10,3 +10,7 @@
   with `Gap` mechanically.
 - Apply this convention throughout the main app and `apps/music_controller`,
   including future UI changes.
+- Use `NeonSettingsSlider` for settings sliders so music, TTS, and player
+  presentation settings share the same appearance and value labels.
+- Place each slider's title in `Expanded` and its value at the right of the
+  same row, above the full-width slider.

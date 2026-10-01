@@ -205,14 +205,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_settings_duration_hint =>
-      'Applies to new requests. 600 seconds = 10 minutes.';
+      '60–1200 seconds (1–20 minutes). Applies to new requests.';
 
   @override
-  String get music_settings_cache => 'Cache size (MB)';
+  String get music_settings_cache => 'Cache size';
+
+  @override
+  String music_settings_cache_mb(int size) {
+    return '$size MB';
+  }
+
+  @override
+  String music_settings_cache_gb(int size) {
+    return '$size GB';
+  }
 
   @override
   String get music_settings_cache_hint =>
-      '0 = unlimited. Old unused files are removed first; tracks used this session are kept.';
+      '128 MB–2 GB. Old unused files are removed first; tracks used this session are kept.';
 
   @override
   String get music_settings_server => 'Local music controller server';
@@ -233,14 +243,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_settings_retry => 'Retry';
-
-  @override
-  String get music_settings_invalid_positive =>
-      'Enter a whole number greater than 0.';
-
-  @override
-  String get music_settings_invalid_nonnegative =>
-      'Enter a whole number of 0 or more.';
 
   @override
   String get music_settings_invalid_port => 'Enter a port from 1 to 65535.';
@@ -277,6 +279,9 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get overlay_settings_collapse_description =>
       'Time before switching to compact mode. Hovering keeps the player expanded.';
+
+  @override
+  String get overlay_settings_collapse_delay => 'Collapse delay';
 
   @override
   String overlay_settings_seconds(int seconds) {

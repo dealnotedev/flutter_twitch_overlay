@@ -59,6 +59,16 @@ void main() {
         final slider = find.byKey(ValueKey(key));
         await tester.ensureVisible(slider);
         final rect = tester.getRect(slider);
+        await tester.tapAt(
+          Offset(rect.left + rect.width * 0.37, rect.center.dy),
+        );
+        await _pump(tester);
+        final percent =
+            key == 'music_volume'
+                ? settings.music.volumePercent
+                : settings.music.ttsVolumePercent;
+        expect(percent, inInclusiveRange(5, 95));
+        expect(percent % 5, 0);
         await tester.tapAt(Offset(rect.right - 1, rect.center.dy));
         await _pump(tester);
       }
@@ -83,18 +93,79 @@ void main() {
         await _pump(tester);
       }
 
-      await number('music_max_queue', '0');
-      expect(settings.music.maxQueue, 10);
-      await number('music_max_queue', '24');
-      await number('music_max_duration', '-1');
-      expect(settings.music.maxDurationSeconds, 600);
-      await number('music_max_duration', '451');
-      await number('music_cache_max_mb', 'oops');
-      expect(settings.music.cacheMaxMb, 2048);
-      await number('music_cache_max_mb', '0');
-      expect(settings.music.maxQueue, 24);
-      expect(settings.music.maxDurationSeconds, 451);
-      expect(settings.music.cacheMaxMb, 0);
+      Future<void> adjustSlider(
+        String key,
+        int min,
+        int max,
+        int Function() savedValue, {
+        int step = 1,
+      }) async {
+        final slider = find.byKey(ValueKey(key));
+        await tester.ensureVisible(slider);
+        await _pump(tester);
+        expect(find.byKey(ValueKey('${key}_apply')), findsNothing);
+        final rect = tester.getRect(slider);
+        await tester.tapAt(Offset(rect.left + 1, rect.center.dy));
+        await _pump(tester);
+        expect(savedValue(), min);
+        await tester.tapAt(Offset(rect.right - 1, rect.center.dy));
+        await _pump(tester);
+        expect(savedValue(), max);
+        final drag = await tester.startGesture(rect.center);
+        await _pump(tester);
+        final draft = tester.widget<Slider>(slider).value.toInt();
+        expect(draft, inInclusiveRange(min + 1, max - 1));
+        expect((draft - min) % step, 0);
+        expect(savedValue(), max);
+        await drag.up();
+        await _pump(tester);
+        expect(savedValue(), draft);
+      }
+
+      await adjustSlider(
+        'player_collapse_slider',
+        1,
+        60,
+        () => settings.playerCollapseSeconds,
+      );
+      final collapse = find.byKey(const ValueKey('player_collapse_slider'));
+      final alwaysExpanded = find.byKey(
+        const ValueKey('player_always_expanded_switch'),
+      );
+      await tester.ensureVisible(alwaysExpanded);
+      await _pump(tester);
+      await tester.tap(alwaysExpanded);
+      await _pump(tester);
+      expect(settings.playerAlwaysExpanded, isTrue);
+      final collapseSeconds = settings.playerCollapseSeconds;
+      final collapseRect = tester.getRect(collapse);
+      await tester.tapAt(Offset(collapseRect.left + 1, collapseRect.center.dy));
+      await _pump(tester);
+      expect(settings.playerCollapseSeconds, collapseSeconds);
+      await tester.tap(alwaysExpanded);
+      await _pump(tester);
+      expect(settings.playerAlwaysExpanded, isFalse);
+
+      await adjustSlider(
+        'music_max_queue',
+        1,
+        50,
+        () => settings.music.maxQueue,
+      );
+      await adjustSlider(
+        'music_max_duration',
+        60,
+        1200,
+        () => settings.music.maxDurationSeconds,
+        step: 5,
+      );
+      await adjustSlider(
+        'music_cache_max_mb',
+        128,
+        2048,
+        () => settings.music.cacheMaxMb,
+        step: 128,
+      );
       await tester.ensureVisible(find.byKey(const ValueKey('music_max_queue')));
       await _pump(tester);
       await _capture(tester, capture, 'music-limits-$language');

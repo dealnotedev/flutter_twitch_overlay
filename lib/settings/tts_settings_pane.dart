@@ -279,66 +279,24 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                   ],
                 ),
                 const Gap(18),
-                _label(l.tts_volume),
-                Row(
-                  children: [
-                    Icon(
-                      volumePercent == 0
-                          ? Icons.volume_off_rounded
-                          : Icons.volume_up_rounded,
-                      size: 22,
-                      color: MusicPlayerPalette.neonPinkBright,
-                    ),
-                    Expanded(
-                      child: Slider(
-                        key: const ValueKey('tts_volume_slider'),
-                        value: volumePercent.toDouble(),
-                        min: 0,
-                        max: TtsSettings.maxVolumePercent.toDouble(),
-                        divisions: TtsSettings.maxVolumePercent,
-                        label: '$volumePercent%',
-                        semanticFormatterCallback:
-                            (value) => '${value.round()}%',
-                        activeColor: MusicPlayerPalette.neonPinkBright,
-                        inactiveColor: MusicPlayerPalette.neonPink.withValues(
-                          alpha: 0.15,
-                        ),
-                        onChanged:
-                            _saving
-                                ? null
-                                : (value) {
-                                  final percent = value.round();
-                                  setState(() => _volumeDraft = percent);
-                                  controller?.previewVolume(percent);
-                                },
-                        onChangeEnd:
-                            _saving ? null : (_) => unawaited(_saveVolume()),
-                      ),
-                    ),
-                    Container(
-                      width: 62,
-                      alignment: Alignment.center,
-                      padding: const EdgeInsets.symmetric(vertical: 6),
-                      decoration: BoxDecoration(
-                        color: MusicPlayerPalette.neonPink.withValues(
-                          alpha: 0.12,
-                        ),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '$volumePercent%',
-                        style: const TextStyle(
-                          color: MusicPlayerPalette.neonPinkBright,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                    ),
-                  ],
+                NeonSettingsSlider(
+                  sliderKey: const ValueKey('tts_volume_slider'),
+                  label: l.tts_volume,
+                  value: volumePercent,
+                  min: 0,
+                  max: TtsSettings.maxVolumePercent,
+                  step: 5,
+                  formatValue: (value) => '$value%',
+                  onChanged:
+                      _saving
+                          ? null
+                          : (percent) {
+                            setState(() => _volumeDraft = percent);
+                            controller?.previewVolume(percent);
+                          },
+                  onChangeEnd: _saving ? null : (_) => unawaited(_saveVolume()),
                 ),
-                Text(
-                  l.tts_volume_hint,
-                  style: _secondary.copyWith(fontSize: 11),
-                ),
+                Text(l.tts_volume_hint, style: _secondary),
               ],
             ),
           ),
@@ -399,7 +357,7 @@ class _TtsSettingsPaneState extends State<TtsSettingsPane> {
                     l.tts_last_check(
                       DateFormat('HH:mm:ss').format(checked.toLocal()),
                     ),
-                    style: _secondary.copyWith(fontSize: 11),
+                    style: _secondary,
                   ),
                 ],
                 if (controller?.pauseReason != null) ...[

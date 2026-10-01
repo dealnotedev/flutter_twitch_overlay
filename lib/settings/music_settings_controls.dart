@@ -31,24 +31,21 @@ class MusicSettingsControls extends StatefulWidget {
 }
 
 class _MusicSettingsControlsState extends State<MusicSettingsControls> {
-  late final TextEditingController _queue;
-  late final TextEditingController _duration;
-  late final TextEditingController _cache;
   late final TextEditingController _port;
   late final StreamSubscription<MusicSettings> _subscription;
-  final _invalid = <String>{};
+  bool _invalidPort = false;
   bool _saving = false;
   bool _saveError = false;
   int? _volumeDraft;
   int? _ttsVolumeDraft;
+  int? _cacheDraft;
+  int? _queueDraft;
+  int? _durationDraft;
 
   @override
   void initState() {
     super.initState();
     final value = widget.settings.music;
-    _queue = TextEditingController(text: '${value.maxQueue}');
-    _duration = TextEditingController(text: '${value.maxDurationSeconds}');
-    _cache = TextEditingController(text: '${value.cacheMaxMb}');
     _port = TextEditingController(text: '${value.controlServerPort}');
     _subscription = widget.settings.musicChanges.listen((_) => _changed());
     widget.server?.addListener(_changed);
@@ -64,9 +61,7 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
     unawaited(_subscription.cancel());
     widget.server?.removeListener(_changed);
     widget.rewardController?.removeListener(_changed);
-    for (final controller in [_queue, _duration, _cache, _port]) {
-      controller.dispose();
-    }
+    _port.dispose();
     super.dispose();
   }
 
@@ -86,6 +81,9 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
           _saving = false;
           _volumeDraft = null;
           _ttsVolumeDraft = null;
+          _cacheDraft = null;
+          _queueDraft = null;
+          _durationDraft = null;
         });
       }
     }
@@ -140,19 +138,43 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
         ],
         const Gap(18),
         _panel([
-          _slider(
-            'music_volume',
-            l.music_settings_volume,
-            _volumeDraft ?? value.volumePercent,
-            (percent) => setState(() => _volumeDraft = percent),
-            (percent) => _save(value.copyWith(volumePercent: percent)),
+          NeonSettingsSlider(
+            sliderKey: const ValueKey('music_volume'),
+            label: l.music_settings_volume,
+            value: _volumeDraft ?? value.volumePercent,
+            min: 0,
+            max: 100,
+            step: 5,
+            formatValue: (value) => '$value%',
+            onChanged:
+                _saving
+                    ? null
+                    : (percent) => setState(() => _volumeDraft = percent),
+            onChangeEnd:
+                _saving
+                    ? null
+                    : (percent) => _save(
+                      widget.settings.music.copyWith(volumePercent: percent),
+                    ),
           ),
-          _slider(
-            'music_tts_volume',
-            l.music_settings_tts_volume,
-            _ttsVolumeDraft ?? value.ttsVolumePercent,
-            (percent) => setState(() => _ttsVolumeDraft = percent),
-            (percent) => _save(value.copyWith(ttsVolumePercent: percent)),
+          NeonSettingsSlider(
+            sliderKey: const ValueKey('music_tts_volume'),
+            label: l.music_settings_tts_volume,
+            value: _ttsVolumeDraft ?? value.ttsVolumePercent,
+            min: 0,
+            max: 100,
+            step: 5,
+            formatValue: (value) => '$value%',
+            onChanged:
+                _saving
+                    ? null
+                    : (percent) => setState(() => _ttsVolumeDraft = percent),
+            onChangeEnd:
+                _saving
+                    ? null
+                    : (percent) => _save(
+                      widget.settings.music.copyWith(ttsVolumePercent: percent),
+                    ),
           ),
           Text(l.music_settings_tts_volume_hint, style: _secondary),
         ]),
@@ -164,34 +186,72 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
         _panel([
           Text(l.music_settings_limits, style: _title),
           const Gap(12),
-          _number(
-            'music_max_queue',
-            l.music_settings_queue,
-            l.music_settings_queue_hint,
-            _queue,
-            1,
-            null,
-            (number) => widget.settings.music.copyWith(maxQueue: number),
+          NeonSettingsSlider(
+            sliderKey: const ValueKey('music_max_queue'),
+            label: l.music_settings_queue,
+            value: _queueDraft ?? value.maxQueue,
+            min: MusicSettings.minQueueLength,
+            max: MusicSettings.maxQueueLength,
+            formatValue: (value) => '$value',
+            onChanged:
+                _saving
+                    ? null
+                    : (number) => setState(() => _queueDraft = number),
+            onChangeEnd:
+                _saving
+                    ? null
+                    : (number) =>
+                        _save(widget.settings.music.copyWith(maxQueue: number)),
           ),
-          _number(
-            'music_max_duration',
-            l.music_settings_duration,
-            l.music_settings_duration_hint,
-            _duration,
-            1,
-            null,
-            (number) =>
-                widget.settings.music.copyWith(maxDurationSeconds: number),
+          Text(l.music_settings_queue_hint, style: _secondary),
+          const Gap(16),
+          NeonSettingsSlider(
+            sliderKey: const ValueKey('music_max_duration'),
+            label: l.music_settings_duration,
+            value: _durationDraft ?? value.maxDurationSeconds,
+            min: MusicSettings.minTrackDurationSeconds,
+            max: MusicSettings.maxTrackDurationSeconds,
+            step: 5,
+            formatValue: l.overlay_settings_seconds,
+            onChanged:
+                _saving
+                    ? null
+                    : (number) => setState(() => _durationDraft = number),
+            onChangeEnd:
+                _saving
+                    ? null
+                    : (number) => _save(
+                      widget.settings.music.copyWith(
+                        maxDurationSeconds: number,
+                      ),
+                    ),
           ),
-          _number(
-            'music_cache_max_mb',
-            l.music_settings_cache,
-            l.music_settings_cache_hint,
-            _cache,
-            0,
-            null,
-            (number) => widget.settings.music.copyWith(cacheMaxMb: number),
+          Text(l.music_settings_duration_hint, style: _secondary),
+          const Gap(16),
+          NeonSettingsSlider(
+            sliderKey: const ValueKey('music_cache_max_mb'),
+            label: l.music_settings_cache,
+            value: _cacheDraft ?? value.cacheMaxMb,
+            min: MusicSettings.minCacheMb,
+            max: MusicSettings.maxCacheMb,
+            step: 128,
+            formatValue:
+                (number) =>
+                    number % 1024 == 0
+                        ? l.music_settings_cache_gb(number ~/ 1024)
+                        : l.music_settings_cache_mb(number),
+            onChanged:
+                _saving
+                    ? null
+                    : (number) => setState(() => _cacheDraft = number),
+            onChangeEnd:
+                _saving
+                    ? null
+                    : (number) => _save(
+                      widget.settings.music.copyWith(cacheMaxMb: number),
+                    ),
           ),
+          Text(l.music_settings_cache_hint, style: _secondary),
         ]),
         const Gap(16),
         _panel([
@@ -213,16 +273,7 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
           const Gap(6),
           Text(l.music_settings_server_hint, style: _secondary),
           const Gap(12),
-          _number(
-            'music_server_port',
-            l.music_settings_port,
-            l.music_settings_port_hint,
-            _port,
-            1,
-            65535,
-            (number) =>
-                widget.settings.music.copyWith(controlServerPort: number),
-          ),
+          _portInput(),
           if (server != null) ...[
             SelectableText(switch (server.status) {
               MusicControlServerStatus.stopped =>
@@ -266,59 +317,16 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
     onPressed: _saving ? null : save,
   );
 
-  Widget _slider(
-    String key,
-    String label,
-    int value,
-    ValueChanged<int> draft,
-    ValueChanged<int> save,
-  ) => Column(
-    crossAxisAlignment: CrossAxisAlignment.start,
-    children: [
-      Text(label, style: _title),
-      Row(
-        children: [
-          Expanded(
-            child: Slider(
-              key: ValueKey(key),
-              value: value.toDouble(),
-              min: 0,
-              max: 100,
-              divisions: 100,
-              label: '$value%',
-              semanticFormatterCallback: (value) => '${value.round()}%',
-              activeColor: MusicPlayerPalette.neonPinkBright,
-              inactiveColor: MusicPlayerPalette.neonPink.withValues(
-                alpha: 0.15,
-              ),
-              onChanged: _saving ? null : (value) => draft(value.round()),
-              onChangeEnd: _saving ? null : (value) => save(value.round()),
-            ),
-          ),
-          SizedBox(width: 52, child: Text('$value%', style: _secondary)),
-        ],
-      ),
-    ],
-  );
-
-  Widget _number(
-    String key,
-    String label,
-    String hint,
-    TextEditingController controller,
-    int min,
-    int? max,
-    MusicSettings Function(int) update,
-  ) {
+  Widget _portInput() {
     Future<void> submit() async {
       if (_saving) return;
-      final number = int.tryParse(controller.text.trim());
-      if (number == null || number < min || (max != null && number > max)) {
-        setState(() => _invalid.add(key));
+      final number = int.tryParse(_port.text.trim());
+      if (number == null || number < 1 || number > 65535) {
+        setState(() => _invalidPort = true);
         return;
       }
-      setState(() => _invalid.remove(key));
-      await _save(update(number));
+      setState(() => _invalidPort = false);
+      await _save(widget.settings.music.copyWith(controlServerPort: number));
     }
 
     final l = context.localizations;
@@ -327,22 +335,22 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: _title),
+          Text(l.music_settings_port, style: _title),
           const Gap(8),
           Row(
             children: [
               Expanded(
                 child: NeonSettingsInput(
-                  key: ValueKey(key),
-                  label: label,
-                  controller: controller,
+                  key: const ValueKey('music_server_port'),
+                  label: l.music_settings_port,
+                  controller: _port,
                   enabled: !_saving,
                   onSubmitted: submit,
                 ),
               ),
               const Gap(12),
               NeonSettingsButton(
-                key: ValueKey('${key}_apply'),
+                key: const ValueKey('music_server_port_apply'),
                 label: l.music_settings_apply,
                 icon: Icons.check_rounded,
                 onPressed: _saving ? null : submit,
@@ -350,16 +358,9 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
             ],
           ),
           const Gap(6),
-          Text(hint, style: _secondary),
-          if (_invalid.contains(key))
-            Text(
-              max != null
-                  ? l.music_settings_invalid_port
-                  : min == 0
-                  ? l.music_settings_invalid_nonnegative
-                  : l.music_settings_invalid_positive,
-              style: _errorStyle,
-            ),
+          Text(l.music_settings_port_hint, style: _secondary),
+          if (_invalidPort)
+            Text(l.music_settings_invalid_port, style: _errorStyle),
         ],
       ),
     );

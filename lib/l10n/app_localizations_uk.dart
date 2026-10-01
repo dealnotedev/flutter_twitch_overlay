@@ -212,14 +212,24 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get music_settings_duration_hint =>
-      'Застосовується до нових замовлень. 600 секунд = 10 хвилин.';
+      '60–1200 секунд (1–20 хвилин). Застосовується до нових замовлень.';
 
   @override
-  String get music_settings_cache => 'Розмір кешу (МБ)';
+  String get music_settings_cache => 'Розмір кешу';
+
+  @override
+  String music_settings_cache_mb(int size) {
+    return '$size МБ';
+  }
+
+  @override
+  String music_settings_cache_gb(int size) {
+    return '$size ГБ';
+  }
 
   @override
   String get music_settings_cache_hint =>
-      '0 = без обмежень. Спочатку видаляються старі невикористані файли; треки поточного сеансу зберігаються.';
+      '128 МБ–2 ГБ. Спочатку видаляються старі невикористані файли; треки поточного сеансу зберігаються.';
 
   @override
   String get music_settings_server => 'Локальний сервер керування музикою';
@@ -240,13 +250,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get music_settings_retry => 'Спробувати ще раз';
-
-  @override
-  String get music_settings_invalid_positive =>
-      'Введіть ціле число більше за 0.';
-
-  @override
-  String get music_settings_invalid_nonnegative => 'Введіть ціле число від 0.';
 
   @override
   String get music_settings_invalid_port => 'Введіть порт від 1 до 65535.';
@@ -283,6 +286,9 @@ class AppLocalizationsUk extends AppLocalizations {
   @override
   String get overlay_settings_collapse_description =>
       'Час до компактного режиму. Під курсором плеєр залишається розгорнутим.';
+
+  @override
+  String get overlay_settings_collapse_delay => 'Затримка згортання';
 
   @override
   String overlay_settings_seconds(int seconds) {

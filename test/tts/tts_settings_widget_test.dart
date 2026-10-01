@@ -119,6 +119,21 @@ void main() {
       await tester.runAsync(() async {});
       expect(player.volume, 2.0);
       expect(settings.tts.volumePercent, 100);
+      final volumeRect = tester.getRect(volume);
+      await drag.moveTo(Offset(volumeRect.right - 30, volumeRect.center.dy));
+      await tester.pump();
+      await drag.moveTo(
+        Offset(volumeRect.left + volumeRect.width * 0.37, volumeRect.center.dy),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      final draft = tester.widget<Slider>(volume).value.toInt();
+      expect(draft, inInclusiveRange(5, 195));
+      expect(draft % 5, 0);
+      await tester.runAsync(() async {});
+      expect(player.volume, draft / 100);
+      expect(settings.tts.volumePercent, 100);
+      await drag.moveTo(Offset(volumeRect.right - 1, volumeRect.center.dy));
+      await tester.pump(const Duration(milliseconds: 200));
       await drag.up();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));

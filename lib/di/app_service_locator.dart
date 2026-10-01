@@ -4,8 +4,8 @@ import 'dart:io';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
-import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
+import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/music/music_settings.dart';
@@ -13,27 +13,19 @@ import 'package:obssource/music/music_tool_paths.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
 import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
 import 'package:obssource/secrets.dart';
-import 'package:obssource/twitch/twitch_api.dart';
-import 'package:obssource/twitch/twitch_redemption_service.dart';
-import 'package:obssource/twitch/ws_manager.dart';
 import 'package:obssource/tts/tts_api.dart';
 import 'package:obssource/tts/tts_controller.dart';
 import 'package:obssource/tts/tts_player.dart';
 import 'package:obssource/tts/tts_twitch.dart';
+import 'package:obssource/twitch/twitch_api.dart';
+import 'package:obssource/twitch/twitch_redemption_service.dart';
+import 'package:obssource/twitch/ws_manager.dart';
 
 class AppServiceLocator extends ServiceLocator {
   static late final AppServiceLocator instance;
 
-  static AppServiceLocator init(
-    Settings settings,
-    ObsConfig config, {
-    bool startMusicControlServer = false,
-  }) {
-    instance = AppServiceLocator._(
-      settings,
-      config,
-      startMusicControlServer: startMusicControlServer,
-    );
+  static AppServiceLocator init(Settings settings, ObsConfig config) {
+    instance = AppServiceLocator._(settings, config);
     return instance;
   }
 
@@ -45,11 +37,7 @@ class AppServiceLocator extends ServiceLocator {
   late final MusicRewardController musicRewardController;
   Future<void> _musicUpdates = Future.value();
 
-  AppServiceLocator._(
-    this.settings,
-    this.config, {
-    required bool startMusicControlServer,
-  }) {
+  AppServiceLocator._(this.settings, this.config) {
     final wsManager = WebSocketManager(
       'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30',
       settings,
@@ -154,17 +142,13 @@ class AppServiceLocator extends ServiceLocator {
     map[TtsController] = tts;
     map[TtsRewardCatalog] = TtsRewardCatalog(api: ttsApi, settings: settings);
 
-    if (startMusicControlServer) {
-      musicControlServer = MusicControlServerController(
-        requests: musicRequests,
-      );
-      unawaited(
-        musicControlServer!.configure(
-          enabled: music.controlServerEnabled,
-          port: music.controlServerPort,
-        ),
-      );
-    }
+    musicControlServer = MusicControlServerController(requests: musicRequests);
+    unawaited(
+      musicControlServer?.configure(
+        enabled: music.controlServerEnabled,
+        port: music.controlServerPort,
+      ),
+    );
 
     _musicSettingsSubscription = settings.musicChanges.listen((value) {
       musicRequests.updateSettings(value);

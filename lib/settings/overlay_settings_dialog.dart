@@ -364,62 +364,22 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
               fontSize: 12,
             ),
           ),
-          Row(
-            children: [
-              Text(
-                l10n.overlay_settings_seconds(1),
-                style: const TextStyle(
-                  color: MusicPlayerPalette.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-              Expanded(
-                child: Slider(
-                  key: const ValueKey('player_collapse_slider'),
-                  value: _collapseSeconds.toDouble(),
-                  min: 1,
-                  max: 60,
-                  divisions: 59,
-                  label: l10n.overlay_settings_seconds(_collapseSeconds),
-                  activeColor: MusicPlayerPalette.neonPinkBright,
-                  inactiveColor: MusicPlayerPalette.neonPink.withValues(
-                    alpha: 0.15,
-                  ),
-                  onChanged:
-                      _alwaysExpanded || _savingPresentation
-                          ? null
-                          : (value) =>
-                              setState(() => _collapseSeconds = value.round()),
-                  onChangeEnd: (_) => unawaited(_savePresentation()),
-                ),
-              ),
-              Text(
-                l10n.overlay_settings_seconds(60),
-                style: const TextStyle(
-                  color: MusicPlayerPalette.textSecondary,
-                  fontSize: 12,
-                ),
-              ),
-              const Gap(16),
-              Container(
-                width: 72,
-                alignment: Alignment.center,
-                padding: const EdgeInsets.symmetric(vertical: 6),
-                decoration: BoxDecoration(
-                  color: MusicPlayerPalette.neonPink.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  _alwaysExpanded
-                      ? '∞'
-                      : l10n.overlay_settings_seconds(_collapseSeconds),
-                  style: const TextStyle(
-                    color: MusicPlayerPalette.neonPinkBright,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ],
+          NeonSettingsSlider(
+            sliderKey: const ValueKey('player_collapse_slider'),
+            label: l10n.overlay_settings_collapse_delay,
+            value: _collapseSeconds,
+            min: 1,
+            max: 60,
+            formatValue: l10n.overlay_settings_seconds,
+            valueLabel: _alwaysExpanded ? '∞' : null,
+            onChanged:
+                _alwaysExpanded || _savingPresentation
+                    ? null
+                    : (value) => setState(() => _collapseSeconds = value),
+            onChangeEnd:
+                _alwaysExpanded || _savingPresentation
+                    ? null
+                    : (_) => unawaited(_savePresentation()),
           ),
           if (_presentationSaveError)
             Text(

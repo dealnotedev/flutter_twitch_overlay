@@ -388,19 +388,31 @@ abstract class AppLocalizations {
   /// No description provided for @music_settings_duration_hint.
   ///
   /// In en, this message translates to:
-  /// **'Applies to new requests. 600 seconds = 10 minutes.'**
+  /// **'60–1200 seconds (1–20 minutes). Applies to new requests.'**
   String get music_settings_duration_hint;
 
   /// No description provided for @music_settings_cache.
   ///
   /// In en, this message translates to:
-  /// **'Cache size (MB)'**
+  /// **'Cache size'**
   String get music_settings_cache;
+
+  /// No description provided for @music_settings_cache_mb.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} MB'**
+  String music_settings_cache_mb(int size);
+
+  /// No description provided for @music_settings_cache_gb.
+  ///
+  /// In en, this message translates to:
+  /// **'{size} GB'**
+  String music_settings_cache_gb(int size);
 
   /// No description provided for @music_settings_cache_hint.
   ///
   /// In en, this message translates to:
-  /// **'0 = unlimited. Old unused files are removed first; tracks used this session are kept.'**
+  /// **'128 MB–2 GB. Old unused files are removed first; tracks used this session are kept.'**
   String get music_settings_cache_hint;
 
   /// No description provided for @music_settings_server.
@@ -438,18 +450,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Retry'**
   String get music_settings_retry;
-
-  /// No description provided for @music_settings_invalid_positive.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a whole number greater than 0.'**
-  String get music_settings_invalid_positive;
-
-  /// No description provided for @music_settings_invalid_nonnegative.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter a whole number of 0 or more.'**
-  String get music_settings_invalid_nonnegative;
 
   /// No description provided for @music_settings_invalid_port.
   ///
@@ -510,6 +510,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time before switching to compact mode. Hovering keeps the player expanded.'**
   String get overlay_settings_collapse_description;
+
+  /// No description provided for @overlay_settings_collapse_delay.
+  ///
+  /// In en, this message translates to:
+  /// **'Collapse delay'**
+  String get overlay_settings_collapse_delay;
 
   /// No description provided for @overlay_settings_seconds.
   ///

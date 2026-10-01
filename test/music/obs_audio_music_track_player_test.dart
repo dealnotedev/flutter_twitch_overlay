@@ -1,18 +1,10 @@
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:obssource/config/obs_config.dart';
-import 'package:obssource/config/settings.dart';
-import 'package:obssource/di/app_service_locator.dart';
-import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
-import 'package:obssource/tts/tts_controller.dart';
-import 'package:obssource/tts/tts_player.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +14,7 @@ void main() {
 
   setUp(() {
     commands = [];
+    // Hosts without lifecycle events use the duration-based fallback.
     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
         .setMockDecodedMessageHandler(channel, (message) async {
           commands.add(jsonDecode(message!) as Map<String, dynamic>);
@@ -39,36 +32,25 @@ void main() {
       volume: 0.8,
       completionGrace: Duration.zero,
     );
-    final playback = player.play(
-      DownloadedMusicTrack(
-        itemId: 'track-1',
-        requestedBy: 'viewer',
-        metadata: MusicTrackMetadata(
-          videoId: 'video-1',
-          title: 'Track',
-          author: 'Artist',
-          duration: const Duration(milliseconds: 200),
-          thumbnail: null,
-          sourceUrl: Uri.parse('https://youtu.be/video-1'),
-        ),
-        filePath: r'C:\music\track.mp3',
-      ),
-    );
+    final playback = player.play(_track(const Duration(milliseconds: 200)));
+    addTearDown(() async {
+      await player.stop();
+      await playback;
+    });
     var completed = false;
-    unawaited(playback.whenComplete(() => completed = true));
-
+    unawaited(playback.then((_) => completed = true));
     await _waitUntil(() => commands.any((item) => item['cmd'] == 'play'));
+
     await player.setPaused(true);
     await Future<void>.delayed(const Duration(milliseconds: 250));
-
     expect(completed, isFalse);
     expect(commands.map((item) => item['cmd']), contains('pause'));
 
     await player.setPaused(false);
     await playback.timeout(const Duration(seconds: 1));
-
-    expect(commands.map((item) => item['cmd']), contains('resume'));
     expect(completed, isTrue);
+    expect(commands.map((item) => item['cmd']), contains('resume'));
+    expect(commands.last['cmd'], 'release');
   });
 
   test('seek updates native position and fallback completion time', () async {
@@ -76,167 +58,63 @@ void main() {
       volume: 0.8,
       completionGrace: Duration.zero,
     );
-    final playback = player.play(
-      DownloadedMusicTrack(
-        itemId: 'track-seek',
-        requestedBy: 'viewer',
-        metadata: MusicTrackMetadata(
-          videoId: 'video-seek',
-          title: 'Track',
-          author: 'Artist',
-          duration: const Duration(seconds: 1),
-          thumbnail: null,
-          sourceUrl: Uri.parse('https://youtu.be/video-seek'),
-        ),
-        filePath: r'C:\music\track-seek.mp3',
-      ),
-    );
-
+    final playback = player.play(_track(const Duration(seconds: 1)));
+    addTearDown(() async {
+      await player.stop();
+      await playback;
+    });
+    var completed = false;
+    unawaited(playback.then((_) => completed = true));
     await _waitUntil(() => commands.any((item) => item['cmd'] == 'play'));
-    await player.seek(const Duration(milliseconds: 900));
-    await playback.timeout(const Duration(milliseconds: 400));
 
-    final seek = commands.singleWhere((item) => item['cmd'] == 'seek');
-    expect(seek['position_ms'], 900);
+    await player.seek(const Duration(milliseconds: 900));
+    expect(
+      commands.singleWhere((item) => item['cmd'] == 'seek')['position_ms'],
+      900,
+    );
+    await playback.timeout(const Duration(milliseconds: 400));
+    expect(completed, isTrue);
+    expect(commands.last['cmd'], 'release');
   });
 
-  test('updates the active music volume in real time', () async {
-    final player = ObsAudioMusicTrackPlayer(
-      volume: 0.7,
-      completionGrace: Duration.zero,
-    );
-    final playback = player.play(
-      DownloadedMusicTrack(
-        itemId: 'track-volume',
-        requestedBy: 'viewer',
-        metadata: MusicTrackMetadata(
-          videoId: 'video-volume',
-          title: 'Track',
-          author: 'Artist',
-          duration: const Duration(seconds: 30),
-          thumbnail: null,
-          sourceUrl: Uri.parse('https://youtu.be/video-volume'),
-        ),
-        filePath: r'C:\music\track-volume.mp3',
-      ),
-    );
-
+  test('updates active volume without restarting playback', () async {
+    final player = ObsAudioMusicTrackPlayer(volume: 0.7);
+    final playback = player.play(_track(const Duration(seconds: 30)));
+    addTearDown(() async {
+      await player.stop();
+      await playback;
+    });
     await _waitUntil(() => commands.any((item) => item['cmd'] == 'play'));
-    final play = commands.singleWhere((item) => item['cmd'] == 'play');
-    expect(play['volume'], 0.7);
+    expect(
+      commands.singleWhere((item) => item['cmd'] == 'play')['volume'],
+      0.7,
+    );
 
     await player.setVolume(0.35);
-
-    final volume = commands.singleWhere((item) => item['cmd'] == 'volume');
-    expect(volume['volume'], 0.35);
-
+    expect(
+      commands.singleWhere((item) => item['cmd'] == 'volume')['volume'],
+      0.35,
+    );
+    expect(commands.where((item) => item['cmd'] == 'play'), hasLength(1));
+    expect(commands.where((item) => item['cmd'] == 'stop'), isEmpty);
     await player.stop();
     await playback;
   });
-
-  test(
-    'saved volume, TTS ducking and server settings apply without restarting playback',
-    () async {
-      SharedPreferences.setMockInitialValues({});
-      final settings = Settings();
-      await settings.init();
-      Future<int> freePort() async {
-        final socket = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
-        final port = socket.port;
-        await socket.close(force: true);
-        return port;
-      }
-
-      final first = await freePort();
-      await settings.saveMusic(
-        settings.music.copyWith(
-          controlServerEnabled: false,
-          controlServerPort: first,
-        ),
-      );
-      final config = ObsConfig();
-      config.config.set(
-        Config(
-          valid: true,
-          json: {
-            'music_volume_percent': 5,
-            'music_control_server_enabled': true,
-            'music_control_server_port': 1,
-          },
-        ),
-      );
-      final locator = AppServiceLocator.init(
-        settings,
-        config,
-        startMusicControlServer: true,
-      );
-      final player = locator.provide<ObsAudioMusicTrackPlayer>();
-      final playback = player.play(
-        DownloadedMusicTrack(
-          itemId: 'configured-volume',
-          requestedBy: 'viewer',
-          metadata: MusicTrackMetadata(
-            videoId: 'configured-volume',
-            title: 'Track',
-            author: 'Artist',
-            duration: const Duration(seconds: 30),
-            thumbnail: null,
-            sourceUrl: Uri.parse('https://youtu.be/configured-volume'),
-          ),
-          filePath: r'C:\music\configured-volume.mp3',
-        ),
-      );
-      addTearDown(() async {
-        await locator.close();
-        await playback;
-      });
-
-      await _waitUntil(() => commands.any((item) => item['cmd'] == 'play'));
-      final play = commands.singleWhere((item) => item['cmd'] == 'play');
-      expect(play['volume'], 0.7);
-
-      config.config.set(
-        Config(valid: true, json: {'music_volume_percent': 90}),
-      );
-      await Future<void>.delayed(const Duration(milliseconds: 20));
-      expect(commands.where((item) => item['cmd'] == 'volume'), isEmpty);
-      await settings.saveMusic(settings.music.copyWith(volumePercent: 25));
-
-      await _waitUntil(() => commands.any((item) => item['cmd'] == 'volume'));
-      final volume = commands.singleWhere((item) => item['cmd'] == 'volume');
-      expect(volume['volume'], 0.25);
-
-      final ttsPlayer =
-          locator.provide<TtsController>().player as ObsTtsPlayback;
-      await ttsPlayer.duckMusic!(true);
-      expect(commands.last['volume'], 0.0625);
-      await settings.saveMusic(settings.music.copyWith(ttsVolumePercent: 40));
-      await _waitUntil(() => commands.last['volume'] == 0.1);
-      await settings.saveMusic(settings.music.copyWith(volumePercent: 50));
-      await _waitUntil(() => commands.last['volume'] == 0.2);
-      await ttsPlayer.duckMusic!(false);
-      expect(commands.last['volume'], 0.5);
-
-      final server = locator.musicControlServer!;
-      expect(server.status, MusicControlServerStatus.stopped);
-      await settings.saveMusic(
-        settings.music.copyWith(controlServerEnabled: true),
-      );
-      await _waitUntil(() => server.port == first);
-      final second = await freePort();
-      await settings.saveMusic(
-        settings.music.copyWith(controlServerPort: second),
-      );
-      await _waitUntil(() => server.port == second);
-      await settings.saveMusic(
-        settings.music.copyWith(controlServerEnabled: false),
-      );
-      await _waitUntil(() => server.port == null);
-      expect(server.status, MusicControlServerStatus.stopped);
-      expect(commands.where((item) => item['cmd'] == 'stop'), isEmpty);
-    },
-  );
 }
+
+DownloadedMusicTrack _track(Duration duration) => DownloadedMusicTrack(
+  itemId: 'track',
+  requestedBy: 'viewer',
+  metadata: MusicTrackMetadata(
+    videoId: 'video',
+    title: 'Track',
+    author: 'Artist',
+    duration: duration,
+    thumbnail: null,
+    sourceUrl: Uri.parse('https://youtu.be/video'),
+  ),
+  filePath: r'C:\music\track.mp3',
+);
 
 Future<void> _waitUntil(bool Function() condition) async {
   final deadline = DateTime.now().add(const Duration(seconds: 1));

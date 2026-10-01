@@ -1,5 +1,12 @@
 /// Persisted music options managed through the overlay settings.
 class MusicSettings {
+  static const minQueueLength = 1;
+  static const maxQueueLength = 50;
+  static const minTrackDurationSeconds = 60;
+  static const maxTrackDurationSeconds = 1200;
+  static const minCacheMb = 128;
+  static const maxCacheMb = 2048;
+
   final bool enabled;
   final int volumePercent;
   final int ttsVolumePercent;
@@ -15,7 +22,7 @@ class MusicSettings {
     this.ttsVolumePercent = 25,
     this.maxQueue = 10,
     this.maxDurationSeconds = 600,
-    this.cacheMaxMb = 2048,
+    this.cacheMaxMb = maxCacheMb,
     this.controlServerEnabled = true,
     this.controlServerPort = 47821,
   });
@@ -31,7 +38,7 @@ class MusicSettings {
       ttsVolumePercent: integer('tts_volume_percent', 25),
       maxQueue: integer('max_queue', 10),
       maxDurationSeconds: integer('max_duration_seconds', 600),
-      cacheMaxMb: integer('cache_max_mb', 2048),
+      cacheMaxMb: integer('cache_max_mb', maxCacheMb),
       controlServerEnabled: boolean('control_server_enabled', true),
       controlServerPort: integer('control_server_port', 47821),
     ).normalized();
@@ -40,9 +47,17 @@ class MusicSettings {
   MusicSettings normalized() => copyWith(
     volumePercent: volumePercent.clamp(0, 100),
     ttsVolumePercent: ttsVolumePercent.clamp(0, 100),
-    maxQueue: maxQueue > 0 ? maxQueue : 10,
-    maxDurationSeconds: maxDurationSeconds > 0 ? maxDurationSeconds : 600,
-    cacheMaxMb: cacheMaxMb >= 0 ? cacheMaxMb : 2048,
+    maxQueue:
+        maxQueue > 0 ? maxQueue.clamp(minQueueLength, maxQueueLength) : 10,
+    maxDurationSeconds:
+        maxDurationSeconds > 0
+            ? maxDurationSeconds.clamp(
+              minTrackDurationSeconds,
+              maxTrackDurationSeconds,
+            )
+            : 600,
+    cacheMaxMb:
+        cacheMaxMb <= 0 ? maxCacheMb : cacheMaxMb.clamp(minCacheMb, maxCacheMb),
     controlServerPort:
         controlServerPort > 0 && controlServerPort <= 65535
             ? controlServerPort
