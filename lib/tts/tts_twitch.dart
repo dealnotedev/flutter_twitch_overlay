@@ -104,14 +104,15 @@ class TtsRewardCatalog implements TwitchRewardCatalog {
   Future<TwitchCustomReward> createDefault() async {
     final all = await api.getCustomRewards(broadcasterUserId: _channel);
     final titles = all.map((r) => r.title.toLowerCase()).toSet();
-    var title = 'TTS (Freydis)';
+    const defaultTitle = 'Озвучити повідомлення';
+    var title = defaultTitle;
     for (var suffix = 2; titles.contains(title.toLowerCase()); suffix++) {
-      title = 'TTS (Freydis $suffix)';
+      title = '$defaultTitle ($suffix)';
     }
     return api.createCustomReward(
       broadcasterUserId: _channel,
       title: title,
-      cost: 1000,
+      cost: 200,
       prompt: 'Введіть текст для озвучення, до 1024 символів включно.',
       backgroundColor: '#EA4AAB',
       isEnabled: false,
