@@ -330,6 +330,33 @@ class AppLocalizationsEn extends AppLocalizations {
       'Music requests, playback, appearance and the local controller.';
 
   @override
+  String get overlay_settings_avatar => 'Avatar';
+
+  @override
+  String get avatar_settings_description =>
+      'Avatar resolution and animation rendering for follow, raid and subscription alerts. Changes apply immediately.';
+
+  @override
+  String get avatar_settings_resolution => 'Avatar resolution';
+
+  @override
+  String get avatar_settings_resolution_hint =>
+      'Higher resolution adds more detail and increases rendering load.';
+
+  @override
+  String get avatar_settings_renderer => 'Animation renderer';
+
+  @override
+  String get avatar_settings_renderer_optimized => 'Optimized';
+
+  @override
+  String get avatar_settings_renderer_legacy => 'Classic';
+
+  @override
+  String get avatar_settings_renderer_hint =>
+      'The renderer applies to avatars, text and pixel effects in alerts.';
+
+  @override
   String get music_settings_enabled => 'Accept music requests';
 
   @override

@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/settings/avatar_settings_controls.dart';
 
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/twitch/twitch_api.dart';
@@ -38,7 +39,10 @@ class OverlaySettingsDialog extends StatefulWidget {
   State<OverlaySettingsDialog> createState() => _OverlaySettingsDialogState();
 }
 
+enum _SettingsSection { player, avatar }
+
 class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
+  _SettingsSection _section = _SettingsSection.player;
   List<TwitchCustomReward> _rewards = const [];
   String? _selectedRewardId;
   Object? _error;
@@ -210,7 +214,20 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
           width: 1,
           color: MusicPlayerPalette.neonBlue.withValues(alpha: 0.13),
         ),
-        Expanded(child: _buildPlayerSettings(context)),
+        Expanded(
+          child: IndexedStack(
+            index: _section.index,
+            sizing: StackFit.expand,
+            children: [
+              _buildPlayerSettings(context),
+              SingleChildScrollView(
+                key: const ValueKey('avatar_settings_scroll'),
+                padding: const EdgeInsets.fromLTRB(28, 22, 28, 26),
+                child: AvatarSettingsControls(settings: widget.settings),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -239,8 +256,16 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
             key: const ValueKey('overlay_settings_player_section'),
             label: context.localizations.overlay_settings_player,
             icon: Icons.graphic_eq_rounded,
-            selected: true,
-            onPressed: () {},
+            selected: _section == _SettingsSection.player,
+            onPressed: () => setState(() => _section = _SettingsSection.player),
+          ),
+          const Gap(8),
+          NeonSettingsButton.section(
+            key: const ValueKey('overlay_settings_avatar_section'),
+            label: context.localizations.overlay_settings_avatar,
+            icon: Icons.account_circle_outlined,
+            selected: _section == _SettingsSection.avatar,
+            onPressed: () => setState(() => _section = _SettingsSection.avatar),
           ),
         ],
       ),

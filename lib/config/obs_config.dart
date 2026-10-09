@@ -13,8 +13,6 @@ class ObsConfig {
     'followers': true,
     'raids': true,
     'subscriptions': true,
-    'alert_animation_renderer': 'optimized',
-    'alert_avatar_resolution': 48,
   };
 
   ObsConfig() {

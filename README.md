@@ -15,22 +15,19 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+## Avatar settings
+
+Configure avatar resolution and animation rendering in **Overlay settings → Avatar**.
+Options are saved locally and apply immediately, including to visible follow,
+raid and subscription alerts. The renderer also applies to text and pixel
+decorations. Choose Optimized (the default `drawRawAtlas` renderer) or Classic
+(the previous canvas renderer). Avatar resolution defaults to `48` and can be
+set from `16` to `128`; its pixel size remains fixed at `8`.
+
+The old `alert_animation_renderer` and `alert_avatar_resolution` options in OBS
+JSON are ignored and are not migrated. Defaults are 48 and Optimized.
+
 ## OBS source configuration
-
-The OBS source JSON configures rendering for all user alerts, including
-follow, raid, and subscription animations:
-
-```json
-{
-  "alert_animation_renderer": "optimized",
-  "alert_avatar_resolution": 48
-}
-```
-
-The settings apply to avatars, text, and pixel decorations. Changes also update
-alerts that are already visible. Supported renderer values are `optimized` (the default `drawRawAtlas` renderer) and
-`legacy` (the previous canvas renderer). The avatar resolution defaults to
-`48`; its pixel size remains fixed at `8`.
 
 Subscription alerts are enabled by default; set `"subscriptions": false` in
 the OBS source JSON to disable them. They handle new subscriptions, shared

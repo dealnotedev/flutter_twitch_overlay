@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:obssource/config/avatar_settings.dart';
 import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:rxdart/rxdart.dart';
@@ -10,6 +11,7 @@ class Settings {
   static const _kTwitchAuth = 'twitch_login';
   static const _kMusicRewardId = 'music_reward_id';
   static const _kMusicSettings = 'music_settings';
+  static const _kAvatarSettings = 'avatar_settings';
   static const _kPlayerCollapseSeconds = 'player_collapse_seconds';
   static const _kPlayerAlwaysExpanded = 'player_always_expanded';
 
@@ -18,6 +20,18 @@ class Settings {
 
     _initTwitchCreds(prefs);
     _initMusicRewardId(prefs);
+    if (prefs.containsKey(_kAvatarSettings)) {
+      try {
+        final raw = prefs.get(_kAvatarSettings);
+        final json = jsonDecode(raw is String ? raw : '{}');
+        avatar =
+            json is Map<String, dynamic>
+                ? AvatarSettings.fromJson(json)
+                : const AvatarSettings();
+      } on FormatException {
+        avatar = const AvatarSettings();
+      }
+    }
     if (prefs.containsKey(_kMusicSettings)) {
       try {
         final raw = prefs.get(_kMusicSettings);
@@ -42,6 +56,23 @@ class Settings {
   final _playerPresentationSubject = StreamController<void>.broadcast();
   Stream<void> get playerPresentationChanges =>
       _playerPresentationSubject.stream;
+
+  AvatarSettings avatar = const AvatarSettings();
+  final _avatarSubject = StreamController<AvatarSettings>.broadcast();
+  Stream<AvatarSettings> get avatarChanges => _avatarSubject.stream;
+
+  Future<void> saveAvatar(AvatarSettings value) async {
+    final normalized = value.normalized();
+    final prefs = await SharedPreferences.getInstance();
+    if (!await prefs.setString(
+      _kAvatarSettings,
+      jsonEncode(normalized.toJson()),
+    )) {
+      throw StateError('Could not save avatar settings');
+    }
+    avatar = normalized;
+    _avatarSubject.add(avatar);
+  }
 
   MusicSettings music = const MusicSettings();
   final _musicSubject = StreamController<MusicSettings>.broadcast();

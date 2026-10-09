@@ -9,6 +9,7 @@ import 'package:image/image.dart' as img;
 import 'package:intl/intl.dart';
 import 'package:obssource/alerts/user_alert_widget.dart';
 import 'package:obssource/avatar_widget.dart';
+import 'package:obssource/config/avatar_settings.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/data/events.dart';
@@ -59,7 +60,7 @@ class _State extends State<LoggedWidget> {
 
   StreamSubscription<WsMessage>? _eventsSubscription;
   StreamSubscription<WsStateEvent>? _stateSubscription;
-  StreamSubscription<Config>? _configSubscription;
+  StreamSubscription<AvatarSettings>? _avatarSettingsSubscription;
   StreamSubscription<void>? _playerSettingsSubscription;
   late Timer _rewardCleanupTimer;
   late Settings _settings;
@@ -91,14 +92,16 @@ class _State extends State<LoggedWidget> {
       if (mounted) setState(() {});
     });
     _obsConfig = widget.locator.provide();
-    _alertRenderer = _readAlertRenderer();
-    _alertAvatarResolution = _readAlertAvatarResolution();
+    _alertRenderer = _settings.avatar.renderer;
+    _alertAvatarResolution = _settings.avatar.resolution;
     try {
       _musicRequests = widget.locator.provide<MusicRequests>();
     } catch (_) {
       // Older test and debug locators may not provide music requests yet.
     }
-    _configSubscription = _obsConfig.config.changes.listen(_handleConfig);
+    _avatarSettingsSubscription = _settings.avatarChanges.listen(
+      _handleAvatarSettings,
+    );
 
     final ws = widget.locator.provide<WebSocketManager>();
     _wsState = ws.currentState;
@@ -116,7 +119,7 @@ class _State extends State<LoggedWidget> {
     _rewardCleanupTimer.cancel();
     _eventsSubscription?.cancel();
     _stateSubscription?.cancel();
-    _configSubscription?.cancel();
+    _avatarSettingsSubscription?.cancel();
     _playerSettingsSubscription?.cancel();
     _musicOverlayController.dispose();
     super.dispose();
@@ -325,29 +328,9 @@ class _State extends State<LoggedWidget> {
     });
   }
 
-  AvatarPixelRenderer _readAlertRenderer() {
-    final value = _obsConfig.getString(
-      'alert_animation_renderer',
-      fallback: 'optimized',
-    );
-
-    return value == 'legacy'
-        ? AvatarPixelRenderer.legacyCanvas
-        : AvatarPixelRenderer.rawAtlas;
-  }
-
-  int _readAlertAvatarResolution() {
-    final resolution = _obsConfig.getInt(
-      'alert_avatar_resolution',
-      fallback: 48,
-    );
-
-    return resolution > 0 ? resolution : 48;
-  }
-
-  void _handleConfig(Config _) {
-    final renderer = _readAlertRenderer();
-    final avatarResolution = _readAlertAvatarResolution();
+  void _handleAvatarSettings(AvatarSettings value) {
+    final renderer = value.renderer;
+    final avatarResolution = value.resolution;
     if (!mounted ||
         (renderer == _alertRenderer &&
             avatarResolution == _alertAvatarResolution)) {

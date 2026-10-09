@@ -336,6 +336,33 @@ class AppLocalizationsUk extends AppLocalizations {
       'Замовлення музики, відтворення, вигляд і локальне керування.';
 
   @override
+  String get overlay_settings_avatar => 'Аватар';
+
+  @override
+  String get avatar_settings_description =>
+      'Роздільність аватара та рендер анімацій сповіщень про фолови, рейди й підписки. Зміни застосовуються одразу.';
+
+  @override
+  String get avatar_settings_resolution => 'Роздільність аватара';
+
+  @override
+  String get avatar_settings_resolution_hint =>
+      'Вища роздільність додає деталей і збільшує навантаження на рендер.';
+
+  @override
+  String get avatar_settings_renderer => 'Рендер анімації';
+
+  @override
+  String get avatar_settings_renderer_optimized => 'Оптимізований';
+
+  @override
+  String get avatar_settings_renderer_legacy => 'Класичний';
+
+  @override
+  String get avatar_settings_renderer_hint =>
+      'Рендер застосовується до аватарів, тексту та піксельних ефектів у сповіщеннях.';
+
+  @override
   String get music_settings_enabled => 'Приймати замовлення музики';
 
   @override

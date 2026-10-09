@@ -1,12 +1,80 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:obssource/config/avatar_settings.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
+
+  test('avatar defaults ignore old individual preferences', () async {
+    SharedPreferences.setMockInitialValues({
+      'alert_avatar_resolution': 32,
+      'alert_animation_renderer': 'legacy',
+    });
+    final settings = Settings();
+    await settings.init();
+    expect(settings.avatar.resolution, 48);
+    expect(settings.avatar.renderer, AvatarPixelRenderer.rawAtlas);
+  });
+
+  test('saves, emits and restores avatar settings', () async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = Settings();
+    await settings.init();
+    final changed = settings.avatarChanges.first;
+    const value = AvatarSettings(
+      resolution: 40,
+      renderer: AvatarPixelRenderer.legacyCanvas,
+    );
+    await settings.saveAvatar(value);
+    expect((await changed).toJson(), value.toJson());
+    final restored = Settings();
+    await restored.init();
+    expect(restored.avatar.toJson(), value.toJson());
+  });
+
+  test('avatar resolution stays within the slider range', () async {
+    for (final (resolution, expected) in [
+      (-1, 48),
+      (0, 48),
+      (1, 16),
+      (16, 16),
+      (48, 48),
+      (128, 128),
+      (256, 128),
+    ]) {
+      SharedPreferences.setMockInitialValues({
+        'avatar_settings': jsonEncode({'resolution': resolution}),
+      });
+      final settings = Settings();
+      await settings.init();
+      expect(settings.avatar.resolution, expected);
+      await settings.saveAvatar(AvatarSettings(resolution: resolution));
+      final restored = Settings();
+      await restored.init();
+      expect(restored.avatar.resolution, expected);
+    }
+  });
+
+  test('malformed avatar settings fall back to defaults', () async {
+    for (final malformed in <Object>[
+      '{broken',
+      '[]',
+      'null',
+      123,
+      jsonEncode({'resolution': '32', 'renderer': true}),
+      jsonEncode({'renderer': 'unknown'}),
+    ]) {
+      SharedPreferences.setMockInitialValues({'avatar_settings': malformed});
+      final settings = Settings();
+      await settings.init();
+      expect(settings.avatar.toJson(), const AvatarSettings().toJson());
+    }
+  });
 
   test(
     'music defaults are independent of old individual preferences',

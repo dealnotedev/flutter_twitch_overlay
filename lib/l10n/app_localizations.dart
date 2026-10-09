@@ -583,6 +583,54 @@ abstract class AppLocalizations {
   /// **'Music requests, playback, appearance and the local controller.'**
   String get overlay_settings_player_description;
 
+  /// No description provided for @overlay_settings_avatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar'**
+  String get overlay_settings_avatar;
+
+  /// No description provided for @avatar_settings_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar resolution and animation rendering for follow, raid and subscription alerts. Changes apply immediately.'**
+  String get avatar_settings_description;
+
+  /// No description provided for @avatar_settings_resolution.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar resolution'**
+  String get avatar_settings_resolution;
+
+  /// No description provided for @avatar_settings_resolution_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Higher resolution adds more detail and increases rendering load.'**
+  String get avatar_settings_resolution_hint;
+
+  /// No description provided for @avatar_settings_renderer.
+  ///
+  /// In en, this message translates to:
+  /// **'Animation renderer'**
+  String get avatar_settings_renderer;
+
+  /// No description provided for @avatar_settings_renderer_optimized.
+  ///
+  /// In en, this message translates to:
+  /// **'Optimized'**
+  String get avatar_settings_renderer_optimized;
+
+  /// No description provided for @avatar_settings_renderer_legacy.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get avatar_settings_renderer_legacy;
+
+  /// No description provided for @avatar_settings_renderer_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'The renderer applies to avatars, text and pixel effects in alerts.'**
+  String get avatar_settings_renderer_hint;
+
   /// No description provided for @music_settings_enabled.
   ///
   /// In en, this message translates to:

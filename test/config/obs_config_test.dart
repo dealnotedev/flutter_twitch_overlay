@@ -21,7 +21,11 @@ void main() {
     await config.init();
 
     expect(config.config.current.valid, isFalse);
-    expect(config.getInt('alert_avatar_resolution', fallback: 1), 48);
+    expect(config.getInt('alert_avatar_resolution', fallback: 1), 1);
+    expect(
+      config.config.current.json.keys,
+      isNot(contains(startsWith('alert_'))),
+    );
     expect(
       config.config.current.json.keys,
       isNot(contains(startsWith('music_'))),
@@ -70,7 +74,7 @@ void main() {
 
       expect(
         config.getString('alert_animation_renderer', fallback: 'legacy'),
-        'optimized',
+        'legacy',
       );
     });
 
@@ -103,7 +107,7 @@ void main() {
     test('uses fallback JSON when configuration is invalid', () {
       final config = ObsConfig();
 
-      expect(config.getInt('alert_avatar_resolution', fallback: 24), 48);
+      expect(config.getInt('alert_avatar_resolution', fallback: 24), 24);
     });
 
     test('returns a configured integer value', () {

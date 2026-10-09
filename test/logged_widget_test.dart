@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:obssource/config/obs_config.dart';
+import 'package:obssource/config/avatar_settings.dart';
 import 'package:obssource/alerts/user_alert_widget.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
@@ -71,14 +72,11 @@ void main() {
   testWidgets(
     'subscription alert uses shared avatar settings and deduplicates deliveries',
     (tester) async {
-      config.config.set(
-        Config(
-          valid: true,
-          json: {
-            'subscriptions': true,
-            'alert_avatar_resolution': 32,
-            'alert_animation_renderer': 'legacy',
-          },
+      config.config.set(Config(valid: true, json: {'subscriptions': true}));
+      await settings.saveAvatar(
+        const AvatarSettings(
+          resolution: 32,
+          renderer: AvatarPixelRenderer.legacyCanvas,
         ),
       );
       await _pumpLoggedWidget(tester, locator);
@@ -107,6 +105,13 @@ void main() {
       expect(alert.avatar, isNotNull);
       expect(alert.avatarResolution, 32);
       expect(alert.renderer, AvatarPixelRenderer.legacyCanvas);
+      await settings.saveAvatar(const AvatarSettings());
+      await tester.pump();
+      final updated = tester.widget<UserAlertWidget>(
+        find.byType(UserAlertWidget),
+      );
+      expect(updated.avatarResolution, 48);
+      expect(updated.renderer, AvatarPixelRenderer.rawAtlas);
       await tester.runAsync(() async {
         await Future<void>.delayed(Duration.zero);
       });
@@ -445,6 +450,16 @@ void main() {
   testWidgets('shows follow events without injecting a debug follow', (
     tester,
   ) async {
+    config.config.set(
+      Config(
+        valid: true,
+        json: {
+          'followers': true,
+          'alert_animation_renderer': 'legacy',
+          'alert_avatar_resolution': 40,
+        },
+      ),
+    );
     await _pumpLoggedWidget(tester, locator);
 
     expect(find.byKey(const ValueKey('connection_indicator')), findsOneWidget);
@@ -489,6 +504,20 @@ void main() {
           'alert_animation_renderer': 'legacy',
           'alert_avatar_resolution': 40,
         },
+      ),
+    );
+    await tester.pump();
+
+    // Old OBS options must not override UI settings.
+    expect(
+      tester.widget<FollowWidget>(find.byType(FollowWidget)).renderer,
+      AvatarPixelRenderer.rawAtlas,
+    );
+    expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).resolution, 48);
+    await settings.saveAvatar(
+      const AvatarSettings(
+        resolution: 40,
+        renderer: AvatarPixelRenderer.legacyCanvas,
       ),
     );
     await tester.pump();
@@ -554,13 +583,10 @@ void main() {
           load['id'],
         );
 
-        config.config.set(
-          Config(
-            valid: true,
-            json: {
-              'alert_animation_renderer': 'legacy',
-              'alert_avatar_resolution': 40,
-            },
+        await settings.saveAvatar(
+          const AvatarSettings(
+            resolution: 40,
+            renderer: AvatarPixelRenderer.legacyCanvas,
           ),
         );
         await tester.pump();
@@ -863,6 +889,7 @@ class _FakeWebSocketManager extends WebSocketManager {
     _messages.add(message);
   }
 
+  @override
   Future<void> close() => _messages.close();
 
   @override
