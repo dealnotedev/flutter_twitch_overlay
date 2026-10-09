@@ -40,8 +40,6 @@ dependencies:
 
   dio: ^5.8.0+1
 
-  crypto: ^3.0.6
-
   fresh_dio: ^0.4.3
 
   gap: ^3.0.1

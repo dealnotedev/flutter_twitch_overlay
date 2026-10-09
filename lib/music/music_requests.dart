@@ -13,7 +13,26 @@ enum MusicQueueErrorType {
   invalidYoutubeUrl,
   queueFull,
   trackTooLongOrLive,
+  youtubeAccessRequired,
+  youtubeDownloadBlocked,
+  youtubeUnavailable,
+  networkUnavailable,
+  musicToolsUnavailable,
   operationFailed,
+}
+
+/// A preparation failure with a stable, localizable reason for the UI.
+class MusicTrackException implements Exception {
+  final String message;
+  final MusicQueueErrorType errorType;
+
+  const MusicTrackException(
+    this.message, {
+    this.errorType = MusicQueueErrorType.operationFailed,
+  });
+
+  @override
+  String toString() => message;
 }
 
 class MusicQueueError {
@@ -652,14 +671,13 @@ class MusicRequestManager implements MusicRequests {
   ) {
     return MusicQueueError(
       requester: request.requestedBy,
-      type: MusicQueueErrorType.operationFailed,
-      details: _describeError(error),
+      type:
+          error is MusicTrackException
+              ? error.errorType
+              : MusicQueueErrorType.operationFailed,
+      // Process diagnostics belong in the local log, not on the stream or LAN.
+      details: null,
     );
-  }
-
-  static String _describeError(Object error) {
-    final value = error.toString();
-    return value.length <= 180 ? value : '${value.substring(0, 177)}...';
   }
 
   void _emit() {

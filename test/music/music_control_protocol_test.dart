@@ -3,6 +3,52 @@ import 'package:obssource/music/control/music_control_protocol.dart';
 import 'package:obssource/music/music_requests.dart';
 
 void main() {
+  test(
+    'media 403 keeps v1 compatibility without claiming login is required',
+    () {
+      const state = MusicQueueSnapshot(
+        revision: 1,
+        nowPlaying: null,
+        queue: [],
+        lastError: MusicQueueError(
+          requester: 'viewer',
+          type: MusicQueueErrorType.youtubeDownloadBlocked,
+        ),
+      );
+      final wire = MusicControlProtocol.snapshotToJson(state);
+      final error = wire['lastError'] as Map;
+      expect(error['type'], 'operationFailed');
+      expect(error['reason'], 'youtubeDownloadBlocked');
+      expect(error['details'], contains('403'));
+      expect(
+        MusicControlProtocol.snapshotFromJson(wire).lastError?.type,
+        MusicQueueErrorType.youtubeDownloadBlocked,
+      );
+    },
+  );
+  test(
+    'YouTube verification keeps v1 controllers compatible and localizes on new clients',
+    () {
+      const state = MusicQueueSnapshot(
+        revision: 1,
+        nowPlaying: null,
+        queue: [],
+        lastError: MusicQueueError(
+          requester: 'viewer',
+          type: MusicQueueErrorType.youtubeAccessRequired,
+        ),
+      );
+      final wire = MusicControlProtocol.snapshotToJson(state);
+      final error = wire['lastError'] as Map;
+      expect(error['type'], 'operationFailed');
+      expect(error['reason'], 'youtubeAccessRequired');
+      expect(error['details'], contains('connect YouTube'));
+      expect(
+        MusicControlProtocol.snapshotFromJson(wire).lastError?.type,
+        MusicQueueErrorType.youtubeAccessRequired,
+      );
+    },
+  );
   test('round-trips a complete music queue snapshot', () {
     final updatedAt = DateTime(2026, 9, 3, 14, 30, 15, 250);
     final playingItem = _item(

@@ -9,7 +9,6 @@ class MusicSettings {
 
   final bool enabled;
   final int volumePercent;
-  final int ttsVolumePercent;
   final int maxQueue;
   final int maxDurationSeconds;
   final int cacheMaxMb;
@@ -19,7 +18,6 @@ class MusicSettings {
   const MusicSettings({
     this.enabled = true,
     this.volumePercent = 70,
-    this.ttsVolumePercent = 25,
     this.maxQueue = 10,
     this.maxDurationSeconds = 600,
     this.cacheMaxMb = maxCacheMb,
@@ -35,7 +33,6 @@ class MusicSettings {
     return MusicSettings(
       enabled: boolean('enabled', true),
       volumePercent: integer('volume_percent', 70),
-      ttsVolumePercent: integer('tts_volume_percent', 25),
       maxQueue: integer('max_queue', 10),
       maxDurationSeconds: integer('max_duration_seconds', 600),
       cacheMaxMb: integer('cache_max_mb', maxCacheMb),
@@ -46,7 +43,6 @@ class MusicSettings {
 
   MusicSettings normalized() => copyWith(
     volumePercent: volumePercent.clamp(0, 100),
-    ttsVolumePercent: ttsVolumePercent.clamp(0, 100),
     maxQueue:
         maxQueue > 0 ? maxQueue.clamp(minQueueLength, maxQueueLength) : 10,
     maxDurationSeconds:
@@ -67,7 +63,6 @@ class MusicSettings {
   MusicSettings copyWith({
     bool? enabled,
     int? volumePercent,
-    int? ttsVolumePercent,
     int? maxQueue,
     int? maxDurationSeconds,
     int? cacheMaxMb,
@@ -76,7 +71,6 @@ class MusicSettings {
   }) => MusicSettings(
     enabled: enabled ?? this.enabled,
     volumePercent: volumePercent ?? this.volumePercent,
-    ttsVolumePercent: ttsVolumePercent ?? this.ttsVolumePercent,
     maxQueue: maxQueue ?? this.maxQueue,
     maxDurationSeconds: maxDurationSeconds ?? this.maxDurationSeconds,
     cacheMaxMb: cacheMaxMb ?? this.cacheMaxMb,
@@ -87,7 +81,6 @@ class MusicSettings {
   Map<String, Object> toJson() => {
     'enabled': enabled,
     'volume_percent': volumePercent,
-    'tts_volume_percent': ttsVolumePercent,
     'max_queue': maxQueue,
     'max_duration_seconds': maxDurationSeconds,
     'cache_max_mb': cacheMaxMb,

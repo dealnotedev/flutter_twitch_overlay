@@ -86,14 +86,57 @@
       "requester": { "type": "String" }
     }
   },
-  "music_error_operation_failed": "{requester}: {details}",
+  "music_error_operation_failed": "{requester}: couldn't prepare this track. Please try again later.",
   "@music_error_operation_failed": {
     "placeholders": {
-      "requester": { "type": "String" },
-      "details": { "type": "String" }
+      "requester": {
+        "type": "String"
+      }
     }
   },
   "music_control_title": "Music controller",
+  "music_error_youtube_access": "YouTube needs verification. Music settings → Connect YouTube.",
+  "music_error_youtube_download_blocked": "YouTube blocked the audio download (403). Music settings → Connect YouTube.",
+  "music_error_youtube_unavailable": "{requester}: this video is unavailable. Please choose another.",
+  "@music_error_youtube_unavailable": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_youtube_title": "YouTube connection",
+  "music_youtube_description": "If YouTube asks for verification, connect it here. Your YouTube session is saved only on this computer.",
+  "music_youtube_disconnected": "Public tracks work without signing in until YouTube asks for verification.",
+  "music_youtube_opening": "Preparing the YouTube connection…",
+  "music_youtube_instructions": "1. Open and play the requested video in the browser window that opened. If the YouTube homepage opened, choose a short public video.\n2. Complete any verification. You can try checking the connection without signing in first.\n3. Leave the video tab open, return here and press Check connection.",
+  "music_youtube_checking": "Checking YouTube access and audio download…",
+  "music_youtube_connected": "YouTube connected. You can submit the track again.",
+  "music_youtube_connect": "Connect YouTube",
+  "music_youtube_reopen": "Reopen YouTube",
+  "music_youtube_verify": "Check connection",
+  "music_youtube_cancel": "Cancel",
+  "music_youtube_disconnect": "Disconnect",
+  "music_youtube_no_browser": "Install Microsoft Edge or Google Chrome, then press Connect YouTube again.",
+  "music_youtube_browser_closed": "The YouTube window was closed. Press Reopen YouTube and keep it open until the check finishes.",
+  "music_youtube_verification_required": "YouTube still needs verification. Complete it in the opened browser window, then check again.",
+  "music_youtube_download_blocked": "YouTube blocked the audio download (403). If the video plays in the browser, try signing in to Google in that same window, then check the connection again. Signing in can help, but doesn't guarantee access.",
+  "music_youtube_network_error": "Couldn't reach YouTube. Check your internet connection and try again.",
+  "music_youtube_tools_error": "Music components are missing or unavailable. Reinstall the latest full version of the application.",
+  "music_youtube_storage_error": "Couldn't save the YouTube connection. Check that your user folder is writable and try again.",
+  "music_youtube_choose_video": "Leave only the video you want to check open in the YouTube window, close other video tabs, then check again.",
+  "music_youtube_video_unavailable": "YouTube won't let the player access this video. Choose another public video in the opened window and check again.",
+  "music_youtube_video_too_long": "This video exceeds your track duration limit or is a live stream. Choose a shorter video or increase the duration limit below, then check again.",
+  "music_youtube_checked_video": "Checked video: {url}",
+  "@music_youtube_checked_video": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "music_youtube_error_details": "Error details",
+  "music_youtube_check_error": "Couldn't prepare the audio. Open Error details to find the cause before trying again.",
   "music_control_connected": "Connected to the OBS overlay",
   "music_control_connecting": "Connecting to the OBS overlay…",
   "music_control_reconnecting": "Reconnect attempt {attempt} in {seconds}s",
@@ -107,14 +150,11 @@
   "music_control_incompatible": "Controller and overlay versions are incompatible",
   "music_control_closed": "Connection closed",
   "overlay_settings_title": "Overlay settings",
-  "overlay_settings_sections": "Sections",
   "overlay_settings_player": "Player",
   "overlay_settings_player_description": "Music requests, playback, appearance and the local controller.",
   "music_settings_enabled": "Accept music requests",
   "music_settings_enabled_hint": "Turning this off pauses the Twitch reward. Accepted tracks keep playing; late requests are refunded.",
   "music_settings_volume": "Music volume",
-  "music_settings_tts_volume": "Music volume during TTS",
-  "music_settings_tts_volume_hint": "Percentage of the music volume above. 0% mutes music during TTS; 100% keeps it unchanged.",
   "music_settings_limits": "Queue and cache",
   "music_settings_queue": "Maximum number of tracks",
   "music_settings_queue_hint": "Includes the playing track. Changing the limit keeps accepted requests.",
@@ -155,52 +195,6 @@
   "overlay_settings_no_rewards_title": "No app-managed rewards yet",
   "overlay_settings_no_rewards_body": "Create a default music request reward, then customize it on Twitch and refresh this list.",
   "overlay_settings_load_error": "Could not load Twitch rewards",
-  "tts_description": "Read viewers’ messages aloud for Channel Points.",
-  "tts_enabled": "TTS processing",
-  "tts_on": "On",
-  "tts_off": "Off",
-  "tts_base_url": "Service URL",
-  "tts_url_hint": "Include the API version, for example https://api.teamplay.com.ua/tts/v1",
-  "tts_apply": "Apply",
-  "tts_invalid_url": "Enter a valid HTTP(S) URL without a query or fragment.",
-  "tts_mood": "Mood",
-  "tts_volume": "Speech volume",
-  "tts_volume_hint": "Applies to speech only. The notification sound keeps its volume.",
-  "tts_neutral": "Neutral",
-  "tts_calm": "Calm",
-  "tts_lively": "Lively",
-  "tts_service": "Last service status",
-  "tts_available": "Available",
-  "tts_unavailable": "Unavailable",
-  "tts_unknown": "Not checked yet",
-  "tts_check": "Check now",
-  "tts_agents": "{healthy} healthy / {connected} connected agents",
-  "@tts_agents": {"placeholders": {"healthy": {"type": "int"}, "connected": {"type": "int"}}},
-  "tts_last_check": "Checked at {time} · updates every minute",
-  "@tts_last_check": {"placeholders": {"time": {"type": "String"}}},
-  "tts_reward_description": "Choose a text-input reward. It pauses automatically when TTS is unavailable.",
-  "tts_reward_empty": "Create a TTS reward, or choose one managed by this app.",
-  "tts_music_conflict": "Used for music requests",
-  "tts_reward_conflict": "Used for TTS",
-  "tts_announcement": "Notification sound → 1 second pause → speech",
-  "tts_disabled": "TTS processing is off",
-  "tts_no_reward": "Choose a Twitch reward",
-  "tts_twitch_unavailable": "Twitch event connection is unavailable",
-  "tts_audio_unavailable": "OBS audio is unavailable",
-  "tts_queue_full": "TTS queue is full",
-  "tts_reward_unavailable": "Reward is paused, disabled or incompatible",
-  "tts_no_agents": "No healthy agents available",
-  "tts_timeout": "Speech request timed out",
-  "tts_invalid_text": "Enter between 1 and 1024 characters",
-  "tts_failed": "Could not read the text aloud",
-  "tts_canceled": "Speech canceled",
-  "tts_agents_unknown": "Agent count is unknown",
-  "tts_settlement_failed": "Could not update the request on Twitch. A moderator needs to resolve it.",
-  "tts_operation_failed": "Could not complete the operation. Please try again.",
-  "tts_test": "Test through OBS",
-  "tts_test_text": "Text to read aloud",
-  "tts_test_default": "Hello! This is a text-to-speech test.",
-  "tts_stop": "Stop",
-  "tts_working": "Processing: {name}",
-  "@tts_working": {"placeholders": {"name": {"type": "String"}}}
+  "settings_on": "On",
+  "settings_off": "Off"
 }

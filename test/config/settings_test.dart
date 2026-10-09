@@ -26,7 +26,6 @@ void main() {
     const value = MusicSettings(
       enabled: false,
       volumePercent: 42,
-      ttsVolumePercent: 15,
       maxQueue: 23,
       maxDurationSeconds: 321,
       cacheMaxMb: 512,
@@ -47,7 +46,6 @@ void main() {
         'music_settings': jsonEncode({
           'enabled': 'yes',
           'volume_percent': 150,
-          'tts_volume_percent': -10,
           'max_queue': 0,
           'max_duration_seconds': -1,
           'cache_max_mb': -1,
@@ -61,7 +59,6 @@ void main() {
         settings.music.toJson(),
         const MusicSettings(
           volumePercent: 100,
-          ttsVolumePercent: 0,
           controlServerEnabled: false,
         ).toJson(),
       );

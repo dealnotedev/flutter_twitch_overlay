@@ -12,11 +12,9 @@ import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/music/music_tool_paths.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
 import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
+import 'package:obssource/music/youtube_browser_session.dart';
+import 'package:obssource/music/youtube_connection_controller.dart';
 import 'package:obssource/secrets.dart';
-import 'package:obssource/tts/tts_api.dart';
-import 'package:obssource/tts/tts_controller.dart';
-import 'package:obssource/tts/tts_player.dart';
-import 'package:obssource/tts/tts_twitch.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_redemption_service.dart';
 import 'package:obssource/twitch/ws_manager.dart';
@@ -35,6 +33,7 @@ class AppServiceLocator extends ServiceLocator {
   late final StreamSubscription<MusicSettings> _musicSettingsSubscription;
   MusicControlServerController? musicControlServer;
   late final MusicRewardController musicRewardController;
+  late final YoutubeConnectionController youtubeConnection;
   Future<void> _musicUpdates = Future.value();
 
   AppServiceLocator._(this.settings, this.config) {
@@ -53,22 +52,64 @@ class AppServiceLocator extends ServiceLocator {
       maxBytes: music.cacheMaxMb * 1024 * 1024,
     );
 
+    final sessionDirectory = Directory(
+      '${musicCache.rootDirectory.parent.path}${Platform.pathSeparator}youtube-session',
+    );
+    YtDlpMusicTrackFetcher? youtubeProbe;
+    var youtubeProbeCanceled = false;
+    youtubeConnection = YoutubeConnectionController(
+      directory: sessionDirectory,
+      browser: ManagedYoutubeBrowserSession(
+        profileDirectory: Directory(
+          '${sessionDirectory.path}${Platform.pathSeparator}browser',
+        ),
+      ),
+      cancelVerification: () async {
+        youtubeProbeCanceled = true;
+        await youtubeProbe?.cancel();
+      },
+      verifyAccess: (cookies, url) async {
+        youtubeProbeCanceled = false;
+        final probe = YtDlpMusicTrackFetcher(
+          executable: tools.ytDlpExecutable,
+          ffmpegLocation: tools.ffmpegLocation,
+          denoPath: tools.denoPath,
+          cache: musicCache,
+          cookieFilePath: () => cookies,
+          downloadTimeout: const Duration(minutes: 2),
+        );
+        youtubeProbe = probe;
+        try {
+          final metadata = await probe.inspect(url);
+          if (youtubeProbeCanceled) return;
+          // Also verify audio retrieval; a successful metadata request alone is
+          // insufficient when YouTube blocks media downloads.
+          if (metadata.duration >
+              Duration(seconds: settings.music.maxDurationSeconds)) {
+            throw const MusicTrackException(
+              'Choose a video within the configured duration limit.',
+              errorType: MusicQueueErrorType.trackTooLongOrLive,
+            );
+          }
+          await probe.obtain(metadata: metadata, onProgress: (_) {});
+        } finally {
+          youtubeProbe = null;
+        }
+      },
+    );
+
     final trackFetcher = YtDlpMusicTrackFetcher(
       executable: tools.ytDlpExecutable,
       ffmpegLocation: tools.ffmpegLocation,
       denoPath: tools.denoPath,
       cache: musicCache,
+      cookieFilePath: () => youtubeConnection.cookieFilePath,
+      onAccessRequired: youtubeConnection.requireVerification,
+      onDownloadBlocked: youtubeConnection.requireDownloadCheck,
     );
 
     final musicPlayer = ObsAudioMusicTrackPlayer(
       volume: music.volumePercent / 100,
-    );
-
-    var ttsDucking = false;
-    Future<void> applyMusicVolume() => musicPlayer.setVolume(
-      settings.music.volumePercent /
-          100 *
-          (ttsDucking ? settings.music.ttsVolumePercent / 100 : 1),
     );
 
     final musicApi = TwitchApi(
@@ -119,29 +160,6 @@ class AppServiceLocator extends ServiceLocator {
       },
     );
 
-    final ttsApi = TwitchApi(
-      settings: settings,
-      clientSecret: twitchClientSecret,
-    );
-
-    final tts = TtsController(
-      settings: settings,
-      api: HttpTtsGateway(),
-      twitch: ApiTtsTwitch(ttsApi, settings),
-      player: ObsTtsPlayback(
-        duckMusic: (active) {
-          ttsDucking = active;
-          return applyMusicVolume();
-        },
-      ),
-      events: wsManager.messages,
-      connected: wsManager.rewardsReady,
-      connectionChanges: wsManager.rewardsReadyChanges,
-    );
-
-    map[TtsController] = tts;
-    map[TtsRewardCatalog] = TtsRewardCatalog(api: ttsApi, settings: settings);
-
     musicControlServer = MusicControlServerController(requests: musicRequests);
     unawaited(
       musicControlServer?.configure(
@@ -153,7 +171,9 @@ class AppServiceLocator extends ServiceLocator {
     _musicSettingsSubscription = settings.musicChanges.listen((value) {
       musicRequests.updateSettings(value);
       unawaited(
-        applyMusicVolume().catchError((Object error) {
+        musicPlayer.setVolume(value.volumePercent / 100).catchError((
+          Object error,
+        ) {
           stderr.writeln('Unable to change music volume: $error');
         }),
       );
@@ -180,9 +200,9 @@ class AppServiceLocator extends ServiceLocator {
     await _musicSettingsSubscription.cancel();
     await _musicUpdates;
     await musicRewardController.close();
-    await (map[TtsController]! as TtsController).close();
     await (map[WebSocketManager]! as WebSocketManager).close();
     await musicControlServer?.close();
     await (map[MusicRequests]! as MusicRequests).close();
+    await youtubeConnection.close();
   }
 }

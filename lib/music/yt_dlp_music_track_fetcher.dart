@@ -8,14 +8,16 @@ import 'package:obssource/music/music_requests.dart';
 typedef MusicProcessStarter =
     Future<Process> Function(String executable, List<String> arguments);
 
-class YtDlpException implements Exception {
-  final String message;
+class YtDlpException extends MusicTrackException {
   final int? exitCode;
+  final String? diagnostic;
 
-  const YtDlpException(this.message, {this.exitCode});
-
-  @override
-  String toString() => message;
+  const YtDlpException(
+    super.message, {
+    this.exitCode,
+    this.diagnostic,
+    super.errorType,
+  });
 }
 
 class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
@@ -30,6 +32,9 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
   final Duration inspectTimeout;
   final Duration downloadTimeout;
   final MusicProcessStarter _processStarter;
+  final String? Function()? cookieFilePath;
+  final void Function(Uri sourceUrl)? onAccessRequired;
+  final void Function(Uri sourceUrl)? onDownloadBlocked;
 
   Process? _activeProcess;
 
@@ -41,6 +46,9 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     this.inspectTimeout = const Duration(seconds: 20),
     this.downloadTimeout = const Duration(minutes: 15),
     MusicProcessStarter? processStarter,
+    this.cookieFilePath,
+    this.onAccessRequired,
+    this.onDownloadBlocked,
   }) : _processStarter = processStarter ?? _startProcess;
 
   @override
@@ -54,14 +62,12 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
       '--skip-download',
       '--dump-single-json',
       ..._runtimeArguments,
+      ..._sessionArguments,
       sourceUrl.toString(),
     ], timeout: inspectTimeout);
 
     if (result.exitCode != 0) {
-      throw YtDlpException(
-        _errorMessage('Unable to inspect YouTube URL', result.stderr),
-        exitCode: result.exitCode,
-      );
+      throw _failure(sourceUrl, result.stderr, result.exitCode);
     }
 
     try {
@@ -71,7 +77,10 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
       }
 
       if (json['is_live'] == true || json['live_status'] == 'is_live') {
-        throw const YtDlpException('Live streams are not supported');
+        throw const YtDlpException(
+          'Live streams are not supported',
+          errorType: MusicQueueErrorType.trackTooLongOrLive,
+        );
       }
 
       final seconds = json['duration'];
@@ -163,6 +172,7 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
       '--print',
       'after_move:$_filePrefix%(filepath)s',
       ..._runtimeArguments,
+      ..._sessionArguments,
       sourceUrl.toString(),
     ];
 
@@ -216,16 +226,16 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
         downloadTimeout,
         onTimeout: () {
           process.kill();
-          throw const YtDlpException('YouTube download timed out');
+          throw const YtDlpException(
+            'Unable to reach YouTube. Check your internet connection.',
+            errorType: MusicQueueErrorType.networkUnavailable,
+          );
         },
       );
       await Future.wait([stdoutDone, stderrDone]);
 
       if (exitCode != 0) {
-        throw YtDlpException(
-          _errorMessage('Unable to download YouTube audio', stderr.toString()),
-          exitCode: exitCode,
-        );
+        throw _failure(sourceUrl, stderr.toString(), exitCode);
       }
 
       final path = finalPath ?? expectedFile.path;
@@ -254,6 +264,60 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     return ['--js-runtimes', 'deno:$path'];
   }
 
+  List<String> get _sessionArguments {
+    final path = cookieFilePath?.call();
+    return path == null || path.isEmpty ? const [] : ['--cookies', path];
+  }
+
+  YtDlpException _failure(Uri sourceUrl, String stderr, int exitCode) {
+    final text = stderr.toLowerCase();
+    var type = MusicQueueErrorType.operationFailed;
+    var message = 'Unable to prepare this track. Please try again later.';
+    if (text.contains('unable to download video data') &&
+        text.contains('http error 403')) {
+      type = MusicQueueErrorType.youtubeDownloadBlocked;
+      message =
+          'YouTube blocked this audio download (403). Reconnect YouTube '
+          'in Music settings. If the video plays but the check still fails, '
+          'try signing in in the opened browser and check again.';
+      onDownloadBlocked?.call(sourceUrl);
+    } else if (text.contains('sign in to confirm') ||
+        text.contains('not a bot') ||
+        text.contains('use --cookies') ||
+        text.contains('cookies are no longer valid') ||
+        text.contains('login required')) {
+      type = MusicQueueErrorType.youtubeAccessRequired;
+      message =
+          'YouTube needs verification. Open Music settings to connect '
+          'YouTube, then try again.';
+      onAccessRequired?.call(sourceUrl);
+    } else if (text.contains('private video') ||
+        text.contains('video unavailable') ||
+        text.contains('video has been removed') ||
+        text.contains('not available in your country')) {
+      type = MusicQueueErrorType.youtubeUnavailable;
+      message = 'This YouTube video is unavailable. Please choose another.';
+    } else if (text.contains('timed out') ||
+        text.contains('unable to download webpage') ||
+        text.contains('name resolution') ||
+        text.contains('failed to resolve') ||
+        text.contains('network is unreachable')) {
+      type = MusicQueueErrorType.networkUnavailable;
+      message = 'Unable to reach YouTube. Check your internet connection.';
+    } else if (text.contains('ffmpeg not found') ||
+        text.contains('ffprobe and ffmpeg not found') ||
+        text.contains('no supported javascript runtime')) {
+      type = MusicQueueErrorType.musicToolsUnavailable;
+      message = 'Music components are unavailable. Reinstall the application.';
+    }
+    return YtDlpException(
+      message,
+      errorType: type,
+      exitCode: exitCode,
+      diagnostic: _errorMessage('yt-dlp', stderr),
+    );
+  }
+
   Future<_ProcessOutput> _runCollectingOutput(
     List<String> args, {
     required Duration timeout,
@@ -267,7 +331,10 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
         timeout,
         onTimeout: () {
           process.kill();
-          throw const YtDlpException('YouTube metadata request timed out');
+          throw const YtDlpException(
+            'Unable to reach YouTube. Check your internet connection.',
+            errorType: MusicQueueErrorType.networkUnavailable,
+          );
         },
       );
       return _ProcessOutput(
@@ -292,7 +359,11 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
       _activeProcess = process;
       return process;
     } on ProcessException catch (error) {
-      throw YtDlpException('Unable to start $executable: ${error.message}');
+      throw YtDlpException(
+        'Music components are unavailable. Reinstall the application.',
+        errorType: MusicQueueErrorType.musicToolsUnavailable,
+        diagnostic: 'Unable to start $executable: ${error.message}',
+      );
     }
   }
 

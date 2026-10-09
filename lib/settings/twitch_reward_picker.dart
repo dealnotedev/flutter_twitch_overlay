@@ -6,7 +6,7 @@ import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/settings/twitch_reward_card.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 
-/// Shared presentation and selection behavior for music and TTS rewards.
+/// Presentation and selection behavior for music request rewards.
 class TwitchRewardPicker extends StatelessWidget {
   final List<TwitchCustomReward> rewards;
   final String? selectedId;
@@ -14,7 +14,6 @@ class TwitchRewardPicker extends StatelessWidget {
   final String emptyDescription;
   final String keyPrefix;
   final IconData rewardIcon;
-  final String? Function(TwitchCustomReward) blockedReason;
   final ValueChanged<TwitchCustomReward?> onSelected;
   final VoidCallback? onCreate;
   final VoidCallback? onRefresh;
@@ -30,7 +29,6 @@ class TwitchRewardPicker extends StatelessWidget {
     required this.description,
     required this.emptyDescription,
     required this.keyPrefix,
-    required this.blockedReason,
     required this.onSelected,
     required this.onCreate,
     required this.onRefresh,
@@ -160,15 +158,12 @@ class TwitchRewardPicker extends StatelessWidget {
 
   Widget _buildCard(TwitchCustomReward reward) {
     final selected = reward.id == selectedId;
-    final blocked = blockedReason(reward);
-    final selectable =
-        selected || (reward.isMusicRequestCompatible && blocked == null);
+    final selectable = selected || reward.isMusicRequestCompatible;
     return TwitchRewardCard(
       key: ValueKey('${keyPrefix}_reward_${reward.id}'),
       reward: reward,
       icon: rewardIcon,
       selected: selected,
-      blockedReason: blocked,
       onPressed:
           _interactive && selectable
               ? () => onSelected(selected ? null : reward)

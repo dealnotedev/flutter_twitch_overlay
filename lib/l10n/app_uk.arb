@@ -82,14 +82,57 @@
       "requester": { "type": "String" }
     }
   },
-  "music_error_operation_failed": "{requester}: {details}",
+  "music_error_operation_failed": "{requester}: не вдалося підготувати трек. Спробуйте пізніше.",
   "@music_error_operation_failed": {
     "placeholders": {
-      "requester": { "type": "String" },
-      "details": { "type": "String" }
+      "requester": {
+        "type": "String"
+      }
     }
   },
   "music_control_title": "Керування музикою",
+  "music_error_youtube_access": "YouTube потребує перевірки. Налаштування музики → Підключити YouTube.",
+  "music_error_youtube_download_blocked": "YouTube заблокував завантаження аудіо (403). Налаштування музики → Підключити YouTube.",
+  "music_error_youtube_unavailable": "{requester}: це відео недоступне. Оберіть інше.",
+  "@music_error_youtube_unavailable": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_youtube_title": "Підключення YouTube",
+  "music_youtube_description": "Якщо YouTube просить перевірку, підключіть його тут. Сесія YouTube зберігається лише на цьому комп’ютері.",
+  "music_youtube_disconnected": "Загальнодоступні треки працюють без входу, доки YouTube не попросить перевірку.",
+  "music_youtube_opening": "Підготовка підключення YouTube…",
+  "music_youtube_instructions": "1. Відкрийте й запустіть потрібне відео у вікні браузера, що відкрилося. Якщо відкрилася головна сторінка YouTube, оберіть коротке загальнодоступне відео.\n2. Пройдіть перевірку, якщо вона з’явиться. Спочатку можна перевірити підключення без входу в обліковий запис.\n3. Залиште вкладку з відео відкритою, поверніться сюди й натисніть «Перевірити підключення».",
+  "music_youtube_checking": "Перевірка доступу до YouTube та завантаження аудіо…",
+  "music_youtube_connected": "YouTube підключено. Можна замовити трек повторно.",
+  "music_youtube_connect": "Підключити YouTube",
+  "music_youtube_reopen": "Відкрити YouTube знову",
+  "music_youtube_verify": "Перевірити підключення",
+  "music_youtube_cancel": "Скасувати",
+  "music_youtube_disconnect": "Відключити",
+  "music_youtube_no_browser": "Встановіть Microsoft Edge або Google Chrome, потім знову натисніть «Підключити YouTube».",
+  "music_youtube_browser_closed": "Вікно YouTube закрито. Відкрийте YouTube знову й залиште вікно відкритим до завершення перевірки.",
+  "music_youtube_verification_required": "YouTube ще потребує перевірки. Пройдіть її у відкритому вікні браузера й перевірте підключення знову.",
+  "music_youtube_download_blocked": "YouTube заблокував завантаження аудіо (403). Якщо відео грає в браузері, спробуйте увійти в Google у цьому ж вікні, потім перевірте підключення знову. Вхід може допомогти, але не гарантує доступу.",
+  "music_youtube_network_error": "Не вдалося з’єднатися з YouTube. Перевірте інтернет і спробуйте ще раз.",
+  "music_youtube_tools_error": "Компоненти музики відсутні або недоступні. Перевстановіть найновішу повну версію застосунку.",
+  "music_youtube_storage_error": "Не вдалося зберегти підключення YouTube. Перевірте доступ до запису у вашу папку користувача й спробуйте ще раз.",
+  "music_youtube_choose_video": "Залиште у вікні YouTube лише вкладку з потрібним відео, закрийте інші вкладки з відео й перевірте підключення знову.",
+  "music_youtube_video_unavailable": "YouTube не надає плеєру доступ до цього відео. Оберіть інше загальнодоступне відео у відкритому вікні й перевірте підключення знову.",
+  "music_youtube_video_too_long": "Відео перевищує ліміт тривалості треку або є прямим ефіром. Оберіть коротше відео або збільште ліміт тривалості нижче й перевірте підключення знову.",
+  "music_youtube_checked_video": "Перевірене відео: {url}",
+  "@music_youtube_checked_video": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "music_youtube_error_details": "Деталі помилки",
+  "music_youtube_check_error": "Не вдалося підготувати аудіо. Відкрийте «Деталі помилки», щоб з’ясувати причину перед повторною спробою.",
   "music_control_connected": "Підключено до оверлею OBS",
   "music_control_connecting": "Підключення до оверлею OBS…",
   "music_control_reconnecting": "Спроба перепідключення {attempt} через {seconds} с",
@@ -103,14 +146,11 @@
   "music_control_incompatible": "Версії контролера та оверлею несумісні",
   "music_control_closed": "Підключення закрито",
   "overlay_settings_title": "Налаштування оверлею",
-  "overlay_settings_sections": "Розділи",
   "overlay_settings_player": "Плеєр",
   "overlay_settings_player_description": "Замовлення музики, відтворення, вигляд і локальне керування.",
   "music_settings_enabled": "Приймати замовлення музики",
   "music_settings_enabled_hint": "Вимкнення призупиняє нагороду Twitch. Прийняті треки продовжують грати; запізнілі замовлення повертають бали.",
   "music_settings_volume": "Гучність музики",
-  "music_settings_tts_volume": "Гучність музики під час TTS",
-  "music_settings_tts_volume_hint": "Відсоток від основної гучності музики. 0% вимикає музику під час TTS; 100% залишає її без змін.",
   "music_settings_limits": "Черга та кеш",
   "music_settings_queue": "Максимальна кількість треків",
   "music_settings_queue_hint": "Включає поточний трек. Зміна ліміту зберігає прийняті замовлення.",
@@ -148,52 +188,6 @@
   "overlay_settings_no_rewards_title": "Керованих винагород ще немає",
   "overlay_settings_no_rewards_body": "Створіть стандартну винагороду для музики, налаштуйте її у Twitch та оновіть список.",
   "overlay_settings_load_error": "Не вдалося завантажити винагороди Twitch",
-  "tts_description": "Озвучення повідомлень глядачів за бали каналу.",
-  "tts_enabled": "Обробка TTS",
-  "tts_on": "Увімкнено",
-  "tts_off": "Вимкнено",
-  "tts_base_url": "Адреса сервісу",
-  "tts_url_hint": "Разом із версією API, наприклад https://api.teamplay.com.ua/tts/v1",
-  "tts_apply": "Застосувати",
-  "tts_invalid_url": "Введіть HTTP(S) адресу без параметрів запиту та фрагмента.",
-  "tts_mood": "Настрій",
-  "tts_volume": "Гучність озвучення",
-  "tts_volume_hint": "Лише озвучення. Гучність звуку сповіщення не змінюється.",
-  "tts_neutral": "Звичайний",
-  "tts_calm": "Спокійний",
-  "tts_lively": "Енергійний",
-  "tts_service": "Останній стан сервісу",
-  "tts_available": "Доступний",
-  "tts_unavailable": "Недоступний",
-  "tts_unknown": "Ще не перевірено",
-  "tts_check": "Перевірити",
-  "tts_agents": "Агенти: {healthy} готові / {connected} підключені",
-  "@tts_agents": {"placeholders": {"healthy": {"type": "int"}, "connected": {"type": "int"}}},
-  "tts_last_check": "Перевірено о {time} · оновлення щохвилини",
-  "@tts_last_check": {"placeholders": {"time": {"type": "String"}}},
-  "tts_reward_description": "Оберіть винагороду з введенням тексту. Вона призупиняється, коли TTS недоступний.",
-  "tts_reward_empty": "Створіть винагороду TTS або оберіть доступну цьому застосунку.",
-  "tts_music_conflict": "Використовується для замовлення музики",
-  "tts_reward_conflict": "Використовується для TTS",
-  "tts_announcement": "Звук сповіщення → пауза 1 секунда → озвучення",
-  "tts_disabled": "Обробку TTS вимкнено",
-  "tts_no_reward": "Оберіть винагороду Twitch",
-  "tts_twitch_unavailable": "Немає з’єднання з подіями Twitch",
-  "tts_audio_unavailable": "Аудіо OBS недоступне",
-  "tts_queue_full": "Черга TTS заповнена",
-  "tts_reward_unavailable": "Винагорода призупинена, вимкнена або несумісна",
-  "tts_no_agents": "Немає готових агентів",
-  "tts_timeout": "Час очікування озвучення вичерпано",
-  "tts_invalid_text": "Введіть від 1 до 1024 символів",
-  "tts_failed": "Не вдалося озвучити текст",
-  "tts_canceled": "Озвучення скасовано",
-  "tts_agents_unknown": "Кількість агентів невідома",
-  "tts_settlement_failed": "Не вдалося оновити заявку у Twitch. Потрібне втручання модератора.",
-  "tts_operation_failed": "Не вдалося виконати дію. Спробуйте ще раз.",
-  "tts_test": "Перевірити через OBS",
-  "tts_test_text": "Текст для озвучення",
-  "tts_test_default": "Привіт! Це перевірка озвучення.",
-  "tts_stop": "Зупинити",
-  "tts_working": "Обробляється: {name}",
-  "@tts_working": {"placeholders": {"name": {"type": "String"}}}
+  "settings_on": "Увімкнено",
+  "settings_off": "Вимкнено"
 }

@@ -316,7 +316,12 @@ class _ExpandedMusicPlayer extends StatelessWidget {
             ),
             child: Text(
               _localizedMusicError(context, error),
-              maxLines: 2,
+              maxLines:
+                  error.type == MusicQueueErrorType.youtubeAccessRequired ||
+                          error.type ==
+                              MusicQueueErrorType.youtubeDownloadBlocked
+                      ? null
+                      : 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: MusicPlayerPalette.error,
@@ -647,8 +652,18 @@ String _localizedMusicError(BuildContext context, MusicQueueError error) {
     ),
     MusicQueueErrorType.trackTooLongOrLive => localizations
         .music_error_track_too_long_or_live(error.requester),
+    MusicQueueErrorType.youtubeAccessRequired =>
+      localizations.music_error_youtube_access,
+    MusicQueueErrorType.youtubeDownloadBlocked =>
+      localizations.music_error_youtube_download_blocked,
+    MusicQueueErrorType.youtubeUnavailable => localizations
+        .music_error_youtube_unavailable(error.requester),
+    MusicQueueErrorType.networkUnavailable =>
+      localizations.music_youtube_network_error,
+    MusicQueueErrorType.musicToolsUnavailable =>
+      localizations.music_youtube_tools_error,
     MusicQueueErrorType.operationFailed => localizations
-        .music_error_operation_failed(error.requester, error.details ?? ''),
+        .music_error_operation_failed(error.requester),
   };
 }
 

@@ -8,7 +8,7 @@ void main() {
   final appDirectory = Directory('${separator}app');
   final bundledDirectory = '${appDirectory.path}${separator}tools';
 
-  test('prefers the OBS plugin tools directory', () {
+  test('prefers OBS plugin tools without requiring ffprobe', () {
     final obsExecutableDirectory = Directory(
       '${separator}obs${separator}bin${separator}64bit',
     );
@@ -18,7 +18,6 @@ void main() {
     final pluginFiles = {
       '$pluginDirectory${separator}yt-dlp.exe',
       '$pluginDirectory${separator}ffmpeg.exe',
-      '$pluginDirectory${separator}ffprobe.exe',
       '$pluginDirectory${separator}deno.exe',
     };
 
@@ -32,11 +31,10 @@ void main() {
     expect(paths.denoPath, '$pluginDirectory${separator}deno.exe');
   });
 
-  test('uses complete tools directory beside the application', () {
+  test('uses bundled ffmpeg without requiring ffprobe', () {
     final bundledFiles = {
       '$bundledDirectory${separator}yt-dlp.exe',
       '$bundledDirectory${separator}ffmpeg.exe',
-      '$bundledDirectory${separator}ffprobe.exe',
       '$bundledDirectory${separator}deno.exe',
     };
 
@@ -48,6 +46,16 @@ void main() {
     expect(paths.ytDlpExecutable, '$bundledDirectory${separator}yt-dlp.exe');
     expect(paths.ffmpegLocation, bundledDirectory);
     expect(paths.denoPath, '$bundledDirectory${separator}deno.exe');
+  });
+
+  test('does not mistake a leftover ffprobe for ffmpeg', () {
+    final paths = MusicToolPaths.resolve(
+      executableDirectory: appDirectory,
+      environment: const {},
+      fileExists: (path) => path == '$bundledDirectory${separator}ffprobe.exe',
+    );
+
+    expect(paths.ffmpegLocation, isNull);
   });
 
   test('falls back to PATH when bundled tools are absent', () {

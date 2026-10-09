@@ -10,12 +10,140 @@ import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
+import 'package:obssource/music/youtube_browser_session.dart';
+import 'package:obssource/music/youtube_connection_controller.dart';
 import 'package:obssource/settings/overlay_settings_dialog.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  for (final language in ['uk', 'en']) {
+    testWidgets('YouTube connection guides verification and retry in $language', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = Settings();
+      await settings.init();
+      await tester.binding.setSurfaceSize(const Size(1280, 900));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _loadCaptureFonts(tester);
+      final directory =
+          (await tester.runAsync(
+            () => Directory.systemTemp.createTemp('youtube_settings_ui_'),
+          ))!;
+      final browser = _YoutubeBrowser();
+      var checks = 0;
+      final connection = YoutubeConnectionController(
+        directory: directory,
+        browser: browser,
+        verifyAccess: (_, __) async {
+          if (++checks == 1) {
+            throw const YtDlpException(
+              'challenge',
+              errorType: MusicQueueErrorType.youtubeAccessRequired,
+              diagnostic: 'yt-dlp: ERROR: YouTube verification required',
+            );
+          }
+          if (checks == 2) {
+            throw const YtDlpException(
+              'media blocked',
+              errorType: MusicQueueErrorType.youtubeDownloadBlocked,
+              diagnostic:
+                  'yt-dlp: ERROR: unable to download video data: HTTP Error 403: Forbidden',
+            );
+          }
+        },
+      );
+      addTearDown(
+        () => tester.runAsync(() async {
+          await connection.close();
+          directory.deleteSync(recursive: true);
+        }),
+      );
+      final capture = GlobalKey();
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(fontFamily: 'RobotoMono'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          locale: Locale(language),
+          home: Scaffold(
+            backgroundColor: const Color(0xff080516),
+            body: RepaintBoundary(
+              key: capture,
+              child: OverlaySettingsDialog(
+                settings: settings,
+                rewardCatalog: _Catalog(),
+                youtubeConnection: connection,
+              ),
+            ),
+          ),
+        ),
+      );
+      await _pump(tester);
+      final connect = find.byKey(const ValueKey('music_youtube_connect'));
+      await tester.ensureVisible(connect);
+      await tester.runAsync(() async {
+        tester.widget<NeonSettingsButton>(connect).onPressed!();
+        await connection.connect();
+      });
+      await _pump(tester);
+      final l = AppLocalizations.of(tester.element(connect))!;
+      expect(find.text(l.music_youtube_instructions), findsOneWidget);
+      final verify = find.byKey(const ValueKey('music_youtube_verify'));
+      await tester.ensureVisible(verify);
+      await tester.ensureVisible(find.text(l.music_youtube_title));
+      await _pump(tester);
+      await _capture(tester, capture, 'youtube-connect-$language');
+
+      Future<void> pressVerify() async {
+        await tester.runAsync(() async {
+          tester.widget<NeonSettingsButton>(verify).onPressed!();
+          await connection.verify();
+        });
+        await _pump(tester);
+      }
+
+      await pressVerify();
+      expect(find.text(l.music_youtube_verification_required), findsOneWidget);
+      expect(find.text(l.music_youtube_connected), findsNothing);
+      expect(
+        find.text(
+          l.music_youtube_checked_video(
+            'https://www.youtube.com/watch?v=4YFu4dvMHHY',
+          ),
+        ),
+        findsOneWidget,
+      );
+      final details = find.byKey(const ValueKey('music_youtube_diagnostic'));
+      expect(details, findsOneWidget);
+      await tester.ensureVisible(details);
+      await tester.tap(find.text(l.music_youtube_error_details));
+      await _pump(tester);
+      expect(find.text(connection.diagnostic!), findsOneWidget);
+      await tester.ensureVisible(find.text(l.music_youtube_title));
+      await _pump(tester);
+      await _capture(tester, capture, 'youtube-check-error-$language');
+      await pressVerify();
+      expect(find.text(l.music_youtube_download_blocked), findsOneWidget);
+      expect(find.text(l.music_youtube_connected), findsNothing);
+      await tester.ensureVisible(find.text(l.music_youtube_title));
+      await _pump(tester);
+      await _capture(tester, capture, 'youtube-media-403-$language');
+      await pressVerify();
+      expect(find.text(l.music_youtube_connected), findsOneWidget);
+      expect(verify, findsNothing);
+      expect(details, findsNothing);
+      expect(
+        find.byKey(const ValueKey('music_youtube_disconnect')),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+    });
+  }
   for (final language in ['uk', 'en']) {
     testWidgets('music settings validate, persist and render in $language', (
       tester,
@@ -55,25 +183,17 @@ void main() {
       await tester.tap(enabled);
       await _pump(tester);
       expect(settings.music.enabled, isFalse);
-      for (final key in ['music_volume', 'music_tts_volume']) {
-        final slider = find.byKey(ValueKey(key));
-        await tester.ensureVisible(slider);
-        final rect = tester.getRect(slider);
-        await tester.tapAt(
-          Offset(rect.left + rect.width * 0.37, rect.center.dy),
-        );
-        await _pump(tester);
-        final percent =
-            key == 'music_volume'
-                ? settings.music.volumePercent
-                : settings.music.ttsVolumePercent;
-        expect(percent, inInclusiveRange(5, 95));
-        expect(percent % 5, 0);
-        await tester.tapAt(Offset(rect.right - 1, rect.center.dy));
-        await _pump(tester);
-      }
+      final slider = find.byKey(const ValueKey('music_volume'));
+      await tester.ensureVisible(slider);
+      final rect = tester.getRect(slider);
+      await tester.tapAt(Offset(rect.left + rect.width * 0.37, rect.center.dy));
+      await _pump(tester);
+      final percent = settings.music.volumePercent;
+      expect(percent, inInclusiveRange(5, 95));
+      expect(percent % 5, 0);
+      await tester.tapAt(Offset(rect.right - 1, rect.center.dy));
+      await _pump(tester);
       expect(settings.music.volumePercent, 100);
-      expect(settings.music.ttsVolumePercent, 100);
       await tester.ensureVisible(enabled);
       await _pump(tester);
       await _capture(tester, capture, 'music-general-$language');
@@ -271,6 +391,23 @@ class _Catalog implements TwitchRewardCatalog {
   Future<List<TwitchCustomReward>> load() async => [];
   @override
   Future<TwitchCustomReward> createDefault() => throw UnimplementedError();
+}
+
+class _YoutubeBrowser implements YoutubeBrowserSession {
+  @override
+  Future<Uri> readYoutubeVideoUrl() async =>
+      Uri.parse('https://www.youtube.com/watch?v=4YFu4dvMHHY');
+
+  @override
+  Future<void> open(Uri url) async {}
+
+  @override
+  Future<void> close() async {}
+
+  @override
+  Future<List<Map<String, dynamic>>> readYoutubeCookies() async => [
+    {'domain': '.youtube.com', 'name': 'test', 'value': 'fake', 'path': '/'},
+  ];
 }
 
 class _Requests implements MusicRequests {

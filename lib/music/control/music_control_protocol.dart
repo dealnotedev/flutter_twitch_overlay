@@ -140,17 +140,60 @@ abstract final class MusicControlProtocol {
     );
   }
 
-  static Map<String, Object?> _errorToJson(MusicQueueError error) => {
-    'requester': error.requester,
-    'type': error.type.name,
-    'details': error.details,
+  static const _preparationReasons = {
+    MusicQueueErrorType.youtubeAccessRequired,
+    MusicQueueErrorType.youtubeDownloadBlocked,
+    MusicQueueErrorType.youtubeUnavailable,
+    MusicQueueErrorType.networkUnavailable,
+    MusicQueueErrorType.musicToolsUnavailable,
+  };
+
+  static Map<String, Object?> _errorToJson(MusicQueueError error) {
+    final preparationFailure = _preparationReasons.contains(error.type);
+    // Older v1 controllers know operationFailed. The optional reason lets new
+    // controllers localize the recovery action without breaking those clients.
+    return {
+      'requester': error.requester,
+      'type': preparationFailure ? 'operationFailed' : error.type.name,
+      if (preparationFailure) 'reason': error.type.name,
+      'details':
+          preparationFailure
+              ? _legacyPreparationMessage(error.type)
+              : error.details,
+    };
+  }
+
+  static String _legacyPreparationMessage(
+    MusicQueueErrorType type,
+  ) => switch (type) {
+    MusicQueueErrorType.youtubeAccessRequired =>
+      'YouTube needs verification. Open OBS overlay Music settings and connect YouTube.',
+    MusicQueueErrorType.youtubeDownloadBlocked =>
+      'YouTube blocked the audio download (403). Open OBS overlay Music settings '
+          'and reconnect YouTube. Signing in in the opened browser may help.',
+    MusicQueueErrorType.youtubeUnavailable =>
+      'This YouTube video is unavailable. Choose another.',
+    MusicQueueErrorType.networkUnavailable =>
+      'Check your internet connection and try again.',
+    _ =>
+      'Music components are unavailable. Reinstall the latest full application.',
   };
 
   static MusicQueueError _errorFromJson(Object? value) {
     final json = _object(value, 'lastError');
+    final reason =
+        MusicQueueErrorType.values
+            .where(
+              (type) =>
+                  _preparationReasons.contains(type) &&
+                  type.name == json['reason'],
+            )
+            .firstOrNull;
     return MusicQueueError(
       requester: _string(json['requester'], 'requester'),
-      type: _enumValue(MusicQueueErrorType.values, json['type'], 'error.type'),
+      type:
+          reason ??
+          _enumValue(MusicQueueErrorType.values, json['type'], 'error.type'),
       details: _nullableString(json['details'], 'details'),
     );
   }

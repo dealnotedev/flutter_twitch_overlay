@@ -10,28 +10,25 @@ import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
-import 'package:obssource/settings/tts_settings_pane.dart';
 import 'package:obssource/settings/music_settings_controls.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_reward_controller.dart';
-import 'package:obssource/tts/tts_controller.dart';
+import 'package:obssource/music/youtube_connection_controller.dart';
 
 class OverlaySettingsDialog extends StatefulWidget {
   final Settings settings;
   final TwitchRewardCatalog rewardCatalog;
-  final TwitchRewardCatalog? ttsRewardCatalog;
-  final TtsController? ttsController;
   final MusicControlServerController? musicServer;
   final MusicRewardController? musicRewardController;
+  final YoutubeConnectionController? youtubeConnection;
 
   const OverlaySettingsDialog({
     super.key,
     required this.settings,
     required this.rewardCatalog,
-    this.ttsRewardCatalog,
-    this.ttsController,
     this.musicServer,
     this.musicRewardController,
+    this.youtubeConnection,
   });
 
   @override
@@ -39,7 +36,6 @@ class OverlaySettingsDialog extends StatefulWidget {
 }
 
 class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
-  bool _ttsSelected = false;
   List<TwitchCustomReward> _rewards = const [];
   String? _selectedRewardId;
   Object? _error;
@@ -161,7 +157,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
                 height: 1,
                 color: MusicPlayerPalette.neonPink.withValues(alpha: 0.22),
               ),
-              Expanded(child: _buildBody(context)),
+              Expanded(child: _buildPlayerSettings(context)),
             ],
           ),
         ),
@@ -202,69 +198,6 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
     );
   }
 
-  Widget _buildBody(BuildContext context) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        SizedBox(width: 198, child: _buildNavigation(context)),
-        Container(
-          width: 1,
-          color: MusicPlayerPalette.neonBlue.withValues(alpha: 0.13),
-        ),
-        Expanded(
-          child:
-              _ttsSelected
-                  ? TtsSettingsPane(
-                    settings: widget.settings,
-                    catalog: widget.ttsRewardCatalog,
-                    controller: widget.ttsController,
-                  )
-                  : _buildPlayerSettings(context),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildNavigation(BuildContext context) {
-    return Container(
-      color: MusicPlayerPalette.voidBlack.withValues(alpha: 0.38),
-      padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              context.localizations.overlay_settings_sections.toUpperCase(),
-              style: TextStyle(
-                color: MusicPlayerPalette.textSecondary.withValues(alpha: 0.65),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
-              ),
-            ),
-          ),
-          const Gap(12),
-          NeonSettingsButton.section(
-            key: const ValueKey('overlay_settings_player_section'),
-            label: context.localizations.overlay_settings_player,
-            icon: Icons.graphic_eq_rounded,
-            selected: !_ttsSelected,
-            onPressed: () => setState(() => _ttsSelected = false),
-          ),
-          const Gap(10),
-          NeonSettingsButton.section(
-            key: const ValueKey('overlay_settings_tts_section'),
-            label: 'TTS',
-            icon: Icons.record_voice_over_rounded,
-            selected: _ttsSelected,
-            onPressed: () => setState(() => _ttsSelected = true),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildPlayerSettings(BuildContext context) {
     return SingleChildScrollView(
       key: const ValueKey('music_settings_scroll'),
@@ -273,6 +206,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
         settings: widget.settings,
         server: widget.musicServer,
         rewardController: widget.musicRewardController,
+        youtubeConnection: widget.youtubeConnection,
         presentationSettings: _buildPresentationSettings(context),
         rewardSettings: _buildRewardSubsection(context),
       ),
@@ -404,11 +338,6 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
     creating: _creating,
     enabled: !_savingReward,
     error: _error?.toString(),
-    blockedReason:
-        (reward) =>
-            reward.id == widget.settings.tts.rewardId
-                ? context.localizations.tts_reward_conflict
-                : null,
     onSelected: _selectReward,
     onCreate: _createReward,
     onRefresh: _loadRewards,

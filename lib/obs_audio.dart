@@ -83,11 +83,7 @@ class ObsAudio {
   }
 
   /// Loads an asset, returns a numeric handle.
-  static Future<int> loadAsset(
-    String asset, {
-    String? sessionId,
-    bool requireEvents = false,
-  }) async {
+  static Future<int> loadAsset(String asset, {String? sessionId}) async {
     final id = _idFor(asset);
     if (id.$2) return id.$1;
 
@@ -101,7 +97,6 @@ class ObsAudio {
         if (sessionId != null) 'session_id': sessionId,
       },
       sessionId: sessionId,
-      requireEvents: requireEvents,
     );
   }
 
@@ -128,7 +123,6 @@ class ObsAudio {
     required int id,
     required Map<String, Object?> command,
     required String? sessionId,
-    bool requireEvents = false,
   }) async {
     final eventCompleter = Completer<ObsAudioEvent>();
     final subscription = events.listen((event) {
@@ -147,9 +141,6 @@ class ObsAudio {
 
     try {
       final result = await _sendCommand(command);
-      if (requireEvents && !result.eventsSupported) {
-        throw StateError('OBS audio lifecycle events are unavailable');
-      }
       if (!result.eventsSupported) return id;
 
       final event = await eventCompleter.future.timeout(

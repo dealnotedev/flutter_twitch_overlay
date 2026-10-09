@@ -46,6 +46,7 @@ app.*.map.json
 
 /lib/secrets.dart
 
-# Downloaded runtime tools are restored with tools/download_tools.ps1.
+# Downloaded/built runtime tools are restored with tools/download_tools.ps1.
 /tools/*.exe
 /tools/*.zip
+/tools/ffmpeg-build.txt

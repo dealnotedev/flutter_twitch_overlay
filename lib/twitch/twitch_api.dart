@@ -41,12 +41,10 @@ class TwitchApi {
   Future<void> subscribeCustomRewards({
     required String? broadcasterUserId,
     required String sessionId,
-    bool updates = false,
   }) {
     final data = {
       'version': '1',
-      'type':
-          'channel.channel_points_custom_reward_redemption.${updates ? 'update' : 'add'}',
+      'type': 'channel.channel_points_custom_reward_redemption.add',
       'condition': {'broadcaster_user_id': broadcasterUserId},
       'transport': {'session_id': sessionId, 'method': 'websocket'},
     };
@@ -199,26 +197,6 @@ class TwitchApi {
       },
     );
     return _customRewardsFromResponse(response.data).single;
-  }
-
-  Future<TwitchRedemptionStatus?> getRewardRedemptionStatus({
-    required String broadcasterUserId,
-    required String rewardId,
-    required String redemptionId,
-  }) async {
-    final response = await dio.get<Map<String, dynamic>>(
-      '/channel_points/custom_rewards/redemptions',
-      queryParameters: {
-        'broadcaster_id': broadcasterUserId,
-        'reward_id': rewardId,
-        'id': redemptionId,
-      },
-    );
-    final entries =
-        (response.data!['data'] as List).cast<Map<String, dynamic>>();
-    return entries.isEmpty
-        ? null
-        : TwitchRedemptionStatus.fromApi(entries.single['status'] as String?);
   }
 
   Future<UserDto> getUser({required String? id}) {

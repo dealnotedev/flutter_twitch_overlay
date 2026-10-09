@@ -49,18 +49,15 @@ class MusicRewardController extends ChangeNotifier {
     final reward = settings.musicRewardId;
     final previous = _applied;
     try {
-      // Retire the old music reward, unless it has been assigned to TTS.
+      // Retire the old music reward when the selection changes.
       if (previous != null &&
           previous.$1 == channel &&
           previous.$2 != reward &&
-          previous.$2 != settings.tts.rewardId &&
           !previous.$3) {
         await pauseReward(previous.$1, previous.$2, true);
         _applied = null;
       }
-      if (channel == null ||
-          reward == null ||
-          reward == settings.tts.rewardId) {
+      if (channel == null || reward == null) {
         error = null;
         return;
       }

@@ -132,12 +132,118 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String music_error_operation_failed(String requester, String details) {
-    return '$requester: $details';
+  String music_error_operation_failed(String requester) {
+    return '$requester: couldn\'t prepare this track. Please try again later.';
   }
 
   @override
   String get music_control_title => 'Music controller';
+
+  @override
+  String get music_error_youtube_access =>
+      'YouTube needs verification. Music settings → Connect YouTube.';
+
+  @override
+  String get music_error_youtube_download_blocked =>
+      'YouTube blocked the audio download (403). Music settings → Connect YouTube.';
+
+  @override
+  String music_error_youtube_unavailable(String requester) {
+    return '$requester: this video is unavailable. Please choose another.';
+  }
+
+  @override
+  String get music_youtube_title => 'YouTube connection';
+
+  @override
+  String get music_youtube_description =>
+      'If YouTube asks for verification, connect it here. Your YouTube session is saved only on this computer.';
+
+  @override
+  String get music_youtube_disconnected =>
+      'Public tracks work without signing in until YouTube asks for verification.';
+
+  @override
+  String get music_youtube_opening => 'Preparing the YouTube connection…';
+
+  @override
+  String get music_youtube_instructions =>
+      '1. Open and play the requested video in the browser window that opened. If the YouTube homepage opened, choose a short public video.\n2. Complete any verification. You can try checking the connection without signing in first.\n3. Leave the video tab open, return here and press Check connection.';
+
+  @override
+  String get music_youtube_checking =>
+      'Checking YouTube access and audio download…';
+
+  @override
+  String get music_youtube_connected =>
+      'YouTube connected. You can submit the track again.';
+
+  @override
+  String get music_youtube_connect => 'Connect YouTube';
+
+  @override
+  String get music_youtube_reopen => 'Reopen YouTube';
+
+  @override
+  String get music_youtube_verify => 'Check connection';
+
+  @override
+  String get music_youtube_cancel => 'Cancel';
+
+  @override
+  String get music_youtube_disconnect => 'Disconnect';
+
+  @override
+  String get music_youtube_no_browser =>
+      'Install Microsoft Edge or Google Chrome, then press Connect YouTube again.';
+
+  @override
+  String get music_youtube_browser_closed =>
+      'The YouTube window was closed. Press Reopen YouTube and keep it open until the check finishes.';
+
+  @override
+  String get music_youtube_verification_required =>
+      'YouTube still needs verification. Complete it in the opened browser window, then check again.';
+
+  @override
+  String get music_youtube_download_blocked =>
+      'YouTube blocked the audio download (403). If the video plays in the browser, try signing in to Google in that same window, then check the connection again. Signing in can help, but doesn\'t guarantee access.';
+
+  @override
+  String get music_youtube_network_error =>
+      'Couldn\'t reach YouTube. Check your internet connection and try again.';
+
+  @override
+  String get music_youtube_tools_error =>
+      'Music components are missing or unavailable. Reinstall the latest full version of the application.';
+
+  @override
+  String get music_youtube_storage_error =>
+      'Couldn\'t save the YouTube connection. Check that your user folder is writable and try again.';
+
+  @override
+  String get music_youtube_choose_video =>
+      'Leave only the video you want to check open in the YouTube window, close other video tabs, then check again.';
+
+  @override
+  String get music_youtube_video_unavailable =>
+      'YouTube won\'t let the player access this video. Choose another public video in the opened window and check again.';
+
+  @override
+  String get music_youtube_video_too_long =>
+      'This video exceeds your track duration limit or is a live stream. Choose a shorter video or increase the duration limit below, then check again.';
+
+  @override
+  String music_youtube_checked_video(String url) {
+    return 'Checked video: $url';
+  }
+
+  @override
+  String get music_youtube_error_details => 'Error details';
+
+  @override
+  String get music_youtube_check_error =>
+      'Couldn\'t prepare the audio. Open Error details to find the cause before trying again.';
 
   @override
   String get music_control_connected => 'Connected to the OBS overlay';
@@ -164,9 +270,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overlay_settings_title => 'Overlay settings';
 
   @override
-  String get overlay_settings_sections => 'Sections';
-
-  @override
   String get overlay_settings_player => 'Player';
 
   @override
@@ -182,13 +285,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_settings_volume => 'Music volume';
-
-  @override
-  String get music_settings_tts_volume => 'Music volume during TTS';
-
-  @override
-  String get music_settings_tts_volume_hint =>
-      'Percentage of the music volume above. 0% mutes music during TTS; 100% keeps it unchanged.';
 
   @override
   String get music_settings_limits => 'Queue and cache';
@@ -319,152 +415,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overlay_settings_load_error => 'Could not load Twitch rewards';
 
   @override
-  String get tts_description =>
-      'Read viewers’ messages aloud for Channel Points.';
+  String get settings_on => 'On';
 
   @override
-  String get tts_enabled => 'TTS processing';
-
-  @override
-  String get tts_on => 'On';
-
-  @override
-  String get tts_off => 'Off';
-
-  @override
-  String get tts_base_url => 'Service URL';
-
-  @override
-  String get tts_url_hint =>
-      'Include the API version, for example https://api.teamplay.com.ua/tts/v1';
-
-  @override
-  String get tts_apply => 'Apply';
-
-  @override
-  String get tts_invalid_url =>
-      'Enter a valid HTTP(S) URL without a query or fragment.';
-
-  @override
-  String get tts_mood => 'Mood';
-
-  @override
-  String get tts_volume => 'Speech volume';
-
-  @override
-  String get tts_volume_hint =>
-      'Applies to speech only. The notification sound keeps its volume.';
-
-  @override
-  String get tts_neutral => 'Neutral';
-
-  @override
-  String get tts_calm => 'Calm';
-
-  @override
-  String get tts_lively => 'Lively';
-
-  @override
-  String get tts_service => 'Last service status';
-
-  @override
-  String get tts_available => 'Available';
-
-  @override
-  String get tts_unavailable => 'Unavailable';
-
-  @override
-  String get tts_unknown => 'Not checked yet';
-
-  @override
-  String get tts_check => 'Check now';
-
-  @override
-  String tts_agents(int healthy, int connected) {
-    return '$healthy healthy / $connected connected agents';
-  }
-
-  @override
-  String tts_last_check(String time) {
-    return 'Checked at $time · updates every minute';
-  }
-
-  @override
-  String get tts_reward_description =>
-      'Choose a text-input reward. It pauses automatically when TTS is unavailable.';
-
-  @override
-  String get tts_reward_empty =>
-      'Create a TTS reward, or choose one managed by this app.';
-
-  @override
-  String get tts_music_conflict => 'Used for music requests';
-
-  @override
-  String get tts_reward_conflict => 'Used for TTS';
-
-  @override
-  String get tts_announcement => 'Notification sound → 1 second pause → speech';
-
-  @override
-  String get tts_disabled => 'TTS processing is off';
-
-  @override
-  String get tts_no_reward => 'Choose a Twitch reward';
-
-  @override
-  String get tts_twitch_unavailable => 'Twitch event connection is unavailable';
-
-  @override
-  String get tts_audio_unavailable => 'OBS audio is unavailable';
-
-  @override
-  String get tts_queue_full => 'TTS queue is full';
-
-  @override
-  String get tts_reward_unavailable =>
-      'Reward is paused, disabled or incompatible';
-
-  @override
-  String get tts_no_agents => 'No healthy agents available';
-
-  @override
-  String get tts_timeout => 'Speech request timed out';
-
-  @override
-  String get tts_invalid_text => 'Enter between 1 and 1024 characters';
-
-  @override
-  String get tts_failed => 'Could not read the text aloud';
-
-  @override
-  String get tts_canceled => 'Speech canceled';
-
-  @override
-  String get tts_agents_unknown => 'Agent count is unknown';
-
-  @override
-  String get tts_settlement_failed =>
-      'Could not update the request on Twitch. A moderator needs to resolve it.';
-
-  @override
-  String get tts_operation_failed =>
-      'Could not complete the operation. Please try again.';
-
-  @override
-  String get tts_test => 'Test through OBS';
-
-  @override
-  String get tts_test_text => 'Text to read aloud';
-
-  @override
-  String get tts_test_default => 'Hello! This is a text-to-speech test.';
-
-  @override
-  String get tts_stop => 'Stop';
-
-  @override
-  String tts_working(String name) {
-    return 'Processing: $name';
-  }
+  String get settings_off => 'Off';
 }

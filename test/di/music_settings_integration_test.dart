@@ -9,8 +9,6 @@ import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
-import 'package:obssource/tts/tts_controller.dart';
-import 'package:obssource/tts/tts_player.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -102,16 +100,8 @@ void main() {
       final volume = commands.singleWhere((item) => item['cmd'] == 'volume');
       expect(volume['volume'], 0.25);
 
-      final ttsPlayer =
-          locator.provide<TtsController>().player as ObsTtsPlayback;
-      await ttsPlayer.duckMusic!(true);
-      expect(commands.last['volume'], 0.0625);
-      await settings.saveMusic(settings.music.copyWith(ttsVolumePercent: 40));
-      await _waitUntil(() => commands.last['volume'] == 0.1);
       await settings.saveMusic(settings.music.copyWith(volumePercent: 50));
-      await _waitUntil(() => commands.last['volume'] == 0.2);
-      await ttsPlayer.duckMusic!(false);
-      expect(commands.last['volume'], 0.5);
+      await _waitUntil(() => commands.last['volume'] == 0.5);
 
       final server = locator.musicControlServer!;
       expect(server.status, MusicControlServerStatus.stopped);

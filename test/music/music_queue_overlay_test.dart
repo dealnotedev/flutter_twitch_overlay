@@ -11,6 +11,39 @@ void main() {
   const collapseDelay = Duration(seconds: 1);
   const animationDuration = Duration(milliseconds: 200);
 
+  testWidgets(
+    'YouTube verification shows a complete localized recovery message',
+    (tester) async {
+      final requests = _FakeMusicRequests(
+        const MusicQueueSnapshot(
+          revision: 1,
+          nowPlaying: null,
+          queue: [],
+          lastError: MusicQueueError(
+            requester: 'Viewer',
+            type: MusicQueueErrorType.youtubeAccessRequired,
+            details: 'ERROR: [youtube] Sign in to confirm you are not a bot',
+          ),
+        ),
+      );
+      addTearDown(requests.dispose);
+      await tester.pumpWidget(
+        _TestSurface(
+          requests: requests,
+          collapseDelay: collapseDelay,
+          animationDuration: animationDuration,
+        ),
+      );
+      final message = find.text(
+        'YouTube потребує перевірки. Налаштування музики → Підключити YouTube.',
+      );
+      expect(message, findsOneWidget);
+      expect(tester.widget<Text>(message).maxLines, isNull);
+      expect(find.textContaining('ERROR:'), findsNothing);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   testWidgets('updates delay and disables collapse without recreating player', (
     tester,
   ) async {

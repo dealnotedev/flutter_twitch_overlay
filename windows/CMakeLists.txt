@@ -102,16 +102,22 @@ install(CODE "
 install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
   DESTINATION "${INSTALL_BUNDLE_DATA_DIR}" COMPONENT Runtime)
 
-# Keep the downloader toolchain beside the application. The source directory
-# is populated by tools/download_tools.ps1 and intentionally contains only the
-# executables needed at runtime.
+# Keep only the downloader runtime beside the application, never build tools.
+# Populate these files with tools/download_tools.ps1 (or build_ffmpeg.ps1 when
+# yt-dlp and Deno are already present). ffprobe is not needed for music requests.
 set(MUSIC_TOOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../tools")
-if(EXISTS "${MUSIC_TOOLS_DIR}")
-  install(DIRECTORY "${MUSIC_TOOLS_DIR}/"
-    DESTINATION "${CMAKE_INSTALL_PREFIX}/tools"
-    COMPONENT Runtime
-    FILES_MATCHING PATTERN "*.exe")
-endif()
+install(FILES
+        "${MUSIC_TOOLS_DIR}/yt-dlp.exe"
+        "${MUSIC_TOOLS_DIR}/deno.exe"
+        "${MUSIC_TOOLS_DIR}/ffmpeg.exe"
+        "${MUSIC_TOOLS_DIR}/ffmpeg-build.txt"
+        "${MUSIC_TOOLS_DIR}/FFmpeg-LICENSE.txt"
+        "${MUSIC_TOOLS_DIR}/LAME-LICENSE.txt"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/tools"
+        COMPONENT Runtime)
+# An incremental install must also retire the old 98 MiB ffprobe binary.
+install(CODE "file(REMOVE \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/tools/ffprobe.exe\")"
+        COMPONENT Runtime)
 
 # Install the AOT library on non-Debug builds only.
 install(FILES "${AOT_LIBRARY}" DESTINATION "${INSTALL_BUNDLE_DATA_DIR}"

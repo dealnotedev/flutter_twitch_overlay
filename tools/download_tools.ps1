@@ -85,37 +85,9 @@ try {
     -Destination (Join-Path $toolDirectory 'deno.exe') `
     -Force
 
-  $ffmpegArchive = Join-Path $temporaryDirectory 'ffmpeg.zip'
-  $ffmpegChecksum = Join-Path $temporaryDirectory 'ffmpeg.zip.sha256'
-  Download-File `
-    -Uri 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip' `
-    -Destination $ffmpegArchive
-  Download-File `
-    -Uri 'https://www.gyan.dev/ffmpeg/builds/ffmpeg-release-essentials.zip.sha256' `
-    -Destination $ffmpegChecksum
-  Assert-Sha256 `
-    -Path $ffmpegArchive `
-    -Expected (Read-Sha256 -Path $ffmpegChecksum)
-  $ffmpegExtractDirectory = Join-Path $temporaryDirectory 'ffmpeg'
-  Expand-Archive -LiteralPath $ffmpegArchive -DestinationPath $ffmpegExtractDirectory
+  & (Join-Path $toolDirectory 'build_ffmpeg.ps1')
 
-  foreach ($executable in 'ffmpeg.exe', 'ffprobe.exe') {
-    $source = Get-ChildItem `
-      -LiteralPath $ffmpegExtractDirectory `
-      -Filter $executable `
-      -File `
-      -Recurse |
-      Select-Object -First 1
-    if ($null -eq $source) {
-      throw "$executable was not found in the FFmpeg archive"
-    }
-    Copy-Item `
-      -LiteralPath $source.FullName `
-      -Destination (Join-Path $toolDirectory $executable) `
-      -Force
-  }
-
-  Write-Host 'Tools downloaded and checksums verified.'
+  Write-Host 'Tools downloaded and verified; minimal FFmpeg built from source.'
 }
 finally {
   if (Test-Path -LiteralPath $temporaryDirectory) {

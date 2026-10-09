@@ -8,12 +8,15 @@ import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/youtube_browser_session.dart';
+import 'package:obssource/music/youtube_connection_controller.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 
 class MusicSettingsControls extends StatefulWidget {
   final Settings settings;
   final MusicControlServerController? server;
   final MusicRewardController? rewardController;
+  final YoutubeConnectionController? youtubeConnection;
   final Widget presentationSettings;
   final Widget rewardSettings;
 
@@ -24,6 +27,7 @@ class MusicSettingsControls extends StatefulWidget {
     required this.rewardSettings,
     this.server,
     this.rewardController,
+    this.youtubeConnection,
   });
 
   @override
@@ -31,13 +35,13 @@ class MusicSettingsControls extends StatefulWidget {
 }
 
 class _MusicSettingsControlsState extends State<MusicSettingsControls> {
+  bool _showYoutubeDetails = false;
   late final TextEditingController _port;
   late final StreamSubscription<MusicSettings> _subscription;
   bool _invalidPort = false;
   bool _saving = false;
   bool _saveError = false;
   int? _volumeDraft;
-  int? _ttsVolumeDraft;
   int? _cacheDraft;
   int? _queueDraft;
   int? _durationDraft;
@@ -50,6 +54,7 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
     _subscription = widget.settings.musicChanges.listen((_) => _changed());
     widget.server?.addListener(_changed);
     widget.rewardController?.addListener(_changed);
+    widget.youtubeConnection?.addListener(_changed);
   }
 
   void _changed() {
@@ -61,6 +66,7 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
     unawaited(_subscription.cancel());
     widget.server?.removeListener(_changed);
     widget.rewardController?.removeListener(_changed);
+    widget.youtubeConnection?.removeListener(_changed);
     _port.dispose();
     super.dispose();
   }
@@ -80,7 +86,6 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
         setState(() {
           _saving = false;
           _volumeDraft = null;
-          _ttsVolumeDraft = null;
           _cacheDraft = null;
           _queueDraft = null;
           _durationDraft = null;
@@ -137,6 +142,10 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
           ),
         ],
         const Gap(18),
+        if (widget.youtubeConnection != null) ...[
+          _youtubePanel(),
+          const Gap(16),
+        ],
         _panel([
           NeonSettingsSlider(
             sliderKey: const ValueKey('music_volume'),
@@ -157,26 +166,6 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
                       widget.settings.music.copyWith(volumePercent: percent),
                     ),
           ),
-          NeonSettingsSlider(
-            sliderKey: const ValueKey('music_tts_volume'),
-            label: l.music_settings_tts_volume,
-            value: _ttsVolumeDraft ?? value.ttsVolumePercent,
-            min: 0,
-            max: 100,
-            step: 5,
-            formatValue: (value) => '$value%',
-            onChanged:
-                _saving
-                    ? null
-                    : (percent) => setState(() => _ttsVolumeDraft = percent),
-            onChangeEnd:
-                _saving
-                    ? null
-                    : (percent) => _save(
-                      widget.settings.music.copyWith(ttsVolumePercent: percent),
-                    ),
-          ),
-          Text(l.music_settings_tts_volume_hint, style: _secondary),
         ]),
         const Gap(16),
         widget.presentationSettings,
@@ -305,17 +294,127 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
     );
   }
 
-  Widget _toggleButton(
-    String key,
-    bool value,
-    VoidCallback save,
-  ) => NeonSettingsButton(
-    key: ValueKey(key),
-    label: value ? context.localizations.tts_on : context.localizations.tts_off,
-    icon: value ? Icons.check_circle_outline : Icons.power_settings_new,
-    selected: value,
-    onPressed: _saving ? null : save,
-  );
+  Widget _toggleButton(String key, bool value, VoidCallback save) =>
+      NeonSettingsButton(
+        key: ValueKey(key),
+        label:
+            value
+                ? context.localizations.settings_on
+                : context.localizations.settings_off,
+        icon: value ? Icons.check_circle_outline : Icons.power_settings_new,
+        selected: value,
+        onPressed: _saving ? null : save,
+      );
+
+  Widget _youtubePanel() {
+    final connection = widget.youtubeConnection!;
+    final l = context.localizations;
+    final waiting =
+        connection.status == YoutubeConnectionStatus.awaitingVerification;
+    return _panel([
+      Text(l.music_youtube_title, style: _title),
+      const Gap(6),
+      Text(l.music_youtube_description, style: _secondary),
+      const Gap(10),
+      Text(
+        switch (connection.status) {
+          YoutubeConnectionStatus.disconnected => l.music_youtube_disconnected,
+          YoutubeConnectionStatus.opening => l.music_youtube_opening,
+          YoutubeConnectionStatus.awaitingVerification =>
+            l.music_youtube_instructions,
+          YoutubeConnectionStatus.checking => l.music_youtube_checking,
+          YoutubeConnectionStatus.connected => l.music_youtube_connected,
+        },
+        key: const ValueKey('music_youtube_status'),
+        style: _secondary,
+      ),
+      if (connection.issue case final issue?) ...[
+        const Gap(8),
+        Text(
+          switch (issue) {
+            YoutubeConnectionIssue.browserUnavailable =>
+              l.music_youtube_no_browser,
+            YoutubeConnectionIssue.browserClosed =>
+              l.music_youtube_browser_closed,
+            YoutubeConnectionIssue.verificationRequired =>
+              l.music_youtube_verification_required,
+            YoutubeConnectionIssue.downloadBlocked =>
+              l.music_youtube_download_blocked,
+            YoutubeConnectionIssue.chooseVideo => l.music_youtube_choose_video,
+            YoutubeConnectionIssue.videoUnavailable =>
+              l.music_youtube_video_unavailable,
+            YoutubeConnectionIssue.videoTooLongOrLive =>
+              l.music_youtube_video_too_long,
+            YoutubeConnectionIssue.networkUnavailable =>
+              l.music_youtube_network_error,
+            YoutubeConnectionIssue.toolsUnavailable =>
+              l.music_youtube_tools_error,
+            YoutubeConnectionIssue.storageUnavailable =>
+              l.music_youtube_storage_error,
+            YoutubeConnectionIssue.checkFailed => l.music_youtube_check_error,
+          },
+          key: const ValueKey('music_youtube_issue'),
+          style: _errorStyle,
+        ),
+      ],
+      if (connection.checkedVideoUrl case final url?) ...[
+        const Gap(8),
+        SelectableText(
+          l.music_youtube_checked_video(url.toString()),
+          style: _secondary,
+        ),
+      ],
+      if (connection.diagnostic case final diagnostic?) ...[
+        const Gap(8),
+        NeonSettingsButton(
+          key: const ValueKey('music_youtube_diagnostic'),
+          label: l.music_youtube_error_details,
+          icon: _showYoutubeDetails ? Icons.expand_less : Icons.expand_more,
+          selected: _showYoutubeDetails,
+          onPressed:
+              () => setState(() => _showYoutubeDetails = !_showYoutubeDetails),
+        ),
+        if (_showYoutubeDetails) ...[
+          const Gap(8),
+          SelectableText(diagnostic, style: _secondary),
+        ],
+      ],
+      const Gap(12),
+      Wrap(
+        spacing: 10,
+        runSpacing: 8,
+        children: [
+          NeonSettingsButton(
+            key: const ValueKey('music_youtube_connect'),
+            label: waiting ? l.music_youtube_reopen : l.music_youtube_connect,
+            icon: Icons.open_in_new_rounded,
+            onPressed:
+                connection.busy ? null : () => unawaited(connection.connect()),
+          ),
+          if (waiting)
+            NeonSettingsButton(
+              key: const ValueKey('music_youtube_verify'),
+              label: l.music_youtube_verify,
+              icon: Icons.check_circle_outline,
+              onPressed: () => unawaited(connection.verify()),
+            ),
+          if (connection.status == YoutubeConnectionStatus.connected ||
+              connection.status == YoutubeConnectionStatus.checking ||
+              waiting)
+            NeonSettingsButton(
+              key: const ValueKey('music_youtube_disconnect'),
+              label:
+                  waiting ||
+                          connection.status == YoutubeConnectionStatus.checking
+                      ? l.music_youtube_cancel
+                      : l.music_youtube_disconnect,
+              icon: Icons.close_rounded,
+              onPressed: () => unawaited(connection.disconnect()),
+            ),
+        ],
+      ),
+    ]);
+  }
 
   Widget _portInput() {
     Future<void> submit() async {

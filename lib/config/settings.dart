@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
-import 'package:obssource/tts/tts_settings.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -29,14 +28,6 @@ class Settings {
                 : const MusicSettings();
       } on FormatException {
         music = const MusicSettings();
-      }
-    }
-    final ttsJson = prefs.getString('tts_settings');
-    if (ttsJson != null) {
-      try {
-        tts = TtsSettings.fromJson(jsonDecode(ttsJson) as Map<String, dynamic>);
-      } on FormatException {
-        tts = const TtsSettings();
       }
     }
     playerCollapseSeconds = (prefs.getInt(_kPlayerCollapseSeconds) ?? 5).clamp(
@@ -101,9 +92,6 @@ class Settings {
   Stream<TwitchCreds?> get twitchAuthChanges => _twitchAuthSubject.stream;
 
   Future<void> saveMusicRewardId(String? rewardId) async {
-    if (rewardId != null && rewardId.trim() == tts.rewardId) {
-      throw StateError('This reward is already used for TTS');
-    }
     final prefs = await SharedPreferences.getInstance();
     final normalized = rewardId?.trim();
 
@@ -122,29 +110,6 @@ class Settings {
 
   TwitchCreds? twitchAuth;
   String? musicRewardId;
-
-  TtsSettings tts = const TtsSettings();
-  final _ttsSubject = StreamController<TtsSettings>.broadcast();
-  Stream<TtsSettings> get ttsChanges => _ttsSubject.stream;
-
-  Future<void> saveTts(TtsSettings value) async {
-    if (value.rewardId != null && value.rewardId == musicRewardId) {
-      throw StateError('This reward is already used for music');
-    }
-    final normalized = value.copyWith(
-      baseUrl: TtsSettings.normalizeBaseUrl(value.baseUrl),
-      volumePercent: value.volumePercent.clamp(0, TtsSettings.maxVolumePercent),
-    );
-    final prefs = await SharedPreferences.getInstance();
-    if (!await prefs.setString(
-      'tts_settings',
-      jsonEncode(normalized.toJson()),
-    )) {
-      throw StateError('Could not save TTS settings');
-    }
-    tts = normalized;
-    _ttsSubject.add(tts);
-  }
 
   final _twitchAuthSubject = StreamController<TwitchCreds?>.broadcast();
   final _musicRewardIdSubject = StreamController<String?>.broadcast();

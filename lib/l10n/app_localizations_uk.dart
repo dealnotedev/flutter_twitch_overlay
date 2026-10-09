@@ -138,12 +138,118 @@ class AppLocalizationsUk extends AppLocalizations {
   }
 
   @override
-  String music_error_operation_failed(String requester, String details) {
-    return '$requester: $details';
+  String music_error_operation_failed(String requester) {
+    return '$requester: не вдалося підготувати трек. Спробуйте пізніше.';
   }
 
   @override
   String get music_control_title => 'Керування музикою';
+
+  @override
+  String get music_error_youtube_access =>
+      'YouTube потребує перевірки. Налаштування музики → Підключити YouTube.';
+
+  @override
+  String get music_error_youtube_download_blocked =>
+      'YouTube заблокував завантаження аудіо (403). Налаштування музики → Підключити YouTube.';
+
+  @override
+  String music_error_youtube_unavailable(String requester) {
+    return '$requester: це відео недоступне. Оберіть інше.';
+  }
+
+  @override
+  String get music_youtube_title => 'Підключення YouTube';
+
+  @override
+  String get music_youtube_description =>
+      'Якщо YouTube просить перевірку, підключіть його тут. Сесія YouTube зберігається лише на цьому комп’ютері.';
+
+  @override
+  String get music_youtube_disconnected =>
+      'Загальнодоступні треки працюють без входу, доки YouTube не попросить перевірку.';
+
+  @override
+  String get music_youtube_opening => 'Підготовка підключення YouTube…';
+
+  @override
+  String get music_youtube_instructions =>
+      '1. Відкрийте й запустіть потрібне відео у вікні браузера, що відкрилося. Якщо відкрилася головна сторінка YouTube, оберіть коротке загальнодоступне відео.\n2. Пройдіть перевірку, якщо вона з’явиться. Спочатку можна перевірити підключення без входу в обліковий запис.\n3. Залиште вкладку з відео відкритою, поверніться сюди й натисніть «Перевірити підключення».';
+
+  @override
+  String get music_youtube_checking =>
+      'Перевірка доступу до YouTube та завантаження аудіо…';
+
+  @override
+  String get music_youtube_connected =>
+      'YouTube підключено. Можна замовити трек повторно.';
+
+  @override
+  String get music_youtube_connect => 'Підключити YouTube';
+
+  @override
+  String get music_youtube_reopen => 'Відкрити YouTube знову';
+
+  @override
+  String get music_youtube_verify => 'Перевірити підключення';
+
+  @override
+  String get music_youtube_cancel => 'Скасувати';
+
+  @override
+  String get music_youtube_disconnect => 'Відключити';
+
+  @override
+  String get music_youtube_no_browser =>
+      'Встановіть Microsoft Edge або Google Chrome, потім знову натисніть «Підключити YouTube».';
+
+  @override
+  String get music_youtube_browser_closed =>
+      'Вікно YouTube закрито. Відкрийте YouTube знову й залиште вікно відкритим до завершення перевірки.';
+
+  @override
+  String get music_youtube_verification_required =>
+      'YouTube ще потребує перевірки. Пройдіть її у відкритому вікні браузера й перевірте підключення знову.';
+
+  @override
+  String get music_youtube_download_blocked =>
+      'YouTube заблокував завантаження аудіо (403). Якщо відео грає в браузері, спробуйте увійти в Google у цьому ж вікні, потім перевірте підключення знову. Вхід може допомогти, але не гарантує доступу.';
+
+  @override
+  String get music_youtube_network_error =>
+      'Не вдалося з’єднатися з YouTube. Перевірте інтернет і спробуйте ще раз.';
+
+  @override
+  String get music_youtube_tools_error =>
+      'Компоненти музики відсутні або недоступні. Перевстановіть найновішу повну версію застосунку.';
+
+  @override
+  String get music_youtube_storage_error =>
+      'Не вдалося зберегти підключення YouTube. Перевірте доступ до запису у вашу папку користувача й спробуйте ще раз.';
+
+  @override
+  String get music_youtube_choose_video =>
+      'Залиште у вікні YouTube лише вкладку з потрібним відео, закрийте інші вкладки з відео й перевірте підключення знову.';
+
+  @override
+  String get music_youtube_video_unavailable =>
+      'YouTube не надає плеєру доступ до цього відео. Оберіть інше загальнодоступне відео у відкритому вікні й перевірте підключення знову.';
+
+  @override
+  String get music_youtube_video_too_long =>
+      'Відео перевищує ліміт тривалості треку або є прямим ефіром. Оберіть коротше відео або збільште ліміт тривалості нижче й перевірте підключення знову.';
+
+  @override
+  String music_youtube_checked_video(String url) {
+    return 'Перевірене відео: $url';
+  }
+
+  @override
+  String get music_youtube_error_details => 'Деталі помилки';
+
+  @override
+  String get music_youtube_check_error =>
+      'Не вдалося підготувати аудіо. Відкрийте «Деталі помилки», щоб з’ясувати причину перед повторною спробою.';
 
   @override
   String get music_control_connected => 'Підключено до оверлею OBS';
@@ -170,9 +276,6 @@ class AppLocalizationsUk extends AppLocalizations {
   String get overlay_settings_title => 'Налаштування оверлею';
 
   @override
-  String get overlay_settings_sections => 'Розділи';
-
-  @override
   String get overlay_settings_player => 'Плеєр';
 
   @override
@@ -188,13 +291,6 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get music_settings_volume => 'Гучність музики';
-
-  @override
-  String get music_settings_tts_volume => 'Гучність музики під час TTS';
-
-  @override
-  String get music_settings_tts_volume_hint =>
-      'Відсоток від основної гучності музики. 0% вимикає музику під час TTS; 100% залишає її без змін.';
 
   @override
   String get music_settings_limits => 'Черга та кеш';
@@ -329,153 +425,8 @@ class AppLocalizationsUk extends AppLocalizations {
       'Не вдалося завантажити винагороди Twitch';
 
   @override
-  String get tts_description =>
-      'Озвучення повідомлень глядачів за бали каналу.';
+  String get settings_on => 'Увімкнено';
 
   @override
-  String get tts_enabled => 'Обробка TTS';
-
-  @override
-  String get tts_on => 'Увімкнено';
-
-  @override
-  String get tts_off => 'Вимкнено';
-
-  @override
-  String get tts_base_url => 'Адреса сервісу';
-
-  @override
-  String get tts_url_hint =>
-      'Разом із версією API, наприклад https://api.teamplay.com.ua/tts/v1';
-
-  @override
-  String get tts_apply => 'Застосувати';
-
-  @override
-  String get tts_invalid_url =>
-      'Введіть HTTP(S) адресу без параметрів запиту та фрагмента.';
-
-  @override
-  String get tts_mood => 'Настрій';
-
-  @override
-  String get tts_volume => 'Гучність озвучення';
-
-  @override
-  String get tts_volume_hint =>
-      'Лише озвучення. Гучність звуку сповіщення не змінюється.';
-
-  @override
-  String get tts_neutral => 'Звичайний';
-
-  @override
-  String get tts_calm => 'Спокійний';
-
-  @override
-  String get tts_lively => 'Енергійний';
-
-  @override
-  String get tts_service => 'Останній стан сервісу';
-
-  @override
-  String get tts_available => 'Доступний';
-
-  @override
-  String get tts_unavailable => 'Недоступний';
-
-  @override
-  String get tts_unknown => 'Ще не перевірено';
-
-  @override
-  String get tts_check => 'Перевірити';
-
-  @override
-  String tts_agents(int healthy, int connected) {
-    return 'Агенти: $healthy готові / $connected підключені';
-  }
-
-  @override
-  String tts_last_check(String time) {
-    return 'Перевірено о $time · оновлення щохвилини';
-  }
-
-  @override
-  String get tts_reward_description =>
-      'Оберіть винагороду з введенням тексту. Вона призупиняється, коли TTS недоступний.';
-
-  @override
-  String get tts_reward_empty =>
-      'Створіть винагороду TTS або оберіть доступну цьому застосунку.';
-
-  @override
-  String get tts_music_conflict => 'Використовується для замовлення музики';
-
-  @override
-  String get tts_reward_conflict => 'Використовується для TTS';
-
-  @override
-  String get tts_announcement =>
-      'Звук сповіщення → пауза 1 секунда → озвучення';
-
-  @override
-  String get tts_disabled => 'Обробку TTS вимкнено';
-
-  @override
-  String get tts_no_reward => 'Оберіть винагороду Twitch';
-
-  @override
-  String get tts_twitch_unavailable => 'Немає з’єднання з подіями Twitch';
-
-  @override
-  String get tts_audio_unavailable => 'Аудіо OBS недоступне';
-
-  @override
-  String get tts_queue_full => 'Черга TTS заповнена';
-
-  @override
-  String get tts_reward_unavailable =>
-      'Винагорода призупинена, вимкнена або несумісна';
-
-  @override
-  String get tts_no_agents => 'Немає готових агентів';
-
-  @override
-  String get tts_timeout => 'Час очікування озвучення вичерпано';
-
-  @override
-  String get tts_invalid_text => 'Введіть від 1 до 1024 символів';
-
-  @override
-  String get tts_failed => 'Не вдалося озвучити текст';
-
-  @override
-  String get tts_canceled => 'Озвучення скасовано';
-
-  @override
-  String get tts_agents_unknown => 'Кількість агентів невідома';
-
-  @override
-  String get tts_settlement_failed =>
-      'Не вдалося оновити заявку у Twitch. Потрібне втручання модератора.';
-
-  @override
-  String get tts_operation_failed =>
-      'Не вдалося виконати дію. Спробуйте ще раз.';
-
-  @override
-  String get tts_test => 'Перевірити через OBS';
-
-  @override
-  String get tts_test_text => 'Текст для озвучення';
-
-  @override
-  String get tts_test_default => 'Привіт! Це перевірка озвучення.';
-
-  @override
-  String get tts_stop => 'Зупинити';
-
-  @override
-  String tts_working(String name) {
-    return 'Обробляється: $name';
-  }
+  String get settings_off => 'Вимкнено';
 }

@@ -315,6 +315,29 @@ void main() {
     );
   });
 
+  test(
+    'refunds a YouTube challenge with a localizable error and no diagnostics',
+    () async {
+      final subject = createManager();
+      fetcher.inspectError = const MusicTrackException(
+        "ERROR: [youtube] video: Sign in to confirm you're not a bot.",
+        errorType: MusicQueueErrorType.youtubeAccessRequired,
+      );
+      events.add(_redemption(id: 'youtube-blocked'));
+      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      expect(
+        subject.current.lastError?.type,
+        MusicQueueErrorType.youtubeAccessRequired,
+      );
+      expect(subject.current.lastError?.details, isNull);
+      expect(subject.current.queue, isEmpty);
+      expect(
+        redemptions.settlements.single.status,
+        TwitchRedemptionStatus.canceled,
+      );
+    },
+  );
+
   test('fulfills a redemption after normal playback completion', () async {
     final subject = createManager();
     events.add(_redemption(id: 'one'));

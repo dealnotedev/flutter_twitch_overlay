@@ -12,7 +12,6 @@ class TwitchRewardCard extends StatefulWidget {
   final bool selected;
   final VoidCallback? onPressed;
   final IconData icon;
-  final String? blockedReason;
 
   const TwitchRewardCard({
     super.key,
@@ -20,7 +19,6 @@ class TwitchRewardCard extends StatefulWidget {
     required this.selected,
     required this.onPressed,
     this.icon = Icons.music_note_rounded,
-    this.blockedReason,
   });
 
   @override
@@ -124,14 +122,12 @@ class TwitchRewardCardState extends State<TwitchRewardCard> {
                               ),
                             ),
                           ),
-                        if (!reward.isMusicRequestCompatible ||
-                            widget.blockedReason != null)
+                        if (!reward.isMusicRequestCompatible)
                           Positioned(
                             top: 7,
                             left: 7,
                             child: Tooltip(
                               message:
-                                  widget.blockedReason ??
                                   context
                                       .localizations
                                       .overlay_settings_reward_description,

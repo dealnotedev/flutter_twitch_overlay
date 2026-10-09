@@ -52,15 +52,19 @@ Create or select an app-managed Twitch channel-points reward in
 `youtu.be` URL. The Flutter overlay validates the request, resolves metadata,
 downloads MP3 audio with `yt-dlp`, and plays the FIFO queue through `ObsAudio`.
 
-Download the bundled Windows toolchain once from the repository root:
+Prepare the bundled Windows toolchain once from the repository root:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\tools\download_tools.ps1
 ```
 
-The script verifies SHA-256 checksums and installs `yt-dlp`, `ffmpeg`,
-`ffprobe`, and Deno into the repository `tools` directory. For an installed OBS
-plugin, copy the four executables to this plugin-local directory:
+The script downloads and verifies `yt-dlp` and Deno, then builds a compact
+audio-focused FFmpeg from checksum-pinned sources. The private build environment
+stays in `build/ffmpeg-minimal`; see [tools/README.md](tools/README.md) for details.
+`ffprobe` is unnecessary: yt-dlp uses FFmpeg itself to inspect audio.
+For an installed OBS plugin, copy `yt-dlp.exe`, `deno.exe`, `ffmpeg.exe`,
+`ffmpeg-build.txt`, `FFmpeg-LICENSE.txt` and `LAME-LICENSE.txt` to this directory
+(remove an old `ffprobe.exe` there when upgrading):
 
 ```text
 <OBS root>\obs-plugins\64bit\flutter_obs_tools\
@@ -79,7 +83,6 @@ with the overlay preferences and apply without restarting OBS:
 | --- | --- |
 | Accept music requests | On |
 | Music volume | 70% (0–100%) |
-| Music volume during TTS | 25% of the configured music volume |
 | Maximum number of tracks, including the playing track | 10 |
 | Maximum duration of a new request | 600 seconds |
 | Cache size | 2048 MB; 0 means unlimited |
@@ -102,8 +105,7 @@ removed least-recently-used when the cache exceeds its configured limit. Tracks
 used in the current session are protected, so the limit can temporarily be
 exceeded. Incomplete downloads are kept in an isolated staging
 directory and never become cache hits.
-Music volume changes apply to the active track immediately, including while
-TTS is playing.
+Music volume changes apply to the active track immediately.
 
 Choose the music Channel Points reward from the overlay settings next to the
 Twitch connection indicator. The reward must be managed by this application,
@@ -119,58 +121,32 @@ or `error`, plus the numeric `id` and optional `session_id`. The player waits fo
 the native load and start confirmations, surfaces decoder failures, and advances
 the queue on `ended`. A duration-based watchdog remains for older native hosts.
 
-## TTS Channel Points
-
-Open **Overlay settings → TTS** to enable processing, enter the service URL
-(default https://api.teamplay.com.ua/tts/v1), select a mood, and create or select
-an app-managed reward. Voice and language use the server defaults. Rewards must
-require text and retain redemptions in Twitch's queue, and cannot also be
-assigned to music. New rewards cost 1000 points; edit their name and price on
-Twitch and refresh the list.
-
-The base URL includes the full API prefix and version. The overlay appends
-/health on startup and once per minute. Settings show the
-last result, check time, and connected/healthy agent counts. The reward is
-automatically paused when the service, Twitch subscription, local audio, or
-queue is unavailable. The overlay controls the selected reward's paused state,
-including after a restart. To turn it off manually, disable TTS processing or
-disable the reward on Twitch; disabled rewards are never automatically enabled.
-
-Requests run in order, up to ten including the active request, with a
-1024 Unicode code-point limit (inclusive). The client uses synchronous POST /audio/speech
-relative to the base URL,
-with a 100-second HTTP deadline and a two-minute limit for queueing plus
-generation. Any timeout is terminal: cancel/refund the Twitch redemption,
-discard late audio, and never poll or resubmit the synthesis job. The server
-may finish its work independently.
-
-Before each speech file, assets/tts_notification.wav plays to completion,
-followed by one second of silence. The notification is a dedicated sound
-stored as 16-bit PCM WAV, 44.1 kHz stereo. Both files use the OBS audio host; music
-is temporarily reduced to the percentage chosen in Player settings (initially
-25% of its configured volume). Native audio completion events are required.
-The test button uses the same audio path without spending Channel Points.
-The speech volume slider (0–200%, initially 100%) is saved in TTS settings and
-applies immediately to current speech, including test playback. It does not
-change the notification sound's volume.
-
-Redemption IDs are kept only in memory for the current session to ignore duplicate
-events. Each request gets one Twitch fulfillment/refund attempt. Failed updates
-and requests interrupted by a crash are left for moderators to resolve on Twitch.
-There are no retries, persisted request records, or recovery of pending requests
-on startup or reconnection. Use one active overlay for a channel.
-Orderly shutdown pauses the reward. Abrupt termination or loss of internet
-cannot immediately pause it.
-
-Validation:
-
-    flutter test test/tts
-    dart run tools/check_tts.dart https://api.teamplay.com.ua/tts/v1
-
-The second command performs one real short synthesis, validates WAV and SHA-256,
-and removes the temporary audio; it does not modify Twitch rewards.
-
 ## Optional Windows music controller
+
+If a music request reports that YouTube needs verification, open **Overlay
+settings → Player → YouTube connection → Connect YouTube**. The app opens a
+separate Microsoft Edge or Google Chrome window. Play the requested video
+(or choose a short public video if the homepage opens), complete any verification
+requested by YouTube, then return to the
+settings and press **Check connection** while that window is still open.
+The check uses the video open in that browser, and verifies metadata and audio
+retrieval before reporting success. Try checking without signing in first. A
+public video playing in the browser does not guarantee that yt-dlp can retrieve
+its audio. If the check reports a media HTTP 403, try signing in to Google in
+that same dedicated window and check again. This can help; a 403 alone does not
+prove that signing in is required or will resolve every download restriction.
+The checked video URL and expandable error details appear in settings; these
+details are not broadcast on the overlay or sent to the music controller.
+You can then submit the track again; failed requests use the existing Twitch
+refund flow.
+
+The app uses its own browser profile and saves only the YouTube session locally
+under the user's `obssource/youtube-session` directory next to the music cache.
+It does not read the user's normal browser profile. No command-line setup,
+browser extension, or manual cookie export is needed. **Disconnect** removes
+the saved session and dedicated profile. If YouTube requests verification
+again, reconnect here. A network or YouTube restriction can still prevent
+access; the app reports failed checks without claiming a successful connection.
 
 The overlay owns the music queue, playback, and a loopback-only control server.
 The standalone controller in `apps/music_controller` is optional; closing it

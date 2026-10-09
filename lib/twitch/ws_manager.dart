@@ -274,14 +274,6 @@ class WebSocketManager {
           broadcasterId: broadcasterId,
         ),
       );
-      await _registerInternal(
-        api,
-        _Registration(
-          _RegistrationType.rewardUpdates,
-          sessionId: sessionId,
-          broadcasterId: broadcasterId,
-        ),
-      );
       if (_channel?.sessionId == sessionId &&
           _settings.twitchAuth?.broadcasterId == broadcasterId) {
         _setRewardsReady(true);
@@ -349,11 +341,9 @@ class WebSocketManager {
         );
         break;
       case _RegistrationType.rewards:
-      case _RegistrationType.rewardUpdates:
         await api.subscribeCustomRewards(
           broadcasterUserId: registration.broadcasterId,
           sessionId: registration.sessionId,
-          updates: registration.type == _RegistrationType.rewardUpdates,
         );
         break;
 
@@ -405,7 +395,6 @@ class _Channel {
 
 enum _RegistrationType {
   rewards,
-  rewardUpdates,
   follow,
   raid,
   chatMessages,

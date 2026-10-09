@@ -28,7 +28,8 @@ class MusicToolPaths {
     );
     final bundledFfmpegDirectory = _firstDirectoryContaining(
       toolDirectories,
-      const ['ffmpeg.exe', 'ffprobe.exe'],
+      // yt-dlp can inspect audio through ffmpeg when ffprobe is absent.
+      const ['ffmpeg.exe'],
       exists,
     );
     final bundledDeno = _firstExistingFile(toolDirectories, 'deno.exe', exists);
