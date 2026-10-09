@@ -76,6 +76,7 @@ void main() {
       await settings.saveAvatar(
         const AvatarSettings(
           resolution: 32,
+          pixelSize: 3.5,
           renderer: AvatarPixelRenderer.legacyCanvas,
         ),
       );
@@ -104,6 +105,7 @@ void main() {
       expect(alert.description, 'thanks for 22 months of T2 subscription!');
       expect(alert.avatar, isNotNull);
       expect(alert.avatarResolution, 32);
+      expect(alert.avatarPixelSize, 3.5);
       expect(alert.renderer, AvatarPixelRenderer.legacyCanvas);
       await settings.saveAvatar(const AvatarSettings());
       await tester.pump();
@@ -111,6 +113,7 @@ void main() {
         find.byType(UserAlertWidget),
       );
       expect(updated.avatarResolution, 48);
+      expect(updated.avatarPixelSize, 8);
       expect(updated.renderer, AvatarPixelRenderer.rawAtlas);
       await tester.runAsync(() async {
         await Future<void>.delayed(Duration.zero);
@@ -533,6 +536,14 @@ void main() {
     expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).resolution, 40);
     expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).pixelSize, 8);
 
+    await settings.saveAvatar(settings.avatar.copyWith(pixelSize: 2.5));
+    await tester.pump();
+    expect(
+      tester.widget<FollowWidget>(find.byType(FollowWidget)).avatarPixelSize,
+      2.5,
+    );
+    expect(tester.widget<RainyAvatar>(find.byType(RainyAvatar)).pixelSize, 2.5);
+
     await tester.pump(const Duration(seconds: 20));
     expect(find.byType(FollowWidget), findsNothing);
 
@@ -586,6 +597,7 @@ void main() {
         await settings.saveAvatar(
           const AvatarSettings(
             resolution: 40,
+            pixelSize: 3.5,
             renderer: AvatarPixelRenderer.legacyCanvas,
           ),
         );
@@ -593,6 +605,11 @@ void main() {
         final updated = tester.widget<RaidWidget>(find.byType(RaidWidget));
         expect(updated.renderer, AvatarPixelRenderer.legacyCanvas);
         expect(updated.avatarResolution, 40);
+        expect(updated.avatarPixelSize, 3.5);
+        expect(
+          tester.widget<RainyAvatar>(find.byType(RainyAvatar)).pixelSize,
+          3.5,
+        );
         expect(
           tester.widget<RainyAvatar>(find.byType(RainyAvatar)).renderer,
           AvatarPixelRenderer.legacyCanvas,

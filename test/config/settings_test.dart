@@ -18,6 +18,7 @@ void main() {
     final settings = Settings();
     await settings.init();
     expect(settings.avatar.resolution, 48);
+    expect(settings.avatar.pixelSize, 8);
     expect(settings.avatar.renderer, AvatarPixelRenderer.rawAtlas);
   });
 
@@ -45,7 +46,8 @@ void main() {
       (16, 16),
       (48, 48),
       (128, 128),
-      (256, 128),
+      (256, 256),
+      (512, 256),
     ]) {
       SharedPreferences.setMockInitialValues({
         'avatar_settings': jsonEncode({'resolution': resolution}),
@@ -75,6 +77,40 @@ void main() {
       expect(settings.avatar.toJson(), const AvatarSettings().toJson());
     }
   });
+
+  test(
+    'contour renderer and half-pixel sizes persist with bounded values',
+    () async {
+      for (final (pixelSize, expected) in [
+        (-1.0, 2.0),
+        (2.0, 2.0),
+        (2.5, 2.5),
+        (3.5, 3.5),
+        (3.7, 3.5),
+        (16.0, 16.0),
+        (50.0, 16.0),
+        (double.nan, 8.0),
+      ]) {
+        SharedPreferences.setMockInitialValues({});
+        final settings = Settings();
+        await settings.init();
+        await settings.saveAvatar(
+          AvatarSettings(
+            resolution: 256,
+            pixelSize: pixelSize,
+            renderer: AvatarPixelRenderer.contourPoints,
+          ),
+        );
+        final restored = Settings();
+        await restored.init();
+        expect(restored.avatar.pixelSize, expected);
+        expect(restored.avatar.renderer, AvatarPixelRenderer.contourPoints);
+        expect(restored.avatar.resolution, 256);
+      }
+      expect(AvatarSettings.fromJson({'pixel_size': '3.5'}).pixelSize, 8);
+      expect(AvatarSettings.fromJson({'renderer': 'optimized'}).pixelSize, 8);
+    },
+  );
 
   test(
     'music defaults are independent of old individual preferences',

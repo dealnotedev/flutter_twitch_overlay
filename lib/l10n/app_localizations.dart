@@ -607,6 +607,30 @@ abstract class AppLocalizations {
   /// **'Higher resolution adds more detail and increases rendering load.'**
   String get avatar_settings_resolution_hint;
 
+  /// No description provided for @avatar_settings_pixel_size.
+  ///
+  /// In en, this message translates to:
+  /// **'Avatar pixel size'**
+  String get avatar_settings_pixel_size;
+
+  /// No description provided for @avatar_settings_pixel_size_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Changes the avatar size without changing its resolution. Text size stays the same.'**
+  String get avatar_settings_pixel_size_hint;
+
+  /// No description provided for @avatar_settings_renderer_contour.
+  ///
+  /// In en, this message translates to:
+  /// **'Smooth outline'**
+  String get avatar_settings_renderer_contour;
+
+  /// No description provided for @avatar_settings_renderer_contour_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Square particles with smoothing only along the circular outline. Uses a reduced color palette with dithering. Text and other effects use the Optimized renderer.'**
+  String get avatar_settings_renderer_contour_hint;
+
   /// No description provided for @avatar_settings_renderer.
   ///
   /// In en, this message translates to:

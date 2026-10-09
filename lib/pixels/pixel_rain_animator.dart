@@ -3,6 +3,7 @@ import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:obssource/pixels/avatar_contour_renderer.dart';
 import 'package:obssource/pixels/pixel.dart';
 
 enum AvatarPixelMotion { linear, horizontalWaves }
@@ -13,6 +14,10 @@ enum AvatarPixelRenderer {
 
   /// Preserves the original per-pixel canvas implementation as a fallback.
   legacyCanvas,
+
+  /// Solid, color-grouped avatar particles with an antialiased circular edge.
+  /// Non-avatar effects without contour geometry retain the atlas renderer.
+  contourPoints,
 }
 
 class AvatarPixelRain extends StatefulWidget {
@@ -29,6 +34,8 @@ class AvatarPixelRain extends StatefulWidget {
   final Radius pixelRadius;
   final AvatarPixelMotion motion;
   final AvatarPixelRenderer renderer;
+  final AvatarContour? contour;
+  final ContourRainData? contourData;
 
   const AvatarPixelRain({
     super.key,
@@ -43,6 +50,8 @@ class AvatarPixelRain extends StatefulWidget {
     this.pixelPadding = 0.25,
     this.motion = AvatarPixelMotion.linear,
     this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.contour,
+    this.contourData,
   });
 
   @override
@@ -51,15 +60,41 @@ class AvatarPixelRain extends StatefulWidget {
 
 class _AvatarPixelRainState extends State<AvatarPixelRain> {
   ui.Image? _atlas;
+  AvatarContourRenderer? _contourRenderer;
+
+  AvatarPixelRenderer get _renderer =>
+      widget.renderer == AvatarPixelRenderer.contourPoints &&
+              widget.contour == null &&
+              widget.contourData == null
+          ? AvatarPixelRenderer.rawAtlas
+          : widget.renderer;
 
   @override
   void initState() {
     super.initState();
-    if (widget.renderer == AvatarPixelRenderer.rawAtlas) {
+    _prepareRenderer();
+  }
+
+  void _prepareRenderer() {
+    _atlas?.dispose();
+    _atlas = null;
+    _contourRenderer?.dispose();
+    _contourRenderer = null;
+    if (_renderer == AvatarPixelRenderer.rawAtlas) {
       _atlas = _createPixelAtlas(
         widget.pixelSize,
         widget.pixelPadding,
         widget.pixelRadius,
+      );
+    } else if (_renderer == AvatarPixelRenderer.contourPoints) {
+      _contourRenderer = AvatarContourRenderer(
+        widget.contourData ??
+            ContourRainData.prepare(
+              widget.pixels,
+              pixelSize: widget.pixelSize,
+              contour: widget.contour,
+            ),
+        widget.pixelSize,
       );
     }
   }
@@ -71,32 +106,35 @@ class _AvatarPixelRainState extends State<AvatarPixelRain> {
         oldWidget.pixelSize != widget.pixelSize ||
         oldWidget.pixelPadding != widget.pixelPadding ||
         oldWidget.pixelRadius != widget.pixelRadius;
-    if (widget.renderer == AvatarPixelRenderer.rawAtlas &&
-        (oldWidget.renderer != AvatarPixelRenderer.rawAtlas ||
-            atlasShapeChanged)) {
-      final oldAtlas = _atlas;
-      _atlas = _createPixelAtlas(
-        widget.pixelSize,
-        widget.pixelPadding,
-        widget.pixelRadius,
-      );
-      oldAtlas?.dispose();
-    } else if (widget.renderer == AvatarPixelRenderer.legacyCanvas &&
-        oldWidget.renderer == AvatarPixelRenderer.rawAtlas) {
-      _atlas?.dispose();
-      _atlas = null;
+    if (atlasShapeChanged ||
+        oldWidget.renderer != widget.renderer ||
+        oldWidget.pixels != widget.pixels ||
+        oldWidget.contourData != widget.contourData ||
+        (widget.contourData == null && oldWidget.contour != widget.contour)) {
+      _prepareRenderer();
     }
   }
 
   @override
   void dispose() {
     _atlas?.dispose();
+    _contourRenderer?.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return switch (widget.renderer) {
+    return switch (_renderer) {
+      AvatarPixelRenderer.contourPoints => CustomPaint(
+        size: Size(widget.widgetWidth, widget.widgetHeight),
+        painter: _ContourAvatarRainPainter(
+          _contourRenderer!,
+          widget.animation,
+          widget.durationMs,
+          widget.fallDurationMs,
+          widget.motion,
+        ),
+      ),
       AvatarPixelRenderer.rawAtlas => CustomPaint(
         size: Size(widget.widgetWidth, widget.widgetHeight),
         painter: _AtlasAvatarRainPainter(
@@ -131,6 +169,37 @@ class _AvatarPixelRainState extends State<AvatarPixelRain> {
       ),
     };
   }
+}
+
+class _ContourAvatarRainPainter extends CustomPainter {
+  final AvatarContourRenderer renderer;
+  final Animation<double> animation;
+  final int durationMs, fallDurationMs;
+  final AvatarPixelMotion motion;
+
+  _ContourAvatarRainPainter(
+    this.renderer,
+    this.animation,
+    this.durationMs,
+    this.fallDurationMs,
+    this.motion,
+  ) : super(repaint: animation);
+
+  @override
+  void paint(Canvas canvas, Size size) => renderer.paint(
+    canvas,
+    animation.value * durationMs,
+    fallDurationMs,
+    waves: motion == AvatarPixelMotion.horizontalWaves,
+  );
+
+  @override
+  bool shouldRepaint(covariant _ContourAvatarRainPainter old) =>
+      old.renderer != renderer ||
+      old.animation != animation ||
+      old.durationMs != durationMs ||
+      old.fallDurationMs != fallDurationMs ||
+      old.motion != motion;
 }
 
 const _atlasExtent = 64.0;

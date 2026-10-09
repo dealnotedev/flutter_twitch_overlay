@@ -21,6 +21,7 @@ class AvatarSettingsControls extends StatefulWidget {
 class _AvatarSettingsControlsState extends State<AvatarSettingsControls> {
   late final StreamSubscription<AvatarSettings> _subscription;
   int? _resolutionDraft;
+  int? _pixelSizeDraft;
   bool _saving = false;
   bool _saveError = false;
 
@@ -53,6 +54,7 @@ class _AvatarSettingsControlsState extends State<AvatarSettingsControls> {
         setState(() {
           _saving = false;
           _resolutionDraft = null;
+          _pixelSizeDraft = null;
         });
       }
     }
@@ -115,6 +117,32 @@ class _AvatarSettingsControlsState extends State<AvatarSettingsControls> {
               ),
               Text(l.avatar_settings_resolution_hint, style: _secondary),
               const Gap(24),
+              NeonSettingsSlider(
+                sliderKey: const ValueKey('avatar_pixel_size'),
+                label: l.avatar_settings_pixel_size,
+                value: _pixelSizeDraft ?? (value.pixelSize * 2).round(),
+                min: (AvatarSettings.minPixelSize * 2).round(),
+                max: (AvatarSettings.maxPixelSize * 2).round(),
+                formatValue:
+                    (steps) =>
+                        '${(steps / 2).toStringAsFixed(steps.isEven ? 0 : 1)} px',
+                onChanged:
+                    _saving
+                        ? null
+                        : (steps) => setState(() => _pixelSizeDraft = steps),
+                onChangeEnd:
+                    _saving
+                        ? null
+                        : (steps) => unawaited(
+                          _save(
+                            widget.settings.avatar.copyWith(
+                              pixelSize: steps / 2,
+                            ),
+                          ),
+                        ),
+              ),
+              Text(l.avatar_settings_pixel_size_hint, style: _secondary),
+              const Gap(24),
               Text(
                 l.avatar_settings_renderer,
                 style: const TextStyle(
@@ -129,6 +157,11 @@ class _AvatarSettingsControlsState extends State<AvatarSettingsControls> {
                 runSpacing: 8,
                 children: [
                   _rendererButton(
+                    'avatar_renderer_contour',
+                    l.avatar_settings_renderer_contour,
+                    AvatarPixelRenderer.contourPoints,
+                  ),
+                  _rendererButton(
                     'avatar_renderer_optimized',
                     l.avatar_settings_renderer_optimized,
                     AvatarPixelRenderer.rawAtlas,
@@ -142,6 +175,13 @@ class _AvatarSettingsControlsState extends State<AvatarSettingsControls> {
               ),
               const Gap(8),
               Text(l.avatar_settings_renderer_hint, style: _secondary),
+              if (value.renderer == AvatarPixelRenderer.contourPoints) ...[
+                const Gap(8),
+                Text(
+                  l.avatar_settings_renderer_contour_hint,
+                  style: _secondary,
+                ),
+              ],
             ],
           ),
         ),

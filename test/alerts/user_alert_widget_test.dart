@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
+import 'package:obssource/alerts/user_alert_widget.dart';
 import 'package:obssource/data/events.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/generated/assets.dart';
@@ -16,6 +17,41 @@ import 'package:obssource/raid/raid_widget.dart';
 import 'package:obssource/subs/subs_widget.dart';
 
 void main() {
+  testWidgets(
+    'switching away from contour ignores stale background preparation',
+    (tester) async {
+      final avatar = img.Image(width: 256, height: 256);
+      Widget alert(AvatarPixelRenderer renderer, double pixelSize) =>
+          MaterialApp(
+            home: UserAlertWidget(
+              userName: 'Viewer',
+              description: 'Thanks',
+              avatar: avatar,
+              constraints: const BoxConstraints.tightFor(
+                width: 800,
+                height: 600,
+              ),
+              avatarResolution: 256,
+              avatarPixelSize: pixelSize,
+              renderer: renderer,
+            ),
+          );
+      await tester.pumpWidget(alert(AvatarPixelRenderer.contourPoints, 3));
+      await tester.pumpWidget(alert(AvatarPixelRenderer.rawAtlas, 2.5));
+      await tester.runAsync(
+        () => Future<void>.delayed(const Duration(milliseconds: 500)),
+      );
+      await tester.pump();
+      final rendered = tester.widget<RainyAvatar>(find.byType(RainyAvatar));
+      expect(rendered.renderer, AvatarPixelRenderer.rawAtlas);
+      expect(rendered.pixelSize, 2.5);
+      expect(rendered.preparedContour, isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 12));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
   test('Ukrainian raid plurals handle one, few, many and teen exceptions', () {
     final l10n = AppLocalizationsUk();
     for (final count in [1, 21, 31, 101, 121, 1001]) {
@@ -89,6 +125,7 @@ void main() {
                         constraints: constraints,
                         renderer: renderer,
                         avatarResolution: 8,
+                        avatarPixelSize: 3.5,
                       )
                       : FollowWidget(
                         event: UserFollowEvent(
@@ -101,8 +138,26 @@ void main() {
                         constraints: constraints,
                         renderer: renderer,
                         avatarResolution: 8,
+                        avatarPixelSize: 3.5,
                       ),
             ),
+          );
+          await tester.pump();
+          if (renderer == AvatarPixelRenderer.contourPoints) {
+            for (
+              var attempt = 0;
+              attempt < 200 && find.byType(RainyAvatar).evaluate().isEmpty;
+              attempt++
+            ) {
+              await tester.runAsync(
+                () => Future<void>.delayed(const Duration(milliseconds: 10)),
+              );
+              await tester.pump();
+            }
+          }
+          expect(
+            tester.widget<RainyAvatar>(find.byType(RainyAvatar)).pixelSize,
+            3.5,
           );
           await tester.pump();
 

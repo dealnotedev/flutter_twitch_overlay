@@ -1,5 +1,9 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
+import 'package:obssource/pixels/avatar_contour_renderer.dart';
 import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
@@ -13,6 +17,7 @@ class UserAlertWidget extends StatefulWidget {
   final AvatarPixelMotion leavingMotion;
   final AvatarPixelRenderer renderer;
   final int avatarResolution;
+  final double avatarPixelSize;
 
   const UserAlertWidget({
     super.key,
@@ -23,6 +28,7 @@ class UserAlertWidget extends StatefulWidget {
     this.leavingMotion = AvatarPixelMotion.horizontalWaves,
     this.renderer = AvatarPixelRenderer.rawAtlas,
     this.avatarResolution = 48,
+    this.avatarPixelSize = 8,
   });
 
   @override
@@ -32,7 +38,6 @@ class UserAlertWidget extends StatefulWidget {
 class _UserAlertWidgetState extends State<UserAlertWidget> {
   static const _avatarVerticalOffset =
       -SubsWidget.bottomTextBackplatesHeight / 2.0;
-  static const _avatarPixelSize = 8.0;
   static const _pixelRadius = Radius.circular(1);
   static const _enteringDuration = Duration(seconds: 5);
   static const _enteringFallDuration = Duration(seconds: 3);
@@ -44,6 +49,11 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
   late final AvatarPixelMotion _leavingMotion;
   List<Pixel>? _enteringAvatarPixels;
   List<Pixel>? _leavingAvatarPixels;
+  ContourRainData? _enteringContour;
+  ContourRainData? _leavingContour;
+  int _preparationVersion = 0;
+  bool _preparing = false;
+  bool _preparationFailed = false;
 
   Duration get _leavingFallDuration =>
       _leavingMotion == AvatarPixelMotion.horizontalWaves
@@ -62,6 +72,8 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
     super.didUpdateWidget(oldWidget);
 
     if (oldWidget.avatarResolution != widget.avatarResolution ||
+        oldWidget.avatarPixelSize != widget.avatarPixelSize ||
+        oldWidget.renderer != widget.renderer ||
         oldWidget.avatar != widget.avatar ||
         oldWidget.constraints != widget.constraints) {
       _prepareAvatarPixels();
@@ -69,32 +81,64 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
   }
 
   void _prepareAvatarPixels() {
+    final version = ++_preparationVersion;
+    _enteringAvatarPixels = null;
+    _leavingAvatarPixels = null;
+    _enteringContour = null;
+    _leavingContour = null;
+    _preparationFailed = false;
+    _preparing = false;
     final avatar = widget.avatar;
     if (avatar == null) return;
+    final request = _AvatarPreparation(
+      image: avatar,
+      constraints: widget.constraints,
+      resolution: widget.avatarResolution,
+      pixelSize: widget.avatarPixelSize,
+      renderer: widget.renderer,
+      leavingMotion: _leavingMotion,
+      leavingFallDuration: _leavingFallDuration,
+    );
+    if (widget.renderer == AvatarPixelRenderer.contourPoints) {
+      _leaving = false;
+      _preparing = true;
+      unawaited(_prepareInBackground(request, version));
+    } else {
+      _acceptPreparation(_prepareAvatar(request));
+    }
+  }
 
-    _enteringAvatarPixels = RainyAvatar.preparePixels(
-      image: avatar,
-      constraints: widget.constraints,
-      duration: _enteringDuration,
-      fallDuration: _enteringFallDuration,
-      resolution: widget.avatarResolution,
-      pixelSize: _avatarPixelSize,
-      verticalOffset: _avatarVerticalOffset,
-      origin: RainyPixelOrigin.outside,
-      direction: RainyPixelDirection.entering,
-    );
-    _leavingAvatarPixels = RainyAvatar.preparePixels(
-      image: avatar,
-      constraints: widget.constraints,
-      duration: _leavingDuration,
-      fallDuration: _leavingFallDuration,
-      resolution: widget.avatarResolution,
-      pixelSize: _avatarPixelSize,
-      verticalOffset: _avatarVerticalOffset,
-      origin: RainyPixelOrigin.outside,
-      direction: RainyPixelDirection.leaving,
-      motion: _leavingMotion,
-    );
+  void _acceptPreparation(_PreparedAvatar prepared) {
+    _enteringAvatarPixels = prepared.entering;
+    _leavingAvatarPixels = prepared.leaving;
+    _enteringContour = prepared.enteringContour;
+    _leavingContour = prepared.leavingContour;
+    _preparing = false;
+  }
+
+  Future<void> _prepareInBackground(
+    _AvatarPreparation request,
+    int version,
+  ) async {
+    try {
+      final prepared = await compute(_prepareAvatar, request);
+      if (!mounted || version != _preparationVersion) return;
+      setState(() => _acceptPreparation(prepared));
+    } catch (error, stack) {
+      if (!mounted || version != _preparationVersion) return;
+      // Keep the notification usable if avatar preparation fails.
+      setState(() {
+        _preparing = false;
+        _preparationFailed = true;
+      });
+      FlutterError.reportError(
+        FlutterErrorDetails(
+          exception: error,
+          stack: stack,
+          context: ErrorDescription('while preparing the avatar contour'),
+        ),
+      );
+    }
   }
 
   void _handleLeaving() {
@@ -107,7 +151,9 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final avatar = widget.avatar;
+    // Start the text and avatar together, after both animation phases are ready.
+    if (_preparing) return const SizedBox.expand();
+    final avatar = _preparationFailed ? null : widget.avatar;
 
     return Stack(
       fit: StackFit.expand,
@@ -127,6 +173,8 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
                   ? 'user_alert_avatar_leaving'
                   : 'user_alert_avatar_entering',
               widget.avatarResolution,
+              widget.avatarPixelSize,
+              widget.renderer,
             )),
             image: avatar,
             constraints: widget.constraints,
@@ -134,7 +182,7 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
             fallDuration:
                 _leaving ? _leavingFallDuration : _enteringFallDuration,
             resolution: widget.avatarResolution,
-            pixelSize: _avatarPixelSize,
+            pixelSize: widget.avatarPixelSize,
             pixelPadding: 0,
             pixelRadius: _pixelRadius,
             randomBackground: false,
@@ -149,8 +197,89 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
             renderer: widget.renderer,
             preparedPixels:
                 _leaving ? _leavingAvatarPixels : _enteringAvatarPixels,
+            preparedContour: _leaving ? _leavingContour : _enteringContour,
           ),
       ],
     );
   }
+}
+
+class _AvatarPreparation {
+  final img.Image image;
+  final BoxConstraints constraints;
+  final int resolution;
+  final double pixelSize;
+  final AvatarPixelRenderer renderer;
+  final AvatarPixelMotion leavingMotion;
+  final Duration leavingFallDuration;
+
+  const _AvatarPreparation({
+    required this.image,
+    required this.constraints,
+    required this.resolution,
+    required this.pixelSize,
+    required this.renderer,
+    required this.leavingMotion,
+    required this.leavingFallDuration,
+  });
+}
+
+class _PreparedAvatar {
+  final List<Pixel> entering, leaving;
+  final ContourRainData? enteringContour, leavingContour;
+
+  const _PreparedAvatar(
+    this.entering,
+    this.leaving,
+    this.enteringContour,
+    this.leavingContour,
+  );
+}
+
+_PreparedAvatar _prepareAvatar(_AvatarPreparation request) {
+  List<Pixel> pixels(RainyPixelDirection direction) {
+    final leaving = direction == RainyPixelDirection.leaving;
+    return RainyAvatar.preparePixels(
+      image: request.image,
+      constraints: request.constraints,
+      duration:
+          leaving
+              ? _UserAlertWidgetState._leavingDuration
+              : _UserAlertWidgetState._enteringDuration,
+      fallDuration:
+          leaving
+              ? request.leavingFallDuration
+              : _UserAlertWidgetState._enteringFallDuration,
+      resolution: request.resolution,
+      pixelSize: request.pixelSize,
+      verticalOffset: _UserAlertWidgetState._avatarVerticalOffset,
+      origin: RainyPixelOrigin.outside,
+      direction: direction,
+      motion: leaving ? request.leavingMotion : AvatarPixelMotion.linear,
+      renderer: request.renderer,
+    );
+  }
+
+  ContourRainData? contour(List<Pixel> pixels, RainyPixelDirection direction) =>
+      request.renderer == AvatarPixelRenderer.contourPoints
+          ? ContourRainData.prepare(
+            pixels,
+            pixelSize: request.pixelSize,
+            contour: RainyAvatar.contourFor(
+              constraints: request.constraints,
+              resolution: request.resolution,
+              pixelSize: request.pixelSize,
+              verticalOffset: _UserAlertWidgetState._avatarVerticalOffset,
+              direction: direction,
+            ),
+          )
+          : null;
+  final entering = pixels(RainyPixelDirection.entering);
+  final leaving = pixels(RainyPixelDirection.leaving);
+  return _PreparedAvatar(
+    entering,
+    leaving,
+    contour(entering, RainyPixelDirection.entering),
+    contour(leaving, RainyPixelDirection.leaving),
+  );
 }

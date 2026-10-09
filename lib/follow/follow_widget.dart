@@ -10,6 +10,7 @@ class FollowWidget extends StatelessWidget {
   final AvatarPixelMotion leavingMotion;
   final AvatarPixelRenderer renderer;
   final int avatarResolution;
+  final double avatarPixelSize;
 
   const FollowWidget({
     super.key,
@@ -18,6 +19,7 @@ class FollowWidget extends StatelessWidget {
     this.leavingMotion = AvatarPixelMotion.horizontalWaves,
     this.renderer = AvatarPixelRenderer.rawAtlas,
     this.avatarResolution = 48,
+    this.avatarPixelSize = 8,
   });
 
   @override
@@ -29,5 +31,6 @@ class FollowWidget extends StatelessWidget {
     leavingMotion: leavingMotion,
     renderer: renderer,
     avatarResolution: avatarResolution,
+    avatarPixelSize: avatarPixelSize,
   );
 }

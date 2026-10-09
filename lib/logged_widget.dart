@@ -68,6 +68,7 @@ class _State extends State<LoggedWidget> {
   late WsState _wsState;
   late AvatarPixelRenderer _alertRenderer;
   late int _alertAvatarResolution;
+  late double _alertAvatarPixelSize;
   MusicRequests? _musicRequests;
   final _musicOverlayController = MusicQueueOverlayController();
   bool _overlayControlsHovered = false;
@@ -94,6 +95,7 @@ class _State extends State<LoggedWidget> {
     _obsConfig = widget.locator.provide();
     _alertRenderer = _settings.avatar.renderer;
     _alertAvatarResolution = _settings.avatar.resolution;
+    _alertAvatarPixelSize = _settings.avatar.pixelSize;
     try {
       _musicRequests = widget.locator.provide<MusicRequests>();
     } catch (_) {
@@ -139,6 +141,7 @@ class _State extends State<LoggedWidget> {
                 key: ValueKey(follow),
                 renderer: _alertRenderer,
                 avatarResolution: _alertAvatarResolution,
+                avatarPixelSize: _alertAvatarPixelSize,
               ),
             ),
             ..._raids.map(
@@ -148,6 +151,7 @@ class _State extends State<LoggedWidget> {
                 constraints: constraints,
                 renderer: _alertRenderer,
                 avatarResolution: _alertAvatarResolution,
+                avatarPixelSize: _alertAvatarPixelSize,
               ),
             ),
             _createRewardsWidget(),
@@ -165,6 +169,7 @@ class _State extends State<LoggedWidget> {
                 constraints: constraints,
                 renderer: _alertRenderer,
                 avatarResolution: _alertAvatarResolution,
+                avatarPixelSize: _alertAvatarPixelSize,
               ),
             if (_musicRequests case final musicRequests?)
               Positioned(
@@ -331,15 +336,18 @@ class _State extends State<LoggedWidget> {
   void _handleAvatarSettings(AvatarSettings value) {
     final renderer = value.renderer;
     final avatarResolution = value.resolution;
+    final avatarPixelSize = value.pixelSize;
     if (!mounted ||
         (renderer == _alertRenderer &&
-            avatarResolution == _alertAvatarResolution)) {
+            avatarResolution == _alertAvatarResolution &&
+            avatarPixelSize == _alertAvatarPixelSize)) {
       return;
     }
 
     setState(() {
       _alertRenderer = renderer;
       _alertAvatarResolution = avatarResolution;
+      _alertAvatarPixelSize = avatarPixelSize;
     });
   }
 

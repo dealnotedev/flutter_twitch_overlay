@@ -350,6 +350,20 @@ class AppLocalizationsUk extends AppLocalizations {
       'Вища роздільність додає деталей і збільшує навантаження на рендер.';
 
   @override
+  String get avatar_settings_pixel_size => 'Розмір пікселя аватара';
+
+  @override
+  String get avatar_settings_pixel_size_hint =>
+      'Змінює розмір аватара без зміни роздільності. Розмір тексту залишається тим самим.';
+
+  @override
+  String get avatar_settings_renderer_contour => 'Згладжений контур';
+
+  @override
+  String get avatar_settings_renderer_contour_hint =>
+      'Квадратні частинки зі згладжуванням лише вздовж круглого контуру. Використовує спрощену палітру з дизерингом. Текст та інші ефекти використовують оптимізований рендер.';
+
+  @override
   String get avatar_settings_renderer => 'Рендер анімації';
 
   @override

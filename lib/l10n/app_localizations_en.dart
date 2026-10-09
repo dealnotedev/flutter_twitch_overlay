@@ -344,6 +344,20 @@ class AppLocalizationsEn extends AppLocalizations {
       'Higher resolution adds more detail and increases rendering load.';
 
   @override
+  String get avatar_settings_pixel_size => 'Avatar pixel size';
+
+  @override
+  String get avatar_settings_pixel_size_hint =>
+      'Changes the avatar size without changing its resolution. Text size stays the same.';
+
+  @override
+  String get avatar_settings_renderer_contour => 'Smooth outline';
+
+  @override
+  String get avatar_settings_renderer_contour_hint =>
+      'Square particles with smoothing only along the circular outline. Uses a reduced color palette with dithering. Text and other effects use the Optimized renderer.';
+
+  @override
   String get avatar_settings_renderer => 'Animation renderer';
 
   @override

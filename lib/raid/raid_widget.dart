@@ -9,6 +9,7 @@ class RaidWidget extends StatelessWidget {
   final BoxConstraints constraints;
   final AvatarPixelRenderer renderer;
   final int avatarResolution;
+  final double avatarPixelSize;
 
   const RaidWidget({
     super.key,
@@ -16,6 +17,7 @@ class RaidWidget extends StatelessWidget {
     required this.constraints,
     this.renderer = AvatarPixelRenderer.rawAtlas,
     this.avatarResolution = 48,
+    this.avatarPixelSize = 8,
   });
 
   @override
@@ -26,5 +28,6 @@ class RaidWidget extends StatelessWidget {
     constraints: constraints,
     renderer: renderer,
     avatarResolution: avatarResolution,
+    avatarPixelSize: avatarPixelSize,
   );
 }

@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 import 'package:image/image.dart' as img;
+import 'package:obssource/pixels/avatar_contour_renderer.dart';
 import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 
@@ -28,6 +29,7 @@ class RainyAvatar extends StatefulWidget {
   final AvatarPixelMotion motion;
   final AvatarPixelRenderer renderer;
   final List<Pixel>? preparedPixels;
+  final ContourRainData? preparedContour;
 
   const RainyAvatar({
     super.key,
@@ -42,6 +44,7 @@ class RainyAvatar extends StatefulWidget {
     this.motion = AvatarPixelMotion.linear,
     this.renderer = AvatarPixelRenderer.rawAtlas,
     this.preparedPixels,
+    this.preparedContour,
     this.randomBackground = true,
     this.scaleWhenStart = true,
     required this.image,
@@ -80,6 +83,7 @@ class RainyAvatar extends StatefulWidget {
     required RainyPixelOrigin origin,
     required RainyPixelDirection direction,
     AvatarPixelMotion motion = AvatarPixelMotion.linear,
+    AvatarPixelRenderer renderer = AvatarPixelRenderer.rawAtlas,
     Random? random,
   }) {
     final matrix = _State._avatarToColorMatrix(image, resolution, resolution);
@@ -96,8 +100,23 @@ class RainyAvatar extends StatefulWidget {
       motion,
       random ?? Random(),
       verticalOffset: verticalOffset,
+      smoothContour: renderer == AvatarPixelRenderer.contourPoints,
     );
   }
+
+  static AvatarContour contourFor({
+    required BoxConstraints constraints,
+    required int resolution,
+    required double pixelSize,
+    required double verticalOffset,
+    required RainyPixelDirection direction,
+  }) => AvatarContour(
+    centerX: constraints.maxWidth / 2,
+    centerY: constraints.maxHeight / 2 + verticalOffset,
+    radius: (resolution / 2 - 0.5) * pixelSize,
+    pixelSize: pixelSize,
+    fromStart: direction == RainyPixelDirection.leaving,
+  );
 }
 
 enum RainyPixelOrigin { inside, outside }
@@ -131,10 +150,47 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
           origin: widget.origin,
           direction: widget.direction,
           motion: widget.motion,
+          renderer: widget.renderer,
         );
 
     _startAnimation();
     super.initState();
+  }
+
+  @override
+  void didUpdateWidget(covariant RainyAvatar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.preparedPixels != widget.preparedPixels ||
+        oldWidget.image != widget.image ||
+        oldWidget.resolution != widget.resolution ||
+        oldWidget.pixelSize != widget.pixelSize ||
+        oldWidget.renderer != widget.renderer ||
+        oldWidget.constraints != widget.constraints ||
+        oldWidget.verticalOffset != widget.verticalOffset ||
+        oldWidget.direction != widget.direction ||
+        oldWidget.motion != widget.motion ||
+        oldWidget.origin != widget.origin ||
+        oldWidget.duration != widget.duration ||
+        oldWidget.fallDuration != widget.fallDuration) {
+      _fallDurationMs = widget.fallDuration.inMilliseconds;
+      _controller.duration = widget.duration;
+      _pixels =
+          widget.preparedPixels ??
+          RainyAvatar.preparePixels(
+            image: widget.image,
+            constraints: widget.constraints,
+            duration: widget.duration,
+            fallDuration: widget.fallDuration,
+            pixelSize: widget.pixelSize,
+            resolution: widget.resolution,
+            verticalOffset: widget.verticalOffset,
+            origin: widget.origin,
+            direction: widget.direction,
+            motion: widget.motion,
+            renderer: widget.renderer,
+          );
+      _controller.forward(from: 0);
+    }
   }
 
   @override
@@ -312,6 +368,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
     AvatarPixelMotion motion,
     Random random, {
     required double verticalOffset,
+    bool smoothContour = false,
   }) {
     final pixels = <Pixel>[];
 
@@ -335,7 +392,13 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
         if (color != null) {
           final dx = x - cx;
           final dy = y - cy;
-          if (dx * dx + dy * dy <= radius * radius) {
+          final nearX = max(0.0, dx.abs() - 0.5);
+          final nearY = max(0.0, dy.abs() - 0.5);
+          final intersects =
+              smoothContour
+                  ? nearX * nearX + nearY * nearY < radius * radius
+                  : dx * dx + dy * dy <= radius * radius;
+          if (intersects) {
             pixels.add(
               Pixel(
                 x: startX + (x * pixelSize),
@@ -573,6 +636,17 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
                   animation: animation,
                   motion: widget.motion,
                   renderer: widget.renderer,
+                  contourData: widget.preparedContour,
+                  contour:
+                      widget.renderer == AvatarPixelRenderer.contourPoints
+                          ? RainyAvatar.contourFor(
+                            constraints: widget.constraints,
+                            resolution: widget.resolution,
+                            pixelSize: widget.pixelSize,
+                            verticalOffset: widget.verticalOffset,
+                            direction: widget.direction,
+                          )
+                          : null,
                   pixelPadding: widget.pixelPadding,
                   pixelRadius: widget.pixelRadius,
                 ),

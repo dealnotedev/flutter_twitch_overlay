@@ -17,12 +17,19 @@ samples, guidance on mobile development, and a full API reference.
 
 ## Avatar settings
 
-Configure avatar resolution and animation rendering in **Overlay settings → Avatar**.
+Configure avatar resolution, pixel size and animation rendering in **Overlay settings → Avatar**.
 Options are saved locally and apply immediately, including to visible follow,
 raid and subscription alerts. The renderer also applies to text and pixel
-decorations. Choose Optimized (the default `drawRawAtlas` renderer) or Classic
-(the previous canvas renderer). Avatar resolution defaults to `48` and can be
-set from `16` to `128`; its pixel size remains fixed at `8`.
+decorations. Choose Optimized (the default `drawRawAtlas` renderer), Classic
+(the previous canvas renderer), or Smooth outline. Smooth outline draws square
+avatar particles, smoothing only the external circular boundary, with a dithered
+4-bit color grouping. Text and other decorations retain Optimized rendering in
+this mode. Its particle preparation runs in a background isolate.
+
+Avatar resolution defaults to `48` and ranges from `16` to `256`. Pixel size
+defaults to `8` and ranges from `2` to `16` in `0.5` px steps; it affects avatars
+only. The displayed avatar width is resolution × pixel size (for example,
+`256 × 3 = 768` px). Large combinations can extend beyond the canvas.
 
 The old `alert_animation_renderer` and `alert_avatar_resolution` options in OBS
 JSON are ignored and are not migrated. Defaults are 48 and Optimized.

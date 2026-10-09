@@ -15,6 +15,47 @@ import 'package:obssource/twitch/twitch_api.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
+  testWidgets(
+    'avatar size uses half-pixel steps and persists with contour renderer',
+    (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      final settings = Settings();
+      await settings.init();
+      await tester.binding.setSurfaceSize(const Size(1000, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      await _showDialog(tester, settings, 'en', GlobalKey());
+      await tester.tap(
+        find.byKey(const ValueKey('overlay_settings_avatar_section')),
+      );
+      await _pump(tester);
+      final size = find.byKey(const ValueKey('avatar_pixel_size'));
+      final control = tester.widget<Slider>(size);
+      expect(control.min, 4);
+      expect(control.max, 32);
+      expect(control.divisions, 28);
+      expect(find.text('8 px'), findsOneWidget);
+      await tester.ensureVisible(size);
+      final rect = tester.getRect(size);
+      await tester.tapAt(
+        Offset(rect.left + rect.width * 3 / 28, rect.center.dy),
+      );
+      await _pump(tester);
+      expect(settings.avatar.pixelSize, 3.5);
+      expect(find.text('3.5 px'), findsOneWidget);
+      final contour = find.byKey(const ValueKey('avatar_renderer_contour'));
+      await tester.ensureVisible(contour);
+      await tester.tap(contour);
+      await _pump(tester);
+      expect(settings.avatar.renderer, AvatarPixelRenderer.contourPoints);
+      expect(tester.widget<NeonSettingsButton>(contour).selected, isTrue);
+      final restored = Settings();
+      await restored.init();
+      expect(restored.avatar.pixelSize, 3.5);
+      expect(restored.avatar.renderer, AvatarPixelRenderer.contourPoints);
+      await tester.pumpWidget(const SizedBox.shrink());
+    },
+  );
+
   for (final language in ['uk', 'en']) {
     testWidgets('avatar controls save and restore settings in $language', (
       tester,
@@ -43,9 +84,11 @@ void main() {
       expect(find.text('48 × 48'), findsOneWidget);
 
       await _capture(tester, capture, 'avatar-settings-$language');
+      await tester.ensureVisible(classic);
       await tester.tap(classic);
       await _pump(tester);
       expect(settings.avatar.renderer, AvatarPixelRenderer.legacyCanvas);
+      await tester.ensureVisible(slider);
       final rect = tester.getRect(slider);
       await tester.tapAt(Offset(rect.right - 1, rect.center.dy));
       await _pump(tester);
@@ -55,7 +98,13 @@ void main() {
       await tester.pump();
       expect(settings.avatar.resolution, AvatarSettings.maxResolution);
       final draft = tester.widget<Slider>(slider).value.toInt();
-      expect(draft, inExclusiveRange(16, 128));
+      expect(
+        draft,
+        inExclusiveRange(
+          AvatarSettings.minResolution,
+          AvatarSettings.maxResolution,
+        ),
+      );
       await drag.up();
       await _pump(tester);
       expect(settings.avatar.resolution, draft);
@@ -81,6 +130,7 @@ void main() {
       await _pump(tester);
       expect(tester.widget<Slider>(slider).value, AvatarSettings.minResolution);
       expect(tester.widget<NeonSettingsButton>(classic).selected, isTrue);
+      await tester.ensureVisible(optimized);
       await tester.tap(optimized);
       await _pump(tester);
       expect(restored.avatar.renderer, AvatarPixelRenderer.rawAtlas);
@@ -103,17 +153,27 @@ void main() {
     final slider = find.byKey(const ValueKey('avatar_resolution'));
     final classic = find.byKey(const ValueKey('avatar_renderer_legacy'));
     final l = AppLocalizations.of(tester.element(classic))!;
+    await tester.ensureVisible(classic);
     await tester.tap(classic);
     await _pump(tester);
     expect(settings.avatar.renderer, AvatarPixelRenderer.rawAtlas);
     expect(tester.widget<NeonSettingsButton>(classic).selected, isFalse);
     expect(find.text(l.overlay_settings_save_error), findsOneWidget);
+    await tester.ensureVisible(slider);
     final rect = tester.getRect(slider);
     await tester.tapAt(Offset(rect.right - 1, rect.center.dy));
     await _pump(tester);
     expect(tester.widget<Slider>(slider).value, 48);
     expect(settings.avatar.resolution, 48);
+    final pixelSize = find.byKey(const ValueKey('avatar_pixel_size'));
+    await tester.ensureVisible(pixelSize);
+    final pixelRect = tester.getRect(pixelSize);
+    await tester.tapAt(Offset(pixelRect.left + 1, pixelRect.center.dy));
+    await _pump(tester);
+    expect(settings.avatar.pixelSize, 8);
+    expect(tester.widget<Slider>(pixelSize).value, 16);
     settings.fail = false;
+    await tester.ensureVisible(classic);
     await tester.tap(classic);
     await _pump(tester);
     expect(settings.avatar.renderer, AvatarPixelRenderer.legacyCanvas);
