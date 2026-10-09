@@ -121,32 +121,47 @@ or `error`, plus the numeric `id` and optional `session_id`. The player waits fo
 the native load and start confirmations, surfaces decoder failures, and advances
 the queue on `ended`. A duration-based watchdog remains for older native hosts.
 
-## Optional Windows music controller
+## YouTube verification
 
-If a music request reports that YouTube needs verification, open **Overlay
-settings → Player → YouTube connection → Connect YouTube**. The app opens a
-separate Microsoft Edge or Google Chrome window. Play the requested video
-(or choose a short public video if the homepage opens), complete any verification
-requested by YouTube, then return to the
-settings and press **Check connection** while that window is still open.
-The check uses the video open in that browser, and verifies metadata and audio
-retrieval before reporting success. Try checking without signing in first. A
-public video playing in the browser does not guarantee that yt-dlp can retrieve
-its audio. If the check reports a media HTTP 403, try signing in to Google in
-that same dedicated window and check again. This can help; a 403 alone does not
-prove that signing in is required or will resolve every download restriction.
-The checked video URL and expandable error details appear in settings; these
-details are not broadcast on the overlay or sent to the music controller.
-You can then submit the track again; failed requests use the existing Twitch
-refund flow.
+When YouTube blocks every request — a bot check or captcha, a media HTTP 403,
+or a temporary rate limit — the overlay pauses track preparation instead of
+refunding the queue one request at a time. Waiting requests stay in the queue,
+the music reward is paused on Twitch, and the player shows that requests are
+paused. A request that waits longer than 15 minutes is refunded. Problems with
+a single video (private, age-restricted, removed or region-locked) are still
+refunded right away and do not pause the queue.
+
+To recover, open **Overlay settings → Player → YouTube connection → Connect
+YouTube**. The app opens a separate Microsoft Edge or Google Chrome window
+with the blocked video. Play it (or choose a short public video if the
+homepage opens), complete any verification requested by YouTube, then return
+to the settings and press **Check connection**. The window closes as soon as
+its YouTube session is exported, because YouTube rotates the cookies of open
+sessions and the local debugging port should not stay open. The check then
+verifies metadata and a full audio download of that video in a private,
+empty cache before reporting success. On success, waiting requests continue
+automatically. For a rate limit, wait (usually up to an hour) and press
+**Resume requests**; this button also retries without connecting.
+
+Try checking without signing in first. A public video playing in the browser
+does not guarantee that yt-dlp can retrieve its audio. A media HTTP 403 is
+often fixed by a newer yt-dlp, so check the yt-dlp version in **Error
+details**. Signing in to Google in the dedicated window can also help, but
+use a secondary account: YouTube may restrict accounts used for downloading.
+The checked video URL and error details appear only in settings; they are not
+broadcast on the overlay or sent to the music controller.
 
 The app uses its own browser profile and saves only the YouTube session locally
 under the user's `obssource/youtube-session` directory next to the music cache.
 It does not read the user's normal browser profile. No command-line setup,
-browser extension, or manual cookie export is needed. **Disconnect** removes
-the saved session and dedicated profile. If YouTube requests verification
-again, reconnect here. A network or YouTube restriction can still prevent
-access; the app reports failed checks without claiming a successful connection.
+browser extension, or manual cookie export is needed. Every yt-dlp run gets a
+private copy of the session; YouTube's cookie updates are written back only
+after a successful run and never over a newer or removed session. **Cancel**
+closes the browser and keeps the saved session. **Disconnect** asks for
+confirmation, then removes the saved session and the dedicated profile,
+including any Google sign-in there.
+
+## Optional Windows music controller
 
 The overlay owns the music queue, playback, and a loopback-only control server.
 The standalone controller in `apps/music_controller` is optional; closing it

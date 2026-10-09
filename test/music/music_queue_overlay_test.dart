@@ -11,19 +11,24 @@ void main() {
   const collapseDelay = Duration(seconds: 1);
   const animationDuration = Duration(milliseconds: 200);
 
-  testWidgets(
-    'YouTube verification shows a complete localized recovery message',
-    (tester) async {
+  for (final (language, paused, waiting) in [
+    ('uk', 'ЗАМОВЛЕННЯ МУЗИКИ ПРИЗУПИНЕНО', 'Viewer · очікує'),
+    ('en', 'MUSIC REQUESTS PAUSED', 'Viewer · waiting'),
+  ]) {
+    testWidgets('paused requests show a complete viewer notice in $language', (
+      tester,
+    ) async {
       final requests = _FakeMusicRequests(
-        const MusicQueueSnapshot(
+        MusicQueueSnapshot(
           revision: 1,
           nowPlaying: null,
-          queue: [],
-          lastError: MusicQueueError(
+          queue: [_queueItem('held', phase: MusicQueueItemPhase.resolving)],
+          lastError: const MusicQueueError(
             requester: 'Viewer',
             type: MusicQueueErrorType.youtubeAccessRequired,
             details: 'ERROR: [youtube] Sign in to confirm you are not a bot',
           ),
+          hold: MusicQueueErrorType.youtubeAccessRequired,
         ),
       );
       addTearDown(requests.dispose);
@@ -32,17 +37,19 @@ void main() {
           requests: requests,
           collapseDelay: collapseDelay,
           animationDuration: animationDuration,
+          locale: Locale(language),
         ),
       );
-      final message = find.text(
-        'YouTube потребує перевірки. Налаштування музики → Підключити YouTube.',
-      );
+      final l = lookupAppLocalizations(Locale(language));
+      final message = find.text(l.music_error_youtube_access);
       expect(message, findsOneWidget);
       expect(tester.widget<Text>(message).maxLines, isNull);
+      expect(find.text(paused), findsOneWidget);
+      expect(find.text(waiting), findsOneWidget);
       expect(find.textContaining('ERROR:'), findsNothing);
       expect(tester.takeException(), isNull);
-    },
-  );
+    });
+  }
 
   testWidgets('updates delay and disables collapse without recreating player', (
     tester,

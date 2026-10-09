@@ -93,6 +93,36 @@ void main() {
     expect(calls, [('channel', 'music', false)]);
   });
 
+  test('paused track preparation pauses the reward until it resumes', () async {
+    await controller.close();
+    final held = StreamController<bool>.broadcast();
+    addTearDown(held.close);
+    calls.clear();
+    controller = MusicRewardController(
+      settings: settings,
+      connected: true,
+      connectionChanges: connection.stream,
+      requestsHeldChanges: held.stream,
+      pauseReward: (channel, reward, paused) async {
+        calls.add((channel, reward, paused));
+      },
+    );
+    await controller.refresh();
+    expect(calls, [('channel', 'music', false)]);
+    held.add(true);
+    await Future<void>.delayed(Duration.zero);
+    await controller.refresh();
+    expect(calls.last, ('channel', 'music', true));
+    held.add(true);
+    await Future<void>.delayed(Duration.zero);
+    await controller.refresh();
+    expect(calls, hasLength(2));
+    held.add(false);
+    await Future<void>.delayed(Duration.zero);
+    await controller.refresh();
+    expect(calls.last, ('channel', 'music', false));
+  });
+
   test('failed Twitch updates are visible and retryable', () async {
     failure = StateError('offline');
     await settings.saveMusic(settings.music.copyWith(enabled: false));

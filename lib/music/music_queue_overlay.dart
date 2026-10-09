@@ -274,7 +274,10 @@ class _ExpandedMusicPlayer extends StatelessWidget {
             onSkip: onSkip,
           )
         else
-          _WaitingForTrack(preparing: state.queue.isNotEmpty),
+          _WaitingForTrack(
+            preparing: state.queue.isNotEmpty,
+            paused: state.hold != null,
+          ),
         if (state.queue.isNotEmpty) ...[
           const Gap(12),
           Text(
@@ -289,7 +292,11 @@ class _ExpandedMusicPlayer extends StatelessWidget {
           ),
           const Gap(7),
           ...visibleQueue.map(
-            (item) => _QueueRow(item: item, onRemove: () => onRemove(item.id)),
+            (item) => _QueueRow(
+              item: item,
+              held: state.hold != null,
+              onRemove: () => onRemove(item.id),
+            ),
           ),
           if (hiddenQueueCount > 0)
             Padding(
@@ -316,12 +323,10 @@ class _ExpandedMusicPlayer extends StatelessWidget {
             ),
             child: Text(
               _localizedMusicError(context, error),
+              // Pause notices explain what happens to waiting requests and
+              // must not be cut off.
               maxLines:
-                  error.type == MusicQueueErrorType.youtubeAccessRequired ||
-                          error.type ==
-                              MusicQueueErrorType.youtubeDownloadBlocked
-                      ? null
-                      : 2,
+                  musicPreparationHoldReasons.contains(error.type) ? null : 2,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(
                 color: MusicPlayerPalette.error,
@@ -656,6 +661,8 @@ String _localizedMusicError(BuildContext context, MusicQueueError error) {
       localizations.music_error_youtube_access,
     MusicQueueErrorType.youtubeDownloadBlocked =>
       localizations.music_error_youtube_download_blocked,
+    MusicQueueErrorType.youtubeRateLimited =>
+      localizations.music_error_youtube_rate_limited,
     MusicQueueErrorType.youtubeUnavailable => localizations
         .music_error_youtube_unavailable(error.requester),
     MusicQueueErrorType.networkUnavailable =>
@@ -960,8 +967,9 @@ class _NeonSeekBar extends StatelessWidget {
 
 class _WaitingForTrack extends StatelessWidget {
   final bool preparing;
+  final bool paused;
 
-  const _WaitingForTrack({required this.preparing});
+  const _WaitingForTrack({required this.preparing, required this.paused});
 
   @override
   Widget build(BuildContext context) {
@@ -976,7 +984,13 @@ class _WaitingForTrack extends StatelessWidget {
       ),
       child: Row(
         children: [
-          if (preparing)
+          if (paused)
+            const Icon(
+              Icons.pause_circle_outline_rounded,
+              color: MusicPlayerPalette.error,
+              size: 18,
+            )
+          else if (preparing)
             const SizedBox(
               width: 18,
               height: 18,
@@ -994,7 +1008,9 @@ class _WaitingForTrack extends StatelessWidget {
           const Gap(10),
           Expanded(
             child: Text(
-              preparing
+              paused
+                  ? context.localizations.music_requests_paused
+                  : preparing
                   ? context.localizations.music_preparing
                   : context.localizations.music_waiting_for_requests,
               maxLines: 1,
@@ -1016,13 +1032,20 @@ class _WaitingForTrack extends StatelessWidget {
 
 class _QueueRow extends StatelessWidget {
   final MusicQueueItem item;
+  final bool held;
   final VoidCallback onRemove;
 
-  const _QueueRow({required this.item, required this.onRemove});
+  const _QueueRow({
+    required this.item,
+    required this.held,
+    required this.onRemove,
+  });
 
   @override
   Widget build(BuildContext context) {
     final status = switch (item.phase) {
+      MusicQueueItemPhase.resolving when held =>
+        context.localizations.music_queue_status_waiting,
       MusicQueueItemPhase.resolving =>
         context.localizations.music_queue_status_resolving,
       MusicQueueItemPhase.downloading =>

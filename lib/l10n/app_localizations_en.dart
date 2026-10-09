@@ -103,6 +103,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get music_waiting_for_requests => 'WAITING FOR MUSIC REQUESTS';
 
   @override
+  String get music_requests_paused => 'MUSIC REQUESTS PAUSED';
+
+  @override
+  String get music_queue_status_waiting => 'waiting';
+
+  @override
   String get music_queue_status_resolving => 'searching';
 
   @override
@@ -141,11 +147,15 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_error_youtube_access =>
-      'YouTube needs verification. Music settings → Connect YouTube.';
+      'Requests are paused: YouTube asked for verification. Waiting tracks will continue or be refunded.';
 
   @override
   String get music_error_youtube_download_blocked =>
-      'YouTube blocked the audio download (403). Music settings → Connect YouTube.';
+      'Requests are paused: YouTube blocked audio downloads. Waiting tracks will continue or be refunded.';
+
+  @override
+  String get music_error_youtube_rate_limited =>
+      'Requests are paused: YouTube temporarily limited requests. Waiting tracks will continue or be refunded.';
 
   @override
   String music_error_youtube_unavailable(String requester) {
@@ -168,7 +178,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_youtube_instructions =>
-      '1. Open and play the requested video in the browser window that opened. If the YouTube homepage opened, choose a short public video.\n2. Complete any verification. You can try checking the connection without signing in first.\n3. Leave the video tab open, return here and press Check connection.';
+      '1. Open and play the requested video in the browser window that opened. If the YouTube homepage opened, choose a short public video.\n2. Complete any verification. You can try checking the connection without signing in first.\n3. Leave the video tab open, return here and press Check connection. The window closes when the check starts.';
+
+  @override
+  String get music_youtube_account_warning =>
+      'If you sign in, use a secondary Google account: YouTube may restrict accounts used for downloading.';
 
   @override
   String get music_youtube_checking =>
@@ -176,10 +190,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_youtube_connected =>
-      'YouTube connected. You can submit the track again.';
+      'YouTube connected. Waiting requests continue automatically.';
+
+  @override
+  String get music_youtube_saved =>
+      'A YouTube session is saved on this computer and used for music requests.';
+
+  @override
+  String get music_youtube_saved_attention =>
+      'A YouTube session is saved, but the last check or request failed. See the reason below.';
 
   @override
   String get music_youtube_connect => 'Connect YouTube';
+
+  @override
+  String get music_youtube_reconnect => 'Reconnect YouTube';
 
   @override
   String get music_youtube_reopen => 'Reopen YouTube';
@@ -194,20 +219,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get music_youtube_disconnect => 'Disconnect';
 
   @override
+  String get music_youtube_disconnect_confirm =>
+      'Remove the saved YouTube session and the dedicated browser profile, including any Google sign-in there?';
+
+  @override
+  String get music_youtube_disconnect_remove => 'Remove';
+
+  @override
+  String get music_youtube_disconnect_keep => 'Keep';
+
+  @override
+  String get music_youtube_hold_title => 'Music requests are paused';
+
+  @override
+  String music_youtube_hold_body(int count, int minutes) {
+    return 'Waiting requests: $count. The Twitch reward is paused meanwhile. A request that waits longer than $minutes min is refunded.';
+  }
+
+  @override
+  String get music_youtube_resume => 'Resume requests';
+
+  @override
   String get music_youtube_no_browser =>
       'Install Microsoft Edge or Google Chrome, then press Connect YouTube again.';
 
   @override
   String get music_youtube_browser_closed =>
-      'The YouTube window was closed. Press Reopen YouTube and keep it open until the check finishes.';
+      'The YouTube window was closed. Open YouTube again and keep the window open until you press Check connection.';
 
   @override
   String get music_youtube_verification_required =>
-      'YouTube still needs verification. Complete it in the opened browser window, then check again.';
+      'YouTube asked to confirm you\'re not a bot. Open YouTube with the button below, complete the verification in that window, then check the connection.';
 
   @override
   String get music_youtube_download_blocked =>
-      'YouTube blocked the audio download (403). If the video plays in the browser, try signing in to Google in that same window, then check the connection again. Signing in can help, but doesn\'t guarantee access.';
+      'YouTube blocked the audio download (403). A newer application version with an updated yt-dlp often fixes this. You can also open YouTube below, sign in with a secondary Google account in that window and check again; this can help but doesn\'t guarantee access.';
+
+  @override
+  String get music_youtube_rate_limited =>
+      'YouTube temporarily limited requests from this computer, usually for up to an hour. Wait, then press Resume requests. A new connection rarely helps right away.';
 
   @override
   String get music_youtube_network_error =>
@@ -227,11 +277,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_youtube_video_unavailable =>
-      'YouTube won\'t let the player access this video. Choose another public video in the opened window and check again.';
+      'YouTube won\'t let the player access this video. Open YouTube, choose another public video and check again.';
 
   @override
   String get music_youtube_video_too_long =>
-      'This video exceeds your track duration limit or is a live stream. Choose a shorter video or increase the duration limit below, then check again.';
+      'This video exceeds your track duration limit or is a live stream. Open YouTube and choose a shorter video, or increase the duration limit below, then check again.';
 
   @override
   String music_youtube_checked_video(String url) {

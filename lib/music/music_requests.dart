@@ -15,11 +15,20 @@ enum MusicQueueErrorType {
   trackTooLongOrLive,
   youtubeAccessRequired,
   youtubeDownloadBlocked,
+  youtubeRateLimited,
   youtubeUnavailable,
   networkUnavailable,
   musicToolsUnavailable,
   operationFailed,
 }
+
+/// YouTube-wide blocks. Every following request would fail the same way, so
+/// preparation pauses instead of refunding the queue one request at a time.
+const musicPreparationHoldReasons = {
+  MusicQueueErrorType.youtubeAccessRequired,
+  MusicQueueErrorType.youtubeDownloadBlocked,
+  MusicQueueErrorType.youtubeRateLimited,
+};
 
 /// A preparation failure with a stable, localizable reason for the UI.
 class MusicTrackException implements Exception {
@@ -127,11 +136,15 @@ class MusicQueueSnapshot {
   final List<MusicQueueItem> queue;
   final MusicQueueError? lastError;
 
+  /// Why track preparation is paused; queued requests wait instead of failing.
+  final MusicQueueErrorType? hold;
+
   const MusicQueueSnapshot({
     required this.revision,
     required this.nowPlaying,
     required this.queue,
     required this.lastError,
+    this.hold,
   });
 
   static const empty = MusicQueueSnapshot(
@@ -205,6 +218,13 @@ class MusicRequestManager implements MusicRequests {
   final MusicTrackFetcher _fetcher;
   final MusicTrackPlayer _player;
   final TwitchRedemptionService? _redemptionService;
+
+  /// How long a request waits during a hold before its points are refunded.
+  final Duration heldRequestTimeout;
+
+  /// Reports the request that started a hold, so the streamer can check it.
+  final void Function(MusicQueueErrorType reason, Uri sourceUrl)?
+  onPreparationHeld;
   int _maxQueueLength;
   Duration _maxDuration;
   bool _enabled;
@@ -228,6 +248,7 @@ class MusicRequestManager implements MusicRequests {
   Future<void>? _preparationFuture;
   Future<void>? _playbackFuture;
   MusicQueueError? _lastError;
+  MusicQueueError? _hold;
 
   MusicRequestManager({
     required Stream<WsMessage> events,
@@ -239,6 +260,8 @@ class MusicRequestManager implements MusicRequests {
     String? rewardId,
     Stream<String?>? rewardIdChanges,
     TwitchRedemptionService? redemptionService,
+    this.heldRequestTimeout = const Duration(minutes: 15),
+    this.onPreparationHeld,
   }) : _fetcher = fetcher,
        _player = player,
        _redemptionService = redemptionService,
@@ -258,6 +281,41 @@ class MusicRequestManager implements MusicRequests {
     _enabled = value.enabled;
     _maxQueueLength = value.maxQueue;
     _maxDuration = Duration(seconds: value.maxDurationSeconds);
+  }
+
+  /// Retries waiting requests after a hold, for example once YouTube is
+  /// connected again. Returns false when preparation was not paused.
+  bool resumePreparation() {
+    if (_closed || _hold == null) return false;
+    _hold = null;
+    for (final request in _queue) {
+      request.cancelHoldTimer();
+    }
+    _emit();
+    _ensurePreparing();
+    return true;
+  }
+
+  void _startHold(MusicQueueErrorType reason, _PendingMusicRequest request) {
+    _hold = MusicQueueError(requester: request.requestedBy, type: reason);
+    for (final waiting in _queue) {
+      if (waiting.phase == MusicQueueItemPhase.resolving) _holdRequest(waiting);
+    }
+    _emit();
+    onPreparationHeld?.call(reason, request.sourceUrl);
+  }
+
+  void _holdRequest(_PendingMusicRequest request) {
+    request.startHoldTimer(heldRequestTimeout, () {
+      if (_closed || !_queue.remove(request)) return;
+      // The block outlasted the wait; return the viewer's points.
+      _requestSettlement(
+        redemptionId: request.id,
+        rewardId: request.rewardId,
+        status: TwitchRedemptionStatus.canceled,
+      );
+      _emit();
+    });
   }
 
   @override
@@ -351,15 +409,16 @@ class MusicRequestManager implements MusicRequests {
     }
 
     _lastError = null;
-    _queue.add(
-      _PendingMusicRequest(
-        id: id,
-        rewardId: rewardId,
-        requestedBy: requester,
-        sourceUrl: sourceUrl,
-        maxDuration: _maxDuration,
-      ),
+    final request = _PendingMusicRequest(
+      id: id,
+      rewardId: rewardId,
+      requestedBy: requester,
+      sourceUrl: sourceUrl,
+      maxDuration: _maxDuration,
     );
+    _queue.add(request);
+    // A redemption can arrive before Twitch applies the paused reward.
+    if (_hold != null) _holdRequest(request);
     _emit();
     _ensurePreparing();
   }
@@ -401,7 +460,7 @@ class MusicRequestManager implements MusicRequests {
   }
 
   void _ensurePreparing() {
-    if (_preparing || _closed) return;
+    if (_preparing || _closed || _hold != null) return;
     _preparing = true;
     final preparation = _prepareLoop();
     _preparationFuture = preparation;
@@ -410,7 +469,7 @@ class MusicRequestManager implements MusicRequests {
 
   Future<void> _prepareLoop() async {
     try {
-      while (!_closed) {
+      while (!_closed && _hold == null) {
         final request = _firstResolvingRequest();
         if (request == null) return;
         _preparingRequest = request;
@@ -455,7 +514,14 @@ class MusicRequestManager implements MusicRequests {
           _emit();
           _startIfPossible();
         } catch (error) {
-          if (_queue.remove(request)) {
+          final reason = error is MusicTrackException ? error.errorType : null;
+          if (musicPreparationHoldReasons.contains(reason) &&
+              _queue.contains(request) &&
+              !_closed) {
+            // Keep the request; it is prepared again when the hold ends.
+            request.resetPreparation();
+            _startHold(reason!, request);
+          } else if (_queue.remove(request)) {
             if (!_closed) {
               _rejectRequest(request, _operationError(request, error));
             }
@@ -468,7 +534,7 @@ class MusicRequestManager implements MusicRequests {
       }
     } finally {
       _preparing = false;
-      if (!_closed && _firstResolvingRequest() != null) {
+      if (!_closed && _hold == null && _firstResolvingRequest() != null) {
         _ensurePreparing();
       }
     }
@@ -611,7 +677,7 @@ class MusicRequestManager implements MusicRequests {
     final index = _queue.indexWhere((request) => request.id == itemId);
     if (index < 0) return false;
 
-    final request = _queue.removeAt(index);
+    final request = _queue.removeAt(index)..cancelHoldTimer();
     final cancelPreparation = identical(_preparingRequest, request);
     _requestSettlement(
       redemptionId: request.id,
@@ -687,7 +753,9 @@ class MusicRequestManager implements MusicRequests {
       revision: _current.revision + 1,
       nowPlaying: _nowPlaying?.toNowPlaying(DateTime.now()),
       queue: List.unmodifiable(_queue.map((request) => request.toView())),
-      lastError: _lastError,
+      // A hold stays visible until it ends, even while ready tracks play.
+      lastError: _hold ?? _lastError,
+      hold: _hold?.type,
     );
     _stateController.add(_current);
   }
@@ -696,6 +764,9 @@ class MusicRequestManager implements MusicRequests {
   Future<void> close() async {
     if (_closed) return;
     _closed = true;
+    for (final request in _queue) {
+      request.cancelHoldTimer();
+    }
     await _eventSubscription.cancel();
     await _rewardIdSubscription?.cancel();
     await _fetcher.cancel();
@@ -723,6 +794,7 @@ class _PendingMusicRequest {
   DateTime? _resumedAt;
   Duration _position = Duration.zero;
   bool paused = false;
+  Timer? _holdTimer;
 
   _PendingMusicRequest({
     required this.id,
@@ -731,6 +803,21 @@ class _PendingMusicRequest {
     required this.sourceUrl,
     required this.maxDuration,
   });
+
+  void resetPreparation() {
+    phase = MusicQueueItemPhase.resolving;
+    metadata = null;
+    downloadProgress = null;
+  }
+
+  void startHoldTimer(Duration timeout, void Function() onTimeout) {
+    _holdTimer ??= Timer(timeout, onTimeout);
+  }
+
+  void cancelHoldTimer() {
+    _holdTimer?.cancel();
+    _holdTimer = null;
+  }
 
   void startPlayback(DateTime now) {
     startedAt = now;

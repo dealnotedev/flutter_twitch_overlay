@@ -12,6 +12,7 @@ import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/settings/music_settings_controls.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
+import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/music/youtube_connection_controller.dart';
 
@@ -21,6 +22,7 @@ class OverlaySettingsDialog extends StatefulWidget {
   final MusicControlServerController? musicServer;
   final MusicRewardController? musicRewardController;
   final YoutubeConnectionController? youtubeConnection;
+  final MusicRequestManager? musicRequests;
 
   const OverlaySettingsDialog({
     super.key,
@@ -29,6 +31,7 @@ class OverlaySettingsDialog extends StatefulWidget {
     this.musicServer,
     this.musicRewardController,
     this.youtubeConnection,
+    this.musicRequests,
   });
 
   @override
@@ -253,6 +256,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
         server: widget.musicServer,
         rewardController: widget.musicRewardController,
         youtubeConnection: widget.youtubeConnection,
+        musicRequests: widget.musicRequests,
         presentationSettings: _buildPresentationSettings(context),
         rewardSettings: _buildRewardSubsection(context),
       ),

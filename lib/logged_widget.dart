@@ -276,6 +276,10 @@ class _State extends State<LoggedWidget> {
                 appLocator is AppServiceLocator
                     ? appLocator.youtubeConnection
                     : null,
+            musicRequests:
+                appLocator is AppServiceLocator
+                    ? appLocator.musicRequests
+                    : null,
           ),
     );
   }

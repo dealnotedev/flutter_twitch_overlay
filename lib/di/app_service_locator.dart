@@ -34,6 +34,7 @@ class AppServiceLocator extends ServiceLocator {
   MusicControlServerController? musicControlServer;
   late final MusicRewardController musicRewardController;
   late final YoutubeConnectionController youtubeConnection;
+  late final MusicRequestManager musicRequests;
   Future<void> _musicUpdates = Future.value();
 
   AppServiceLocator._(this.settings, this.config) {
@@ -55,6 +56,15 @@ class AppServiceLocator extends ServiceLocator {
     final sessionDirectory = Directory(
       '${musicCache.rootDirectory.parent.path}${Platform.pathSeparator}youtube-session',
     );
+
+    final trackFetcher = YtDlpMusicTrackFetcher(
+      executable: tools.ytDlpExecutable,
+      ffmpegLocation: tools.ffmpegLocation,
+      denoPath: tools.denoPath,
+      cache: musicCache,
+      cookies: () => youtubeConnection.leaseCookies(),
+    );
+
     YtDlpMusicTrackFetcher? youtubeProbe;
     var youtubeProbeCanceled = false;
     youtubeConnection = YoutubeConnectionController(
@@ -64,18 +74,26 @@ class AppServiceLocator extends ServiceLocator {
           '${sessionDirectory.path}${Platform.pathSeparator}browser',
         ),
       ),
+      toolVersion: trackFetcher.readVersion,
+      onConnected: () => musicRequests.resumePreparation(),
       cancelVerification: () async {
         youtubeProbeCanceled = true;
         await youtubeProbe?.cancel();
       },
-      verifyAccess: (cookies, url) async {
+      verifyAccess: (cookies, url, onProgress) async {
         youtubeProbeCanceled = false;
+        // A private, empty cache: a cached track would skip the download and
+        // report success even though YouTube blocks audio downloads.
+        final checkCache = Directory(
+          '${sessionDirectory.path}${Platform.pathSeparator}check',
+        );
+        if (await checkCache.exists()) await checkCache.delete(recursive: true);
         final probe = YtDlpMusicTrackFetcher(
           executable: tools.ytDlpExecutable,
           ffmpegLocation: tools.ffmpegLocation,
           denoPath: tools.denoPath,
-          cache: musicCache,
-          cookieFilePath: () => cookies,
+          cache: MusicFileCache(rootDirectory: checkCache, maxBytes: 0),
+          cookies: () async => YtDlpCookieFile(cookies),
           downloadTimeout: const Duration(minutes: 2),
         );
         youtubeProbe = probe;
@@ -91,21 +109,18 @@ class AppServiceLocator extends ServiceLocator {
               errorType: MusicQueueErrorType.trackTooLongOrLive,
             );
           }
-          await probe.obtain(metadata: metadata, onProgress: (_) {});
+          await probe.obtain(metadata: metadata, onProgress: onProgress);
         } finally {
           youtubeProbe = null;
+          try {
+            if (await checkCache.exists()) {
+              await checkCache.delete(recursive: true);
+            }
+          } on FileSystemException {
+            // Removed before the next check.
+          }
         }
       },
-    );
-
-    final trackFetcher = YtDlpMusicTrackFetcher(
-      executable: tools.ytDlpExecutable,
-      ffmpegLocation: tools.ffmpegLocation,
-      denoPath: tools.denoPath,
-      cache: musicCache,
-      cookieFilePath: () => youtubeConnection.cookieFilePath,
-      onAccessRequired: youtubeConnection.requireVerification,
-      onDownloadBlocked: youtubeConnection.requireDownloadCheck,
     );
 
     final musicPlayer = ObsAudioMusicTrackPlayer(
@@ -126,7 +141,7 @@ class AppServiceLocator extends ServiceLocator {
       settings: settings,
     );
 
-    final musicRequests = MusicRequestManager(
+    musicRequests = MusicRequestManager(
       events: wsManager.messages,
       fetcher: trackFetcher,
       player: musicPlayer,
@@ -136,6 +151,7 @@ class AppServiceLocator extends ServiceLocator {
       rewardId: settings.musicRewardId,
       rewardIdChanges: settings.musicRewardIdChanges,
       redemptionService: redemptionService,
+      onPreparationHeld: youtubeConnection.requireCheck,
     );
 
     map[Settings] = settings;
@@ -150,6 +166,10 @@ class AppServiceLocator extends ServiceLocator {
       settings: settings,
       connected: wsManager.rewardsReady,
       connectionChanges: wsManager.rewardsReadyChanges,
+      requestsHeld: musicRequests.current.hold != null,
+      requestsHeldChanges: musicRequests.states.map(
+        (snapshot) => snapshot.hold != null,
+      ),
       pauseReward: (channel, reward, paused) async {
         if (settings.twitchAuth?.broadcasterId != channel) return;
         await musicApi.updateCustomReward(

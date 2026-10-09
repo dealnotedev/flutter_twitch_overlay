@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -16,6 +17,7 @@ import 'package:obssource/music/youtube_connection_controller.dart';
 import 'package:obssource/settings/overlay_settings_dialog.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/twitch/twitch_api.dart';
+import 'package:obssource/twitch/ws_event.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -35,27 +37,32 @@ void main() {
           ))!;
       final browser = _YoutubeBrowser();
       var checks = 0;
-      final connection = YoutubeConnectionController(
-        directory: directory,
-        browser: browser,
-        verifyAccess: (_, __) async {
-          if (++checks == 1) {
-            throw const YtDlpException(
-              'challenge',
-              errorType: MusicQueueErrorType.youtubeAccessRequired,
-              diagnostic: 'yt-dlp: ERROR: YouTube verification required',
-            );
-          }
-          if (checks == 2) {
-            throw const YtDlpException(
-              'media blocked',
-              errorType: MusicQueueErrorType.youtubeDownloadBlocked,
-              diagnostic:
-                  'yt-dlp: ERROR: unable to download video data: HTTP Error 403: Forbidden',
-            );
-          }
-        },
-      );
+      // Created with real async so its file operations are not stuck in the
+      // fake test zone.
+      final connection =
+          (await tester.runAsync(
+            () async => YoutubeConnectionController(
+              directory: directory,
+              browser: browser,
+              verifyAccess: (_, __, ___) async {
+                if (++checks == 1) {
+                  throw const YtDlpException(
+                    'challenge',
+                    errorType: MusicQueueErrorType.youtubeAccessRequired,
+                    diagnostic: 'yt-dlp: ERROR: YouTube verification required',
+                  );
+                }
+                if (checks == 2) {
+                  throw const YtDlpException(
+                    'media blocked',
+                    errorType: MusicQueueErrorType.youtubeDownloadBlocked,
+                    diagnostic:
+                        'yt-dlp: ERROR: unable to download video data: HTTP Error 403: Forbidden',
+                  );
+                }
+              },
+            ),
+          ))!;
       addTearDown(
         () => tester.runAsync(() async {
           await connection.close();
@@ -98,17 +105,31 @@ void main() {
       await _pump(tester);
       await _capture(tester, capture, 'youtube-connect-$language');
 
-      Future<void> pressVerify() async {
+      // Presses a button and waits for the asynchronous work it started.
+      Future<void> press(String key, {bool Function()? until}) async {
+        final button = find.byKey(ValueKey(key));
+        await tester.ensureVisible(button);
         await tester.runAsync(() async {
-          tester.widget<NeonSettingsButton>(verify).onPressed!();
-          await connection.verify();
+          tester.widget<NeonSettingsButton>(button).onPressed!();
+          while (connection.busy || !(until?.call() ?? true)) {
+            await Future<void>.delayed(const Duration(milliseconds: 5));
+          }
         });
         await _pump(tester);
       }
 
-      await pressVerify();
+      Future<void> showPanel() async {
+        await tester.ensureVisible(find.text(l.music_youtube_title));
+        await _pump(tester);
+      }
+
+      expect(find.text(l.music_youtube_account_warning), findsOneWidget);
+      await press('music_youtube_verify');
+      // The browser closes for the check, so the reason says how to retry.
+      expect(connection.status, YoutubeConnectionStatus.disconnected);
       expect(find.text(l.music_youtube_verification_required), findsOneWidget);
       expect(find.text(l.music_youtube_connected), findsNothing);
+      expect(verify, findsNothing);
       expect(
         find.text(
           l.music_youtube_checked_video(
@@ -123,27 +144,147 @@ void main() {
       await tester.tap(find.text(l.music_youtube_error_details));
       await _pump(tester);
       expect(find.text(connection.diagnostic!), findsOneWidget);
-      await tester.ensureVisible(find.text(l.music_youtube_title));
-      await _pump(tester);
+      await showPanel();
       await _capture(tester, capture, 'youtube-check-error-$language');
-      await pressVerify();
+
+      await press('music_youtube_connect');
+      await press('music_youtube_verify');
       expect(find.text(l.music_youtube_download_blocked), findsOneWidget);
       expect(find.text(l.music_youtube_connected), findsNothing);
-      await tester.ensureVisible(find.text(l.music_youtube_title));
-      await _pump(tester);
+      await showPanel();
       await _capture(tester, capture, 'youtube-media-403-$language');
-      await pressVerify();
+
+      await press('music_youtube_connect');
+      await press('music_youtube_verify');
       expect(find.text(l.music_youtube_connected), findsOneWidget);
-      expect(verify, findsNothing);
       expect(details, findsNothing);
       expect(
+        tester.widget<NeonSettingsButton>(connect).label,
+        l.music_youtube_reconnect,
+      );
+
+      // Cancelling a reconnection keeps the verified session.
+      await press('music_youtube_connect');
+      await press(
+        'music_youtube_cancel',
+        until: () => connection.status == YoutubeConnectionStatus.connected,
+      );
+      expect(connection.hasSession, isTrue);
+      expect(find.text(l.music_youtube_saved), findsOneWidget);
+
+      // Removing the session asks for confirmation first.
+      await press('music_youtube_disconnect');
+      expect(find.text(l.music_youtube_disconnect_confirm), findsOneWidget);
+      await showPanel();
+      await _capture(tester, capture, 'youtube-disconnect-$language');
+      await press('music_youtube_disconnect_keep');
+      expect(find.text(l.music_youtube_disconnect_confirm), findsNothing);
+      expect(connection.hasSession, isTrue);
+      await press('music_youtube_disconnect');
+      await press(
+        'music_youtube_disconnect_remove',
+        until: () => !connection.hasSession,
+      );
+      expect(find.text(l.music_youtube_disconnected), findsOneWidget);
+      expect(
         find.byKey(const ValueKey('music_youtube_disconnect')),
-        findsOneWidget,
+        findsNothing,
       );
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     });
   }
+  testWidgets('paused music requests explain the hold and can resume', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    final settings = Settings();
+    await settings.init();
+    await tester.binding.setSurfaceSize(const Size(1280, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    await _loadCaptureFonts(tester);
+    final directory =
+        (await tester.runAsync(
+          () => Directory.systemTemp.createTemp('youtube_hold_ui_'),
+        ))!;
+    final events = StreamController<WsMessage>.broadcast();
+    final fetcher = _BlockedFetcher();
+    // Real async keeps the queue's preparation loop out of the fake zone.
+    final (requests, connection) =
+        (await tester.runAsync(() async {
+          final connection = YoutubeConnectionController(
+            directory: directory,
+            browser: _YoutubeBrowser(),
+            verifyAccess: (_, __, ___) async {},
+          );
+          final requests = MusicRequestManager(
+            events: events.stream,
+            fetcher: fetcher,
+            player: _SilentPlayer(),
+            enabled: true,
+            maxQueueLength: 10,
+            maxDuration: const Duration(minutes: 10),
+            rewardId: 'reward',
+            onPreparationHeld: connection.requireCheck,
+          );
+          return (requests, connection);
+        }))!;
+    addTearDown(
+      () => tester.runAsync(() async {
+        await requests.close();
+        await events.close();
+        await connection.close();
+        directory.deleteSync(recursive: true);
+      }),
+    );
+    await tester.runAsync(() async {
+      events.add(_redemption('blocked'));
+      while (requests.current.hold == null) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+    });
+    final capture = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(fontFamily: 'RobotoMono'),
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        locale: const Locale('en'),
+        home: Scaffold(
+          backgroundColor: const Color(0xff080516),
+          body: RepaintBoundary(
+            key: capture,
+            child: OverlaySettingsDialog(
+              settings: settings,
+              rewardCatalog: _Catalog(),
+              youtubeConnection: connection,
+              musicRequests: requests,
+            ),
+          ),
+        ),
+      ),
+    );
+    await _pump(tester);
+    final resume = find.byKey(const ValueKey('music_youtube_resume'));
+    final l = AppLocalizations.of(tester.element(resume))!;
+    expect(find.text(l.music_youtube_hold_title), findsOneWidget);
+    expect(find.text(l.music_youtube_hold_body(1, 15)), findsOneWidget);
+    expect(find.text(l.music_youtube_verification_required), findsOneWidget);
+    expect(find.text(l.music_youtube_disconnected), findsNothing);
+    await tester.ensureVisible(find.text(l.music_youtube_title));
+    await _pump(tester);
+    await _capture(tester, capture, 'youtube-hold-en');
+    await tester.runAsync(() async {
+      tester.widget<NeonSettingsButton>(resume).onPressed!();
+      while (fetcher.inspections < 2) {
+        await Future<void>.delayed(const Duration(milliseconds: 5));
+      }
+    });
+    await _pump(tester);
+    expect(fetcher.inspections, 2);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
   for (final language in ['uk', 'en']) {
     testWidgets('music settings validate, persist and render in $language', (
       tester,
@@ -408,6 +549,59 @@ class _YoutubeBrowser implements YoutubeBrowserSession {
   Future<List<Map<String, dynamic>>> readYoutubeCookies() async => [
     {'domain': '.youtube.com', 'name': 'test', 'value': 'fake', 'path': '/'},
   ];
+}
+
+WsMessage _redemption(String id) => WsMessage.fromJson({
+  'payload': {
+    'subscription': {
+      'type': 'channel.channel_points_custom_reward_redemption.add',
+    },
+    'event': {
+      'id': id,
+      'user_id': 'user-$id',
+      'user_login': 'viewer_$id',
+      'user_name': 'Viewer $id',
+      'user_input': 'https://youtu.be/$id',
+      'redeemed_at': '2026-10-09T12:30:00Z',
+      'reward': {'id': 'reward', 'title': 'Play Music', 'cost': 100},
+    },
+  },
+});
+
+class _BlockedFetcher implements MusicTrackFetcher {
+  int inspections = 0;
+
+  @override
+  Future<MusicTrackMetadata> inspect(Uri sourceUrl) async {
+    inspections++;
+    throw const MusicTrackException(
+      'bot check',
+      errorType: MusicQueueErrorType.youtubeAccessRequired,
+    );
+  }
+
+  @override
+  Future<String> obtain({
+    required MusicTrackMetadata metadata,
+    required void Function(MusicDownloadProgress progress) onProgress,
+  }) => throw UnimplementedError();
+
+  @override
+  Future<void> cancel() async {}
+}
+
+class _SilentPlayer implements MusicTrackPlayer {
+  @override
+  Future<void> play(DownloadedMusicTrack track) async {}
+
+  @override
+  Future<void> setPaused(bool paused) async {}
+
+  @override
+  Future<void> seek(Duration position) async {}
+
+  @override
+  Future<void> stop() async {}
 }
 
 class _Requests implements MusicRequests {

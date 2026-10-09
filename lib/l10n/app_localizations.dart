@@ -217,6 +217,18 @@ abstract class AppLocalizations {
   /// **'WAITING FOR MUSIC REQUESTS'**
   String get music_waiting_for_requests;
 
+  /// No description provided for @music_requests_paused.
+  ///
+  /// In en, this message translates to:
+  /// **'MUSIC REQUESTS PAUSED'**
+  String get music_requests_paused;
+
+  /// No description provided for @music_queue_status_waiting.
+  ///
+  /// In en, this message translates to:
+  /// **'waiting'**
+  String get music_queue_status_waiting;
+
   /// No description provided for @music_queue_status_resolving.
   ///
   /// In en, this message translates to:
@@ -274,14 +286,20 @@ abstract class AppLocalizations {
   /// No description provided for @music_error_youtube_access.
   ///
   /// In en, this message translates to:
-  /// **'YouTube needs verification. Music settings → Connect YouTube.'**
+  /// **'Requests are paused: YouTube asked for verification. Waiting tracks will continue or be refunded.'**
   String get music_error_youtube_access;
 
   /// No description provided for @music_error_youtube_download_blocked.
   ///
   /// In en, this message translates to:
-  /// **'YouTube blocked the audio download (403). Music settings → Connect YouTube.'**
+  /// **'Requests are paused: YouTube blocked audio downloads. Waiting tracks will continue or be refunded.'**
   String get music_error_youtube_download_blocked;
+
+  /// No description provided for @music_error_youtube_rate_limited.
+  ///
+  /// In en, this message translates to:
+  /// **'Requests are paused: YouTube temporarily limited requests. Waiting tracks will continue or be refunded.'**
+  String get music_error_youtube_rate_limited;
 
   /// No description provided for @music_error_youtube_unavailable.
   ///
@@ -316,8 +334,14 @@ abstract class AppLocalizations {
   /// No description provided for @music_youtube_instructions.
   ///
   /// In en, this message translates to:
-  /// **'1. Open and play the requested video in the browser window that opened. If the YouTube homepage opened, choose a short public video.\n2. Complete any verification. You can try checking the connection without signing in first.\n3. Leave the video tab open, return here and press Check connection.'**
+  /// **'1. Open and play the requested video in the browser window that opened. If the YouTube homepage opened, choose a short public video.\n2. Complete any verification. You can try checking the connection without signing in first.\n3. Leave the video tab open, return here and press Check connection. The window closes when the check starts.'**
   String get music_youtube_instructions;
+
+  /// No description provided for @music_youtube_account_warning.
+  ///
+  /// In en, this message translates to:
+  /// **'If you sign in, use a secondary Google account: YouTube may restrict accounts used for downloading.'**
+  String get music_youtube_account_warning;
 
   /// No description provided for @music_youtube_checking.
   ///
@@ -328,14 +352,32 @@ abstract class AppLocalizations {
   /// No description provided for @music_youtube_connected.
   ///
   /// In en, this message translates to:
-  /// **'YouTube connected. You can submit the track again.'**
+  /// **'YouTube connected. Waiting requests continue automatically.'**
   String get music_youtube_connected;
+
+  /// No description provided for @music_youtube_saved.
+  ///
+  /// In en, this message translates to:
+  /// **'A YouTube session is saved on this computer and used for music requests.'**
+  String get music_youtube_saved;
+
+  /// No description provided for @music_youtube_saved_attention.
+  ///
+  /// In en, this message translates to:
+  /// **'A YouTube session is saved, but the last check or request failed. See the reason below.'**
+  String get music_youtube_saved_attention;
 
   /// No description provided for @music_youtube_connect.
   ///
   /// In en, this message translates to:
   /// **'Connect YouTube'**
   String get music_youtube_connect;
+
+  /// No description provided for @music_youtube_reconnect.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconnect YouTube'**
+  String get music_youtube_reconnect;
 
   /// No description provided for @music_youtube_reopen.
   ///
@@ -361,6 +403,42 @@ abstract class AppLocalizations {
   /// **'Disconnect'**
   String get music_youtube_disconnect;
 
+  /// No description provided for @music_youtube_disconnect_confirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove the saved YouTube session and the dedicated browser profile, including any Google sign-in there?'**
+  String get music_youtube_disconnect_confirm;
+
+  /// No description provided for @music_youtube_disconnect_remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get music_youtube_disconnect_remove;
+
+  /// No description provided for @music_youtube_disconnect_keep.
+  ///
+  /// In en, this message translates to:
+  /// **'Keep'**
+  String get music_youtube_disconnect_keep;
+
+  /// No description provided for @music_youtube_hold_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Music requests are paused'**
+  String get music_youtube_hold_title;
+
+  /// No description provided for @music_youtube_hold_body.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting requests: {count}. The Twitch reward is paused meanwhile. A request that waits longer than {minutes} min is refunded.'**
+  String music_youtube_hold_body(int count, int minutes);
+
+  /// No description provided for @music_youtube_resume.
+  ///
+  /// In en, this message translates to:
+  /// **'Resume requests'**
+  String get music_youtube_resume;
+
   /// No description provided for @music_youtube_no_browser.
   ///
   /// In en, this message translates to:
@@ -370,20 +448,26 @@ abstract class AppLocalizations {
   /// No description provided for @music_youtube_browser_closed.
   ///
   /// In en, this message translates to:
-  /// **'The YouTube window was closed. Press Reopen YouTube and keep it open until the check finishes.'**
+  /// **'The YouTube window was closed. Open YouTube again and keep the window open until you press Check connection.'**
   String get music_youtube_browser_closed;
 
   /// No description provided for @music_youtube_verification_required.
   ///
   /// In en, this message translates to:
-  /// **'YouTube still needs verification. Complete it in the opened browser window, then check again.'**
+  /// **'YouTube asked to confirm you\'re not a bot. Open YouTube with the button below, complete the verification in that window, then check the connection.'**
   String get music_youtube_verification_required;
 
   /// No description provided for @music_youtube_download_blocked.
   ///
   /// In en, this message translates to:
-  /// **'YouTube blocked the audio download (403). If the video plays in the browser, try signing in to Google in that same window, then check the connection again. Signing in can help, but doesn\'t guarantee access.'**
+  /// **'YouTube blocked the audio download (403). A newer application version with an updated yt-dlp often fixes this. You can also open YouTube below, sign in with a secondary Google account in that window and check again; this can help but doesn\'t guarantee access.'**
   String get music_youtube_download_blocked;
+
+  /// No description provided for @music_youtube_rate_limited.
+  ///
+  /// In en, this message translates to:
+  /// **'YouTube temporarily limited requests from this computer, usually for up to an hour. Wait, then press Resume requests. A new connection rarely helps right away.'**
+  String get music_youtube_rate_limited;
 
   /// No description provided for @music_youtube_network_error.
   ///
@@ -412,13 +496,13 @@ abstract class AppLocalizations {
   /// No description provided for @music_youtube_video_unavailable.
   ///
   /// In en, this message translates to:
-  /// **'YouTube won\'t let the player access this video. Choose another public video in the opened window and check again.'**
+  /// **'YouTube won\'t let the player access this video. Open YouTube, choose another public video and check again.'**
   String get music_youtube_video_unavailable;
 
   /// No description provided for @music_youtube_video_too_long.
   ///
   /// In en, this message translates to:
-  /// **'This video exceeds your track duration limit or is a live stream. Choose a shorter video or increase the duration limit below, then check again.'**
+  /// **'This video exceeds your track duration limit or is a live stream. Open YouTube and choose a shorter video, or increase the duration limit below, then check again.'**
   String get music_youtube_video_too_long;
 
   /// No description provided for @music_youtube_checked_video.

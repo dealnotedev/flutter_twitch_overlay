@@ -6,13 +6,15 @@ import 'package:obssource/config/settings.dart';
 typedef PauseMusicReward =
     Future<void> Function(String channel, String rewardId, bool paused);
 
-/// The selected reward follows the request switch and Twitch event connection.
+/// The selected reward follows the request switch, the Twitch event connection
+/// and paused track preparation, so viewers cannot spend points meanwhile.
 class MusicRewardController extends ChangeNotifier {
   final Settings settings;
   final PauseMusicReward pauseReward;
   final _subscriptions = <StreamSubscription<dynamic>>[];
   Future<void> _pending = Future.value();
   bool _connected;
+  bool _requestsHeld;
   bool _closed = false;
   (String, String, bool)? _applied;
   String? error;
@@ -22,8 +24,17 @@ class MusicRewardController extends ChangeNotifier {
     required this.pauseReward,
     required bool connected,
     required Stream<bool> connectionChanges,
-  }) : _connected = connected {
+    bool requestsHeld = false,
+    Stream<bool>? requestsHeldChanges,
+  }) : _connected = connected,
+       _requestsHeld = requestsHeld {
     _subscriptions.addAll([
+      if (requestsHeldChanges != null)
+        requestsHeldChanges.listen((value) {
+          if (_requestsHeld == value) return;
+          _requestsHeld = value;
+          unawaited(refresh());
+        }),
       settings.musicChanges.listen((_) => unawaited(refresh())),
       settings.musicRewardIdChanges.listen((_) => unawaited(refresh())),
       settings.twitchAuthChanges.listen((_) {
@@ -64,7 +75,7 @@ class MusicRewardController extends ChangeNotifier {
       final target = (
         channel,
         reward,
-        stopping || !settings.music.enabled || !_connected,
+        stopping || !settings.music.enabled || !_connected || _requestsHeld,
       );
       if (target == _applied) {
         error = null;

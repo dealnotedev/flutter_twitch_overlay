@@ -49,6 +49,39 @@ void main() {
       );
     },
   );
+  test('carries a preparation hold as an optional v1 field', () {
+    const state = MusicQueueSnapshot(
+      revision: 1,
+      nowPlaying: null,
+      queue: [],
+      lastError: MusicQueueError(
+        requester: 'viewer',
+        type: MusicQueueErrorType.youtubeRateLimited,
+      ),
+      hold: MusicQueueErrorType.youtubeRateLimited,
+    );
+    final wire = MusicControlProtocol.snapshotToJson(state);
+    final error = wire['lastError'] as Map;
+    expect(wire['hold'], 'youtubeRateLimited');
+    expect(error['type'], 'operationFailed');
+    expect(error['reason'], 'youtubeRateLimited');
+    expect(error['details'], contains('paused'));
+    final restored = MusicControlProtocol.snapshotFromJson(wire);
+    expect(restored.hold, MusicQueueErrorType.youtubeRateLimited);
+    expect(restored.lastError?.type, MusicQueueErrorType.youtubeRateLimited);
+    expect(
+      MusicControlProtocol.snapshotFromJson({...wire}..remove('hold')).hold,
+      isNull,
+    );
+    expect(
+      MusicControlProtocol.snapshotFromJson({...wire, 'hold': 'future'}).hold,
+      isNull,
+    );
+    expect(
+      MusicControlProtocol.snapshotToJson(MusicQueueSnapshot.empty),
+      isNot(contains('hold')),
+    );
+  });
   test('round-trips a complete music queue snapshot', () {
     final updatedAt = DateTime(2026, 9, 3, 14, 30, 15, 250);
     final playingItem = _item(

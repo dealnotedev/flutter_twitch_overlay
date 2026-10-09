@@ -34,12 +34,17 @@ void main() {
     await directory.delete(recursive: true);
   });
 
+  File savedSession() => File('${directory.path}/cookies.txt');
+
+  Future<void> saveSession(String content) =>
+      savedSession().writeAsString(content);
+
   test('checks the video selected in the browser after restart', () async {
     final selected = Uri.parse('https://www.youtube.com/watch?v=selected123');
     controller = YoutubeConnectionController(
       directory: directory,
       browser: browser,
-      verifyAccess: (_, url) async {
+      verifyAccess: (_, url, __) async {
         if (url != selected) {
           // Actual output of the formerly hardcoded public test clip.
           throw const YtDlpException(
@@ -65,6 +70,7 @@ void main() {
       in {
         MusicQueueErrorType.youtubeUnavailable: 'videoUnavailable',
         MusicQueueErrorType.youtubeDownloadBlocked: 'downloadBlocked',
+        MusicQueueErrorType.youtubeRateLimited: 'rateLimited',
         MusicQueueErrorType.trackTooLongOrLive: 'videoTooLongOrLive',
         MusicQueueErrorType.networkUnavailable: 'networkUnavailable',
         MusicQueueErrorType.musicToolsUnavailable: 'toolsUnavailable',
@@ -73,8 +79,9 @@ void main() {
       controller = YoutubeConnectionController(
         directory: directory,
         browser: browser,
+        toolVersion: () async => '2026.08.19',
         verifyAccess:
-            (_, __) async =>
+            (_, __, ___) async =>
                 throw YtDlpException(
                   'failure',
                   errorType: failure.key,
@@ -88,9 +95,13 @@ void main() {
       expect(controller!.issue?.name, failure.value);
       expect(controller!.checkedVideoUrl, browser.selectedUrl);
       expect(controller!.diagnostic, contains('ERROR: preparation failed'));
+      expect(controller!.diagnostic, contains('yt-dlp 2026.08.19'));
       expect(controller!.diagnostic, isNot(contains('secret')));
       expect(controller!.cookieFilePath, isNull);
-      await controller!.disconnect();
+      // The browser was closed for the check; reopening returns to the video.
+      expect(controller!.status, YoutubeConnectionStatus.disconnected);
+      await controller!.connect();
+      expect(browser.url, browser.selectedUrl);
       expect(controller!.diagnostic, isNull);
     });
   }
@@ -100,10 +111,13 @@ void main() {
     () async {
       final blockedUrl = Uri.parse('https://youtu.be/blocked');
       var checked = false;
+      var connected = 0;
+      final progress = <double?>[];
       controller = YoutubeConnectionController(
         directory: directory,
         browser: browser,
-        verifyAccess: (file, url) async {
+        onConnected: () => connected++,
+        verifyAccess: (file, url, onProgress) async {
           expect(url, blockedUrl);
           expect(
             await File(file).readAsString(),
@@ -114,32 +128,55 @@ void main() {
             isNot(contains('google.com')),
           );
           expect(controller!.cookieFilePath, isNull);
+          expect(
+            browser.closed,
+            isTrue,
+            reason: 'An open YouTube tab rotates the exported cookies',
+          );
+          onProgress(
+            const MusicDownloadProgress(
+              downloadedBytes: 1,
+              totalBytes: 4,
+              eta: null,
+            ),
+          );
+          progress.add(controller!.checkProgress);
           checked = true;
         },
       );
-      controller!.requireVerification(blockedUrl);
+      controller!.requireCheck(
+        MusicQueueErrorType.youtubeAccessRequired,
+        blockedUrl,
+      );
+      expect(controller!.issue, YoutubeConnectionIssue.verificationRequired);
       await controller!.connect();
       expect(browser.url, blockedUrl);
       expect(controller!.status, YoutubeConnectionStatus.awaitingVerification);
       await controller!.verify();
       expect(checked, isTrue);
+      expect(progress, [0.25]);
+      expect(controller!.checkProgress, isNull);
       expect(controller!.status, YoutubeConnectionStatus.connected);
-      expect(browser.closed, isTrue);
+      expect(controller!.verifiedThisSession, isTrue);
+      expect(controller!.issue, isNull);
+      expect(connected, 1);
       final saved = controller!.cookieFilePath!;
       expect(await File('$saved.pending').exists(), isFalse);
       await controller!.close();
       controller = YoutubeConnectionController(
         directory: directory,
         browser: browser,
-        verifyAccess: (_, __) async {},
+        verifyAccess: (_, __, ___) async {},
       );
       expect(controller!.cookieFilePath, saved);
       expect(controller!.status, YoutubeConnectionStatus.connected);
+      expect(controller!.verifiedThisSession, isFalse);
       final profile = Directory('${directory.path}/browser');
       await profile.create();
       await File('${profile.path}/app-session').writeAsString('test');
       await controller!.disconnect();
       expect(controller!.cookieFilePath, isNull);
+      expect(await File(saved).exists(), isFalse);
       expect(await profile.exists(), isFalse);
     },
   );
@@ -151,7 +188,7 @@ void main() {
         directory: directory,
         browser: browser,
         verifyAccess:
-            (_, __) async =>
+            (_, __, ___) async =>
                 throw const MusicTrackException(
                   'challenge',
                   errorType: MusicQueueErrorType.youtubeAccessRequired,
@@ -159,13 +196,29 @@ void main() {
       );
       await controller!.connect();
       await controller!.verify();
-      expect(controller!.status, YoutubeConnectionStatus.awaitingVerification);
+      expect(controller!.status, YoutubeConnectionStatus.disconnected);
       expect(controller!.issue, YoutubeConnectionIssue.verificationRequired);
       expect(controller!.cookieFilePath, isNull);
       expect(await directory.list().toList(), isEmpty);
-      expect(browser.closed, isFalse);
+      expect(browser.closed, isTrue);
     },
   );
+
+  test('a browser problem before export keeps the window for fixing', () async {
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) async {},
+    );
+    await controller!.connect();
+    browser.error = const YoutubeConnectionException(
+      YoutubeConnectionIssue.chooseVideo,
+    );
+    await controller!.verify();
+    expect(controller!.status, YoutubeConnectionStatus.awaitingVerification);
+    expect(controller!.issue, YoutubeConnectionIssue.chooseVideo);
+    expect(browser.closed, isFalse);
+  });
 
   test('closed browser offers reconnection', () async {
     browser.error = const YoutubeConnectionException(
@@ -174,7 +227,7 @@ void main() {
     controller = YoutubeConnectionController(
       directory: directory,
       browser: browser,
-      verifyAccess: (_, __) async {},
+      verifyAccess: (_, __, ___) async {},
     );
     await controller!.connect();
     await controller!.verify();
@@ -185,6 +238,143 @@ void main() {
     expect(controller!.status, YoutubeConnectionStatus.connected);
   });
 
+  test('cancel closes the browser and keeps the saved session', () async {
+    await saveSession('saved');
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) async {},
+    );
+    expect(controller!.status, YoutubeConnectionStatus.connected);
+    await controller!.connect();
+    expect(controller!.status, YoutubeConnectionStatus.awaitingVerification);
+    await controller!.cancel();
+    expect(controller!.status, YoutubeConnectionStatus.connected);
+    expect(browser.closed, isTrue);
+    expect(await savedSession().readAsString(), 'saved');
+  });
+
+  test('cancelling a running check keeps the saved session', () async {
+    await saveSession('saved');
+    final entered = Completer<void>();
+    final result = Completer<void>();
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) {
+        entered.complete();
+        return result.future;
+      },
+      cancelVerification: () async {
+        if (!result.isCompleted) result.complete();
+      },
+    );
+    await controller!.connect();
+    final verification = controller!.verify();
+    await entered.future;
+    await controller!.cancel();
+    await verification;
+    expect(controller!.status, YoutubeConnectionStatus.connected);
+    expect(await savedSession().readAsString(), 'saved');
+    expect(await File('${savedSession().path}.pending').exists(), isFalse);
+  });
+
+  test('a music request block keeps a saved session in use', () async {
+    await saveSession('saved');
+    final url = Uri.parse('https://youtu.be/blocked');
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) async {},
+    );
+    controller!.requireCheck(MusicQueueErrorType.youtubeDownloadBlocked, url);
+    expect(controller!.status, YoutubeConnectionStatus.connected);
+    expect(controller!.issue, YoutubeConnectionIssue.downloadBlocked);
+    expect(controller!.cookieFilePath, isNotNull);
+    await controller!.connect();
+    expect(browser.url, url);
+    await controller!.cancel();
+    expect(
+      controller!.issue,
+      YoutubeConnectionIssue.downloadBlocked,
+      reason: 'Cancelling does not hide why requests are paused',
+    );
+  });
+
+  test('a successful run writes cookie updates back', () async {
+    await saveSession('saved');
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) async {},
+    );
+    final failed = (await controller!.leaseCookies())!;
+    expect(await File(failed.path).readAsString(), 'saved');
+    await File(failed.path).writeAsString('failed run');
+    await failed.release(succeeded: false);
+    expect(await savedSession().readAsString(), 'saved');
+
+    final succeeded = (await controller!.leaseCookies())!;
+    await File(succeeded.path).writeAsString('updated by yt-dlp');
+    await succeeded.release(succeeded: true);
+    expect(await savedSession().readAsString(), 'updated by yt-dlp');
+    expect(await File(failed.path).exists(), isFalse);
+    expect(await File(succeeded.path).exists(), isFalse);
+  });
+
+  test('removes copies left by interrupted runs but not active ones', () async {
+    await saveSession('saved');
+    final stale = File('${directory.path}/runs/interrupted.txt');
+    await stale.create(recursive: true);
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) async {},
+    );
+    final active = (await controller!.leaseCookies())!;
+    expect(await stale.exists(), isFalse);
+    await stale.create(recursive: true);
+    await controller!.disconnect();
+    expect(await stale.exists(), isFalse);
+    expect(await File(active.path).exists(), isTrue);
+    await active.release(succeeded: true);
+    expect(await File(active.path).exists(), isFalse);
+  });
+
+  test('a run that outlives disconnect does not restore the session', () async {
+    await saveSession('saved');
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) async {},
+    );
+    final lease = (await controller!.leaseCookies())!;
+    await controller!.disconnect();
+    await File(lease.path).writeAsString('stale');
+    await lease.release(succeeded: true);
+    expect(await savedSession().exists(), isFalse);
+    expect(controller!.cookieFilePath, isNull);
+    expect(await controller!.leaseCookies(), isNull);
+  });
+
+  test('a run that outlives reconnection keeps the new session', () async {
+    await saveSession('old');
+    controller = YoutubeConnectionController(
+      directory: directory,
+      browser: browser,
+      verifyAccess: (_, __, ___) async {},
+    );
+    final lease = (await controller!.leaseCookies())!;
+    await controller!.connect();
+    await controller!.verify();
+    await File(lease.path).writeAsString('stale');
+    await lease.release(succeeded: true);
+    expect(
+      await savedSession().readAsString(),
+      contains('test_session\tfake-value'),
+    );
+  });
+
   test(
     'shutdown cancels an in-flight check and never saves its cookies',
     () async {
@@ -193,7 +383,7 @@ void main() {
       controller = YoutubeConnectionController(
         directory: directory,
         browser: browser,
-        verifyAccess: (_, __) {
+        verifyAccess: (_, __, ___) {
           entered.complete();
           return result.future;
         },

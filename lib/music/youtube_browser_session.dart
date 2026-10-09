@@ -17,6 +17,7 @@ enum YoutubeConnectionIssue {
   browserClosed,
   verificationRequired,
   downloadBlocked,
+  rateLimited,
   chooseVideo,
   videoUnavailable,
   videoTooLongOrLive,

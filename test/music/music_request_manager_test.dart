@@ -34,6 +34,8 @@ void main() {
     String? rewardId = 'reward-1',
     Stream<String?>? rewardIdChanges,
     int maxQueueLength = 10,
+    Duration heldRequestTimeout = const Duration(minutes: 15),
+    void Function(MusicQueueErrorType reason, Uri sourceUrl)? onHeld,
   }) {
     return manager = MusicRequestManager(
       events: events.stream,
@@ -45,6 +47,8 @@ void main() {
       rewardId: rewardId,
       rewardIdChanges: rewardIdChanges,
       redemptionService: redemptions,
+      heldRequestTimeout: heldRequestTimeout,
+      onPreparationHeld: onHeld,
     );
   }
 
@@ -316,27 +320,132 @@ void main() {
   });
 
   test(
-    'refunds a YouTube challenge with a localizable error and no diagnostics',
+    'a YouTube block pauses preparation instead of refunding the queue',
     () async {
-      final subject = createManager();
+      final held = <(MusicQueueErrorType, Uri)>[];
+      final subject = createManager(
+        onHeld: (reason, url) => held.add((reason, url)),
+      );
       fetcher.inspectError = const MusicTrackException(
         "ERROR: [youtube] video: Sign in to confirm you're not a bot.",
         errorType: MusicQueueErrorType.youtubeAccessRequired,
       );
-      events.add(_redemption(id: 'youtube-blocked'));
-      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      events.add(_redemption(id: 'first', input: 'https://youtu.be/first'));
+      events.add(_redemption(id: 'second', input: 'https://youtu.be/second'));
+      await _waitUntil(
+        () => subject.current.hold != null && subject.current.queue.length == 2,
+      );
+      await _flushEvents();
+
+      expect(fetcher.inspected, [Uri.parse('https://youtu.be/first')]);
+      expect(redemptions.settlements, isEmpty);
+      expect(subject.current.hold, MusicQueueErrorType.youtubeAccessRequired);
       expect(
         subject.current.lastError?.type,
         MusicQueueErrorType.youtubeAccessRequired,
       );
       expect(subject.current.lastError?.details, isNull);
-      expect(subject.current.queue, isEmpty);
       expect(
-        redemptions.settlements.single.status,
-        TwitchRedemptionStatus.canceled,
+        subject.current.queue.map((item) => item.phase),
+        everyElement(MusicQueueItemPhase.resolving),
       );
+      expect(held, [
+        (
+          MusicQueueErrorType.youtubeAccessRequired,
+          Uri.parse('https://youtu.be/first'),
+        ),
+      ]);
+
+      fetcher.inspectError = null;
+      expect(subject.resumePreparation(), isTrue);
+      expect(subject.resumePreparation(), isFalse);
+      await _waitUntil(() => subject.current.nowPlaying?.item.id == 'first');
+      expect(subject.current.hold, isNull);
+      expect(subject.current.lastError, isNull);
+      expect(redemptions.settlements, isEmpty);
     },
   );
+
+  test('a blocked audio download is held and re-inspected later', () async {
+    final subject = createManager();
+    fetcher.downloadError = const MusicTrackException(
+      'blocked',
+      errorType: MusicQueueErrorType.youtubeDownloadBlocked,
+    );
+    events.add(_redemption(id: 'blocked'));
+    await _waitUntil(() => subject.current.hold != null);
+    final item = subject.current.queue.single;
+    expect(item.phase, MusicQueueItemPhase.resolving);
+    expect(item.title, isNull);
+    expect(item.downloadProgress, isNull);
+
+    // New redemptions wait during the hold without contacting YouTube.
+    events.add(_redemption(id: 'later'));
+    await _waitUntil(() => subject.current.queue.length == 2);
+    expect(fetcher.inspected, hasLength(1));
+
+    fetcher.downloadError = null;
+    subject.resumePreparation();
+    await _waitUntil(() => player.played.length == 1);
+    expect(player.played.single.itemId, 'blocked');
+    await _waitUntil(
+      () => subject.current.queue.single.phase == MusicQueueItemPhase.ready,
+    );
+    expect(fetcher.inspected, hasLength(3));
+  });
+
+  test('requests waiting longer than the hold timeout are refunded', () async {
+    final subject = createManager(
+      heldRequestTimeout: const Duration(milliseconds: 40),
+    );
+    fetcher.inspectError = const MusicTrackException(
+      'rate limited',
+      errorType: MusicQueueErrorType.youtubeRateLimited,
+    );
+    events.add(_redemption(id: 'first'));
+    events.add(_redemption(id: 'second'));
+    await _waitUntil(() => redemptions.settlements.length == 2);
+    expect(
+      redemptions.settlements.map((settlement) => settlement.status),
+      everyElement(TwitchRedemptionStatus.canceled),
+    );
+    expect(subject.current.queue, isEmpty);
+    expect(
+      subject.current.hold,
+      MusicQueueErrorType.youtubeRateLimited,
+      reason: 'The reward stays paused until the streamer resumes requests',
+    );
+  });
+
+  test('removing a held request refunds it once', () async {
+    final subject = createManager(
+      heldRequestTimeout: const Duration(milliseconds: 40),
+    );
+    fetcher.inspectError = const MusicTrackException(
+      'bot',
+      errorType: MusicQueueErrorType.youtubeAccessRequired,
+    );
+    events.add(_redemption(id: 'held'));
+    await _waitUntil(() => subject.current.hold != null);
+    expect(await subject.remove('held'), isTrue);
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    expect(redemptions.settlements.single.redemptionId, 'held');
+  });
+
+  test('a single unavailable video is refunded without a hold', () async {
+    final subject = createManager();
+    fetcher.inspectError = const MusicTrackException(
+      'private',
+      errorType: MusicQueueErrorType.youtubeUnavailable,
+    );
+    events.add(_redemption(id: 'private'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+    expect(subject.current.hold, isNull);
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.youtubeUnavailable,
+    );
+  });
 
   test('fulfills a redemption after normal playback completion', () async {
     final subject = createManager();

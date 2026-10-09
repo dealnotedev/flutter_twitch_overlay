@@ -51,6 +51,9 @@ abstract final class MusicControlProtocol {
     'queue': snapshot.queue.map(_queueItemToJson).toList(growable: false),
     'lastError':
         snapshot.lastError == null ? null : _errorToJson(snapshot.lastError!),
+    // Optional in v1: older controllers ignore it and show held requests as
+    // resolving.
+    if (snapshot.hold case final hold?) 'hold': hold.name,
   };
 
   static MusicQueueSnapshot snapshotFromJson(Object? value) {
@@ -69,6 +72,10 @@ abstract final class MusicControlProtocol {
       queue: List.unmodifiable(queueValue.map(_queueItemFromJson)),
       lastError:
           json['lastError'] == null ? null : _errorFromJson(json['lastError']),
+      hold:
+          musicPreparationHoldReasons
+              .where((reason) => reason.name == json['hold'])
+              .firstOrNull,
     );
   }
 
@@ -143,6 +150,7 @@ abstract final class MusicControlProtocol {
   static const _preparationReasons = {
     MusicQueueErrorType.youtubeAccessRequired,
     MusicQueueErrorType.youtubeDownloadBlocked,
+    MusicQueueErrorType.youtubeRateLimited,
     MusicQueueErrorType.youtubeUnavailable,
     MusicQueueErrorType.networkUnavailable,
     MusicQueueErrorType.musicToolsUnavailable,
@@ -167,10 +175,14 @@ abstract final class MusicControlProtocol {
     MusicQueueErrorType type,
   ) => switch (type) {
     MusicQueueErrorType.youtubeAccessRequired =>
-      'YouTube needs verification. Open OBS overlay Music settings and connect YouTube.',
+      'Music requests are paused: YouTube needs verification. Open OBS overlay '
+          'Music settings and connect YouTube.',
     MusicQueueErrorType.youtubeDownloadBlocked =>
-      'YouTube blocked the audio download (403). Open OBS overlay Music settings '
-          'and reconnect YouTube. Signing in in the opened browser may help.',
+      'Music requests are paused: YouTube blocked the audio download (403). '
+          'Open OBS overlay Music settings.',
+    MusicQueueErrorType.youtubeRateLimited =>
+      'Music requests are paused: YouTube temporarily limited requests. '
+          'Resume them later in OBS overlay Music settings.',
     MusicQueueErrorType.youtubeUnavailable =>
       'This YouTube video is unavailable. Choose another.',
     MusicQueueErrorType.networkUnavailable =>
