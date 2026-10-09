@@ -276,6 +276,9 @@ class AppLocalizationsUk extends AppLocalizations {
   String get overlay_settings_title => 'Налаштування оверлею';
 
   @override
+  String get overlay_settings_sections => 'Розділи';
+
+  @override
   String get overlay_settings_player => 'Плеєр';
 
   @override

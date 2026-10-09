@@ -150,6 +150,7 @@
   "music_control_incompatible": "Controller and overlay versions are incompatible",
   "music_control_closed": "Connection closed",
   "overlay_settings_title": "Overlay settings",
+  "overlay_settings_sections": "Sections",
   "overlay_settings_player": "Player",
   "overlay_settings_player_description": "Music requests, playback, appearance and the local controller.",
   "music_settings_enabled": "Accept music requests",

@@ -157,7 +157,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
                 height: 1,
                 color: MusicPlayerPalette.neonPink.withValues(alpha: 0.22),
               ),
-              Expanded(child: _buildPlayerSettings(context)),
+              Expanded(child: _buildBody(context)),
             ],
           ),
         ),
@@ -192,6 +192,52 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
             key: const ValueKey('overlay_settings_close_button'),
             icon: Icons.close_rounded,
             onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(width: 198, child: _buildNavigation(context)),
+        Container(
+          width: 1,
+          color: MusicPlayerPalette.neonBlue.withValues(alpha: 0.13),
+        ),
+        Expanded(child: _buildPlayerSettings(context)),
+      ],
+    );
+  }
+
+  Widget _buildNavigation(BuildContext context) {
+    return Container(
+      color: MusicPlayerPalette.voidBlack.withValues(alpha: 0.38),
+      padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              context.localizations.overlay_settings_sections.toUpperCase(),
+              style: TextStyle(
+                color: MusicPlayerPalette.textSecondary.withValues(alpha: 0.65),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const Gap(12),
+          NeonSettingsButton.section(
+            key: const ValueKey('overlay_settings_player_section'),
+            label: context.localizations.overlay_settings_player,
+            icon: Icons.graphic_eq_rounded,
+            selected: true,
+            onPressed: () {},
           ),
         ],
       ),

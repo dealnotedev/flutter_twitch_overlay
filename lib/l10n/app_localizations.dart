@@ -481,6 +481,12 @@ abstract class AppLocalizations {
   /// **'Overlay settings'**
   String get overlay_settings_title;
 
+  /// No description provided for @overlay_settings_sections.
+  ///
+  /// In en, this message translates to:
+  /// **'Sections'**
+  String get overlay_settings_sections;
+
   /// No description provided for @overlay_settings_player.
   ///
   /// In en, this message translates to:

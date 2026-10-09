@@ -146,6 +146,7 @@
   "music_control_incompatible": "Версії контролера та оверлею несумісні",
   "music_control_closed": "Підключення закрито",
   "overlay_settings_title": "Налаштування оверлею",
+  "overlay_settings_sections": "Розділи",
   "overlay_settings_player": "Плеєр",
   "overlay_settings_player_description": "Замовлення музики, відтворення, вигляд і локальне керування.",
   "music_settings_enabled": "Приймати замовлення музики",

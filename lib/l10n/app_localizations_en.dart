@@ -270,6 +270,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get overlay_settings_title => 'Overlay settings';
 
   @override
+  String get overlay_settings_sections => 'Sections';
+
+  @override
   String get overlay_settings_player => 'Player';
 
   @override

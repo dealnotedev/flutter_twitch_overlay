@@ -110,11 +110,14 @@ install(FILES
         "${MUSIC_TOOLS_DIR}/yt-dlp.exe"
         "${MUSIC_TOOLS_DIR}/deno.exe"
         "${MUSIC_TOOLS_DIR}/ffmpeg.exe"
-        "${MUSIC_TOOLS_DIR}/ffmpeg-build.txt"
         "${MUSIC_TOOLS_DIR}/FFmpeg-LICENSE.txt"
         "${MUSIC_TOOLS_DIR}/LAME-LICENSE.txt"
         DESTINATION "${CMAKE_INSTALL_PREFIX}/tools"
         COMPONENT Runtime)
+# Older downloaded FFmpeg runtimes do not have our generated build metadata.
+install(FILES "${MUSIC_TOOLS_DIR}/ffmpeg-build.txt"
+        DESTINATION "${CMAKE_INSTALL_PREFIX}/tools"
+        COMPONENT Runtime OPTIONAL)
 # An incremental install must also retire the old 98 MiB ffprobe binary.
 install(CODE "file(REMOVE \"\$ENV{DESTDIR}${CMAKE_INSTALL_PREFIX}/tools/ffprobe.exe\")"
         COMPONENT Runtime)
