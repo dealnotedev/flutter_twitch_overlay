@@ -48,5 +48,6 @@ app.*.map.json
 
 # Downloaded/built runtime tools are restored with tools/download_tools.ps1.
 /tools/*.exe
+/tools/*.download
 /tools/*.zip
 /tools/ffmpeg-build.txt

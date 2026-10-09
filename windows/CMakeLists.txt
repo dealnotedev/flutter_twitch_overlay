@@ -106,6 +106,15 @@ install(DIRECTORY "${PROJECT_BUILD_DIR}/${FLUTTER_ASSET_DIR_NAME}"
 # Populate these files with tools/download_tools.ps1 (or build_ffmpeg.ps1 when
 # yt-dlp and Deno are already present). ffprobe is not needed for music requests.
 set(MUSIC_TOOLS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/../tools")
+# Every build packages the yt-dlp release pinned in tools/yt-dlp.json. The
+# script returns immediately when the executable already has the pinned
+# SHA-256, and otherwise downloads and verifies that release.
+add_custom_target(music_tools ALL
+  COMMAND powershell.exe -NoProfile -NonInteractive -ExecutionPolicy Bypass
+          -File "${MUSIC_TOOLS_DIR}/ensure_yt_dlp.ps1"
+  COMMENT "Checking the pinned yt-dlp release"
+  VERBATIM)
+add_dependencies(${BINARY_NAME} music_tools)
 install(FILES
         "${MUSIC_TOOLS_DIR}/yt-dlp.exe"
         "${MUSIC_TOOLS_DIR}/deno.exe"

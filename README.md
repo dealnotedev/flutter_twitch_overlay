@@ -61,6 +61,9 @@ powershell -ExecutionPolicy Bypass -File .\tools\download_tools.ps1
 The script downloads and verifies `yt-dlp` and Deno, then builds a compact
 audio-focused FFmpeg from checksum-pinned sources. The private build environment
 stays in `build/ffmpeg-minimal`; see [tools/README.md](tools/README.md) for details.
+The yt-dlp release is pinned in `tools/yt-dlp.json`: every Windows build
+downloads and verifies it when `tools/yt-dlp.exe` is missing or differs. Pin a
+newer release with `.\tools\ensure_yt_dlp.ps1 -Update`.
 `ffprobe` is unnecessary: yt-dlp uses FFmpeg itself to inspect audio.
 For an installed OBS plugin, copy `yt-dlp.exe`, `deno.exe`, `ffmpeg.exe`,
 `ffmpeg-build.txt`, `FFmpeg-LICENSE.txt` and `LAME-LICENSE.txt` to this directory

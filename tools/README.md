@@ -14,6 +14,28 @@ the large gyan.dev essentials bundle. If yt-dlp and Deno are already installed:
 powershell -ExecutionPolicy Bypass -File .\tools\build_ffmpeg.ps1
 ```
 
+## Pinned yt-dlp
+
+`yt-dlp.json` pins the yt-dlp release and the SHA-256 of its `yt-dlp.exe`.
+Every Windows build (`flutter build windows`, `flutter run`) runs
+`ensure_yt_dlp.ps1` before packaging. When `tools/yt-dlp.exe` already has the
+pinned SHA-256, nothing is downloaded. When it is missing or differs, the pinned
+release is downloaded from GitHub and replaces it only if its SHA-256 matches
+the pin; otherwise the build fails and the existing file stays untouched. A
+build that needs a different yt-dlp therefore needs internet access once.
+
+YouTube changes often break older yt-dlp releases (HTTP 403, bot checks), so
+pin a new release when one appears:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\ensure_yt_dlp.ps1 -Update
+powershell -ExecutionPolicy Bypass -File .\tools\ensure_yt_dlp.ps1 -Update -Version 2026.08.19
+```
+
+`-Update` pins the latest stable release, or the given one, using the checksum
+from that release's `SHA2-256SUMS`, and downloads it. Review and commit the
+changed `yt-dlp.json`; the hash in Git is what later builds trust.
+
 The build script downloads checksum-pinned FFmpeg 9.0.2 and a private MSYS2
 environment under `build/ffmpeg-minimal`. It installs GCC, make, NASM, pkgconf,
 diffutils and static LAME there. No administrator install or persistent PATH
