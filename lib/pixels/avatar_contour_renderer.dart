@@ -24,7 +24,7 @@ class AvatarContour {
 const _bayer4 = [0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5];
 
 /// Only Dart data: particle preparation and color grouping can run in an
-/// isolate. Interior particles are ordered by color, followed by boundary cells.
+/// isolate. Color-grouped squares are followed by optional rounded boundary cells.
 class ContourRainData {
   final Float32List startX, startY, endX, endY, delayMs;
   final Int32List groupEnds, groupColors, edgeColors;
@@ -51,9 +51,13 @@ class ContourRainData {
     List<Pixel> pixels, {
     required double pixelSize,
     AvatarContour? contour,
+    bool smoothContour = false,
   }) {
     final groups = <int, List<int>>{};
-    final boundary = List<bool>.filled(pixels.length, false);
+    final boundary =
+        smoothContour && contour != null
+            ? List<bool>.filled(pixels.length, false)
+            : null;
     for (var i = 0; i < pixels.length; i++) {
       final p = pixels[i];
       final x = contour?.fromStart == true ? p.startX : p.x;
@@ -62,9 +66,11 @@ class ContourRainData {
       var v = (y / pixelSize).round();
       if (contour != null) {
         final half = pixelSize / 2;
-        final dx = (x + half - contour.centerX).abs() + half;
-        final dy = (y + half - contour.centerY).abs() + half;
-        boundary[i] = dx * dx + dy * dy > contour.radius * contour.radius;
+        if (boundary != null) {
+          final dx = (x + half - contour.centerX).abs() + half;
+          final dy = (y + half - contour.centerY).abs() + half;
+          boundary[i] = dx * dx + dy * dy > contour.radius * contour.radius;
+        }
         final left = contour.centerX - contour.radius - half;
         final top = contour.centerY - contour.radius - half;
         u = ((x - left) / pixelSize).round();
@@ -99,7 +105,7 @@ class ContourRainData {
       final color = (a ~/ n) << 24 | (r ~/ n) << 16 | (g ~/ n) << 8 | b ~/ n;
       final start = order.length;
       for (final i in indexes) {
-        if (boundary[i]) {
+        if (boundary?[i] == true) {
           edges.add(i);
           edgeColors.add(color);
         } else {

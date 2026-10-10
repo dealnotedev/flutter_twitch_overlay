@@ -28,6 +28,9 @@ class RainyAvatar extends StatefulWidget {
   final RainyPixelDirection direction;
   final AvatarPixelMotion motion;
   final AvatarPixelRenderer renderer;
+
+  /// Rounds boundary particles in points4; other renderers ignore this option.
+  final bool smoothContour;
   final List<Pixel>? preparedPixels;
   final ContourRainData? preparedContour;
 
@@ -43,6 +46,7 @@ class RainyAvatar extends StatefulWidget {
     this.direction = RainyPixelDirection.entering,
     this.motion = AvatarPixelMotion.linear,
     this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.smoothContour = false,
     this.preparedPixels,
     this.preparedContour,
     this.randomBackground = true,
@@ -84,6 +88,7 @@ class RainyAvatar extends StatefulWidget {
     required RainyPixelDirection direction,
     AvatarPixelMotion motion = AvatarPixelMotion.linear,
     AvatarPixelRenderer renderer = AvatarPixelRenderer.rawAtlas,
+    bool smoothContour = false,
     Random? random,
   }) {
     final matrix = _State._avatarToColorMatrix(image, resolution, resolution);
@@ -100,7 +105,8 @@ class RainyAvatar extends StatefulWidget {
       motion,
       random ?? Random(),
       verticalOffset: verticalOffset,
-      smoothContour: renderer == AvatarPixelRenderer.contourPoints,
+      smoothContour:
+          smoothContour && renderer == AvatarPixelRenderer.contourPoints,
     );
   }
 
@@ -151,6 +157,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
           direction: widget.direction,
           motion: widget.motion,
           renderer: widget.renderer,
+          smoothContour: widget.smoothContour,
         );
 
     _startAnimation();
@@ -165,6 +172,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
         oldWidget.resolution != widget.resolution ||
         oldWidget.pixelSize != widget.pixelSize ||
         oldWidget.renderer != widget.renderer ||
+        oldWidget.smoothContour != widget.smoothContour ||
         oldWidget.constraints != widget.constraints ||
         oldWidget.verticalOffset != widget.verticalOffset ||
         oldWidget.direction != widget.direction ||
@@ -188,6 +196,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
             direction: widget.direction,
             motion: widget.motion,
             renderer: widget.renderer,
+            smoothContour: widget.smoothContour,
           );
       _controller.forward(from: 0);
     }
@@ -636,6 +645,7 @@ class _State extends State<RainyAvatar> with SingleTickerProviderStateMixin {
                   animation: animation,
                   motion: widget.motion,
                   renderer: widget.renderer,
+                  smoothContour: widget.smoothContour,
                   contourData: widget.preparedContour,
                   contour:
                       widget.renderer == AvatarPixelRenderer.contourPoints

@@ -9,6 +9,7 @@ class FollowWidget extends StatelessWidget {
   final BoxConstraints constraints;
   final AvatarPixelMotion leavingMotion;
   final AvatarPixelRenderer renderer;
+  final bool smoothContour;
   final int avatarResolution;
   final double avatarPixelSize;
 
@@ -18,6 +19,7 @@ class FollowWidget extends StatelessWidget {
     required this.constraints,
     this.leavingMotion = AvatarPixelMotion.horizontalWaves,
     this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.smoothContour = false,
     this.avatarResolution = 48,
     this.avatarPixelSize = 8,
   });
@@ -30,6 +32,7 @@ class FollowWidget extends StatelessWidget {
     constraints: constraints,
     leavingMotion: leavingMotion,
     renderer: renderer,
+    smoothContour: smoothContour,
     avatarResolution: avatarResolution,
     avatarPixelSize: avatarPixelSize,
   );

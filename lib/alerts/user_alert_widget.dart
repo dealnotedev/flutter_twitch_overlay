@@ -16,6 +16,7 @@ class UserAlertWidget extends StatefulWidget {
   final BoxConstraints constraints;
   final AvatarPixelMotion leavingMotion;
   final AvatarPixelRenderer renderer;
+  final bool smoothContour;
   final int avatarResolution;
   final double avatarPixelSize;
 
@@ -27,6 +28,7 @@ class UserAlertWidget extends StatefulWidget {
     required this.constraints,
     this.leavingMotion = AvatarPixelMotion.horizontalWaves,
     this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.smoothContour = false,
     this.avatarResolution = 48,
     this.avatarPixelSize = 8,
   });
@@ -74,6 +76,7 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
     if (oldWidget.avatarResolution != widget.avatarResolution ||
         oldWidget.avatarPixelSize != widget.avatarPixelSize ||
         oldWidget.renderer != widget.renderer ||
+        oldWidget.smoothContour != widget.smoothContour ||
         oldWidget.avatar != widget.avatar ||
         oldWidget.constraints != widget.constraints) {
       _prepareAvatarPixels();
@@ -96,6 +99,7 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
       resolution: widget.avatarResolution,
       pixelSize: widget.avatarPixelSize,
       renderer: widget.renderer,
+      smoothContour: widget.smoothContour,
       leavingMotion: _leavingMotion,
       leavingFallDuration: _leavingFallDuration,
     );
@@ -175,6 +179,7 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
               widget.avatarResolution,
               widget.avatarPixelSize,
               widget.renderer,
+              widget.smoothContour,
             )),
             image: avatar,
             constraints: widget.constraints,
@@ -195,6 +200,7 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
                     : RainyPixelDirection.entering,
             motion: _leaving ? _leavingMotion : AvatarPixelMotion.linear,
             renderer: widget.renderer,
+            smoothContour: widget.smoothContour,
             preparedPixels:
                 _leaving ? _leavingAvatarPixels : _enteringAvatarPixels,
             preparedContour: _leaving ? _leavingContour : _enteringContour,
@@ -210,6 +216,7 @@ class _AvatarPreparation {
   final int resolution;
   final double pixelSize;
   final AvatarPixelRenderer renderer;
+  final bool smoothContour;
   final AvatarPixelMotion leavingMotion;
   final Duration leavingFallDuration;
 
@@ -219,6 +226,7 @@ class _AvatarPreparation {
     required this.resolution,
     required this.pixelSize,
     required this.renderer,
+    required this.smoothContour,
     required this.leavingMotion,
     required this.leavingFallDuration,
   });
@@ -257,6 +265,7 @@ _PreparedAvatar _prepareAvatar(_AvatarPreparation request) {
       direction: direction,
       motion: leaving ? request.leavingMotion : AvatarPixelMotion.linear,
       renderer: request.renderer,
+      smoothContour: request.smoothContour,
     );
   }
 
@@ -265,6 +274,7 @@ _PreparedAvatar _prepareAvatar(_AvatarPreparation request) {
           ? ContourRainData.prepare(
             pixels,
             pixelSize: request.pixelSize,
+            smoothContour: request.smoothContour,
             contour: RainyAvatar.contourFor(
               constraints: request.constraints,
               resolution: request.resolution,

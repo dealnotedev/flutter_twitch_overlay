@@ -622,13 +622,13 @@ abstract class AppLocalizations {
   /// No description provided for @avatar_settings_renderer_contour.
   ///
   /// In en, this message translates to:
-  /// **'Smooth outline'**
+  /// **'Points4'**
   String get avatar_settings_renderer_contour;
 
   /// No description provided for @avatar_settings_renderer_contour_hint.
   ///
   /// In en, this message translates to:
-  /// **'Square particles with smoothing only along the circular outline. Uses a reduced color palette with dithering. Text and other effects use the Optimized renderer.'**
+  /// **'Square particles with a stepped circular outline. Uses a reduced color palette with dithering. Text and other effects use the Optimized renderer.'**
   String get avatar_settings_renderer_contour_hint;
 
   /// No description provided for @avatar_settings_renderer.

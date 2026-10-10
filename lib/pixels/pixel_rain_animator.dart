@@ -15,7 +15,7 @@ enum AvatarPixelRenderer {
   /// Preserves the original per-pixel canvas implementation as a fallback.
   legacyCanvas,
 
-  /// Solid, color-grouped avatar particles with an antialiased circular edge.
+  /// Solid, color-grouped avatar particles with optional contour smoothing.
   /// Non-avatar effects without contour geometry retain the atlas renderer.
   contourPoints,
 }
@@ -34,6 +34,10 @@ class AvatarPixelRain extends StatefulWidget {
   final Radius pixelRadius;
   final AvatarPixelMotion motion;
   final AvatarPixelRenderer renderer;
+
+  /// Rounds boundary particles in points4. Precomputed [contourData] must be
+  /// prepared with the same option.
+  final bool smoothContour;
   final AvatarContour? contour;
   final ContourRainData? contourData;
 
@@ -50,6 +54,7 @@ class AvatarPixelRain extends StatefulWidget {
     this.pixelPadding = 0.25,
     this.motion = AvatarPixelMotion.linear,
     this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.smoothContour = false,
     this.contour,
     this.contourData,
   });
@@ -93,6 +98,7 @@ class _AvatarPixelRainState extends State<AvatarPixelRain> {
               widget.pixels,
               pixelSize: widget.pixelSize,
               contour: widget.contour,
+              smoothContour: widget.smoothContour,
             ),
         widget.pixelSize,
       );
@@ -108,6 +114,7 @@ class _AvatarPixelRainState extends State<AvatarPixelRain> {
         oldWidget.pixelRadius != widget.pixelRadius;
     if (atlasShapeChanged ||
         oldWidget.renderer != widget.renderer ||
+        oldWidget.smoothContour != widget.smoothContour ||
         oldWidget.pixels != widget.pixels ||
         oldWidget.contourData != widget.contourData ||
         (widget.contourData == null && oldWidget.contour != widget.contour)) {

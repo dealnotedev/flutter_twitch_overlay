@@ -110,6 +110,7 @@ void main() {
       scaleWhenStart: false,
     );
     expect(defaultAvatar.renderer, AvatarPixelRenderer.rawAtlas);
+    expect(defaultAvatar.smoothContour, isFalse);
 
     await tester.pumpWidget(defaultAvatar);
     expect(
@@ -134,6 +135,26 @@ void main() {
       tester.widget<AvatarPixelRain>(find.byType(AvatarPixelRain)).renderer,
       AvatarPixelRenderer.legacyCanvas,
     );
+
+    for (final smoothContour in [true, false]) {
+      await tester.pumpWidget(
+        RainyAvatar(
+          image: image,
+          constraints: constraints,
+          duration: const Duration(seconds: 1),
+          fallDuration: const Duration(seconds: 1),
+          resolution: 4,
+          pixelSize: 8,
+          randomBackground: false,
+          scaleWhenStart: false,
+          renderer: AvatarPixelRenderer.contourPoints,
+          smoothContour: smoothContour,
+        ),
+      );
+      final rain = tester.widget<AvatarPixelRain>(find.byType(AvatarPixelRain));
+      expect(rain.smoothContour, smoothContour);
+      expect(rain.pixels.length, smoothContour ? 16 : 4);
+    }
 
     await tester.pumpWidget(
       PixelRainText(

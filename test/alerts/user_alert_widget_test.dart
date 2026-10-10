@@ -21,21 +21,22 @@ void main() {
     'switching away from contour ignores stale background preparation',
     (tester) async {
       final avatar = img.Image(width: 256, height: 256);
-      Widget alert(AvatarPixelRenderer renderer, double pixelSize) =>
-          MaterialApp(
-            home: UserAlertWidget(
-              userName: 'Viewer',
-              description: 'Thanks',
-              avatar: avatar,
-              constraints: const BoxConstraints.tightFor(
-                width: 800,
-                height: 600,
-              ),
-              avatarResolution: 256,
-              avatarPixelSize: pixelSize,
-              renderer: renderer,
-            ),
-          );
+      Widget alert(
+        AvatarPixelRenderer renderer,
+        double pixelSize, {
+        bool smoothContour = false,
+      }) => MaterialApp(
+        home: UserAlertWidget(
+          userName: 'Viewer',
+          description: 'Thanks',
+          avatar: avatar,
+          constraints: const BoxConstraints.tightFor(width: 800, height: 600),
+          avatarResolution: 256,
+          avatarPixelSize: pixelSize,
+          renderer: renderer,
+          smoothContour: smoothContour,
+        ),
+      );
       await tester.pumpWidget(alert(AvatarPixelRenderer.contourPoints, 3));
       await tester.pumpWidget(alert(AvatarPixelRenderer.rawAtlas, 2.5));
       await tester.runAsync(
@@ -46,6 +47,30 @@ void main() {
       expect(rendered.renderer, AvatarPixelRenderer.rawAtlas);
       expect(rendered.pixelSize, 2.5);
       expect(rendered.preparedContour, isNull);
+      expect(rendered.smoothContour, isFalse);
+      for (final smoothContour in [true, false]) {
+        await tester.pumpWidget(
+          alert(
+            AvatarPixelRenderer.contourPoints,
+            3,
+            smoothContour: smoothContour,
+          ),
+        );
+        for (
+          var attempt = 0;
+          attempt < 200 && find.byType(RainyAvatar).evaluate().isEmpty;
+          attempt++
+        ) {
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 10)),
+          );
+          await tester.pump();
+        }
+        final prepared = tester.widget<RainyAvatar>(find.byType(RainyAvatar));
+        expect(prepared.smoothContour, smoothContour);
+        expect(prepared.preparedPixels!.length, smoothContour ? 51612 : 51040);
+        expect(prepared.preparedContour!.edgeCount, smoothContour ? 1020 : 0);
+      }
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 12));
       expect(tester.takeException(), isNull);
@@ -124,6 +149,7 @@ void main() {
                         ),
                         constraints: constraints,
                         renderer: renderer,
+                        smoothContour: true,
                         avatarResolution: 8,
                         avatarPixelSize: 3.5,
                       )
@@ -137,6 +163,7 @@ void main() {
                         ),
                         constraints: constraints,
                         renderer: renderer,
+                        smoothContour: true,
                         avatarResolution: 8,
                         avatarPixelSize: 3.5,
                       ),
@@ -158,6 +185,10 @@ void main() {
           expect(
             tester.widget<RainyAvatar>(find.byType(RainyAvatar)).pixelSize,
             3.5,
+          );
+          expect(
+            tester.widget<RainyAvatar>(find.byType(RainyAvatar)).smoothContour,
+            isTrue,
           );
           await tester.pump();
 

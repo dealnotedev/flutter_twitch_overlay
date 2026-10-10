@@ -8,6 +8,7 @@ class RaidWidget extends StatelessWidget {
   final UserRaidEvent event;
   final BoxConstraints constraints;
   final AvatarPixelRenderer renderer;
+  final bool smoothContour;
   final int avatarResolution;
   final double avatarPixelSize;
 
@@ -16,6 +17,7 @@ class RaidWidget extends StatelessWidget {
     required this.event,
     required this.constraints,
     this.renderer = AvatarPixelRenderer.rawAtlas,
+    this.smoothContour = false,
     this.avatarResolution = 48,
     this.avatarPixelSize = 8,
   });
@@ -27,6 +29,7 @@ class RaidWidget extends StatelessWidget {
     avatar: event.avatar,
     constraints: constraints,
     renderer: renderer,
+    smoothContour: smoothContour,
     avatarResolution: avatarResolution,
     avatarPixelSize: avatarPixelSize,
   );

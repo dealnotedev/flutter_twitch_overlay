@@ -357,11 +357,11 @@ class AppLocalizationsUk extends AppLocalizations {
       'Змінює розмір аватара без зміни роздільності. Розмір тексту залишається тим самим.';
 
   @override
-  String get avatar_settings_renderer_contour => 'Згладжений контур';
+  String get avatar_settings_renderer_contour => 'Points4';
 
   @override
   String get avatar_settings_renderer_contour_hint =>
-      'Квадратні частинки зі згладжуванням лише вздовж круглого контуру. Використовує спрощену палітру з дизерингом. Текст та інші ефекти використовують оптимізований рендер.';
+      'Квадратні частинки зі ступінчастим круглим контуром. Використовує спрощену палітру з дизерингом. Текст та інші ефекти використовують оптимізований рендер.';
 
   @override
   String get avatar_settings_renderer => 'Рендер анімації';

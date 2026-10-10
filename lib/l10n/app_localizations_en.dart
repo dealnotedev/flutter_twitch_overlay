@@ -351,11 +351,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Changes the avatar size without changing its resolution. Text size stays the same.';
 
   @override
-  String get avatar_settings_renderer_contour => 'Smooth outline';
+  String get avatar_settings_renderer_contour => 'Points4';
 
   @override
   String get avatar_settings_renderer_contour_hint =>
-      'Square particles with smoothing only along the circular outline. Uses a reduced color palette with dithering. Text and other effects use the Optimized renderer.';
+      'Square particles with a stepped circular outline. Uses a reduced color palette with dithering. Text and other effects use the Optimized renderer.';
 
   @override
   String get avatar_settings_renderer => 'Animation renderer';
