@@ -1,0 +1,42 @@
+host: 1920x1080, ANGLE GPU renderer, 1 ms timer, affinity 0xffff
+gpu: ANGLE/D3D11 ready, 1920x1080, present waits with glFlush
+BENCH_INFO none/r256/p3: 51040 particles, preparePixels x2 29.6 ms
+HOST_RESULT none/r256/p3:enter     presented  297 frames in   5001 ms =  59.4 fps | interval p50  16.6 p95  18.2 max   18.9 ms | >25ms: 0 | <8ms: 0 | present avg 0.32 max 1.08 ms
+HOST_RESULT none/r256/p3:leave     presented  121 frames in   2013 ms =  60.1 fps | interval p50  15.7 p95  30.1 max   32.0 ms | >25ms: 9 | <8ms: 1 | present avg 0.22 max 0.74 ms
+BENCH_INFO current/r128/p8: 12644 particles, preparePixels x2 11.2 ms
+HOST_RESULT current/r128/p8:enter  presented  270 frames in   5002 ms =  54.0 fps | interval p50  15.9 p95  33.0 max   35.5 ms | >25ms: 49 | <8ms: 1 | present avg 0.17 max 0.71 ms
+HOST_RESULT current/r128/p8:leave  presented  109 frames in   2011 ms =  54.2 fps | interval p50  16.0 p95  33.4 max   35.4 ms | >25ms: 20 | <8ms: 1 | present avg 0.16 max 0.32 ms
+BENCH_INFO current/r256/p3: 51040 particles, preparePixels x2 35.0 ms
+HOST_RESULT current/r256/p3:enter  presented  253 frames in   5002 ms =  50.6 fps | interval p50  15.9 p95  33.3 max   36.1 ms | >25ms: 66 | <8ms: 0 | present avg 0.13 max 0.29 ms
+HOST_RESULT current/r256/p3:leave  presented   96 frames in   2013 ms =  47.7 fps | interval p50  16.1 p95  33.7 max   35.2 ms | >25ms: 32 | <8ms: 2 | present avg 0.14 max 0.26 ms
+BENCH_INFO contourPoints/r256/p3: 51040 particles, preparePixels x2 35.1 ms, ContourRainData x2 24.2 ms, 1239 color groups, 0 edge cells
+HOST_RESULT contourPoints/r256/p3:enter presented  277 frames in   5003 ms =  55.4 fps | interval p50  16.2 p95  31.9 max   36.5 ms | >25ms: 30 | <8ms: 0 | present avg 0.14 max 0.33 ms
+HOST_RESULT contourPoints/r256/p3:leave presented  111 frames in   2005 ms =  55.4 fps | interval p50  16.0 p95  31.6 max   35.6 ms | >25ms: 15 | <8ms: 0 | present avg 0.14 max 0.28 ms
+BENCH_INFO contourPointsSmooth/r256/p3: 51612 particles, preparePixels x2 38.4 ms, ContourRainData x2 30.8 ms, 1234 color groups, 1020 edge cells
+HOST_RESULT contourPointsSmooth/r256/p3:enter presented  280 frames in   5014 ms =  55.8 fps | interval p50  16.1 p95  31.4 max   36.0 ms | >25ms: 28 | <8ms: 0 | present avg 0.13 max 0.32 ms
+HOST_RESULT contourPointsSmooth/r256/p3:leave presented  110 frames in   2010 ms =  54.7 fps | interval p50  16.0 p95  32.8 max   36.6 ms | >25ms: 16 | <8ms: 0 | present avg 0.12 max 0.31 ms
+BENCH_INFO texelAtlas/r256/p3: 51040 particles, preparePixels x2 40.9 ms, renderer prepare x2 14.2 ms, , leaving: 
+HOST_RESULT texelAtlas/r256/p3:enter presented  276 frames in   5010 ms =  55.1 fps | interval p50  15.8 p95  33.2 max   35.3 ms | >25ms: 40 | <8ms: 1 | present avg 0.14 max 0.30 ms
+HOST_RESULT texelAtlas/r256/p3:leave presented  108 frames in   2009 ms =  53.8 fps | interval p50  16.0 p95  33.2 max   37.9 ms | >25ms: 21 | <8ms: 1 | present avg 0.13 max 0.27 ms
+BENCH_INFO vertices/r256/p3: 51040 particles, preparePixels x2 43.4 ms, renderer prepare x2 9.9 ms, , leaving: 
+HOST_RESULT vertices/r256/p3:enter presented  264 frames in   5016 ms =  52.6 fps | interval p50  15.8 p95  32.0 max   34.4 ms | >25ms: 53 | <8ms: 0 | present avg 0.17 max 0.31 ms
+HOST_RESULT vertices/r256/p3:leave presented  104 frames in   2004 ms =  51.9 fps | interval p50  15.8 p95  32.2 max   37.6 ms | >25ms: 24 | <8ms: 1 | present avg 0.19 max 0.39 ms
+BENCH_INFO cellTexture/r256/p3: 51040 particles, preparePixels x2 31.0 ms, renderer prepare x2 4.7 ms, buffer 640x360, leaving: buffer 640x360
+HOST_RESULT cellTexture/r256/p3:enter presented  258 frames in   5014 ms =  51.5 fps | interval p50  16.3 p95  32.3 max   36.3 ms | >25ms: 64 | <8ms: 6 | present avg 0.14 max 0.55 ms
+HOST_RESULT cellTexture/r256/p3:leave presented   99 frames in   2007 ms =  49.3 fps | interval p50  16.2 p95  34.1 max   36.1 ms | >25ms: 30 | <8ms: 3 | present avg 0.14 max 0.44 ms
+BENCH_RESULT none/r256/p3:enter             build p50 0.2 p95 0.6 max 0.7 | raster p50 0.8 p95 1.5 max 7.7
+BENCH_RESULT none/r256/p3:leave             build p50 0.3 p95 0.7 max 1.0 | raster p50 0.6 p95 1.2 max 1.9
+BENCH_RESULT current/r128/p8:enter          build p50 2.3 p95 4.0 max 5.8 | raster p50 2.6 p95 4.3 max 5.6
+BENCH_RESULT current/r128/p8:leave          build p50 2.6 p95 5.6 max 6.2 | raster p50 2.2 p95 3.4 max 3.6
+BENCH_RESULT current/r256/p3:enter          build p50 3.9 p95 6.7 max 8.8 | raster p50 4.7 p95 5.7 max 7.2
+BENCH_RESULT current/r256/p3:leave          build p50 5.4 p95 9.0 max 12.0 | raster p50 4.7 p95 5.6 max 8.3
+BENCH_RESULT contourPoints/r256/p3:enter    build p50 1.9 p95 2.9 max 4.4 | raster p50 15.9 p95 18.0 max 19.4
+BENCH_RESULT contourPoints/r256/p3:leave    build p50 1.8 p95 4.6 max 6.8 | raster p50 10.1 p95 17.2 max 19.0
+BENCH_RESULT contourPointsSmooth/r256/p3:enter build p50 1.8 p95 2.8 max 4.1 | raster p50 15.7 p95 17.6 max 22.7
+BENCH_RESULT contourPointsSmooth/r256/p3:leave build p50 2.1 p95 5.1 max 7.0 | raster p50 10.7 p95 18.0 max 20.5
+BENCH_RESULT texelAtlas/r256/p3:enter       build p50 1.8 p95 3.8 max 4.6 | raster p50 3.5 p95 5.2 max 7.1
+BENCH_RESULT texelAtlas/r256/p3:leave       build p50 2.2 p95 4.8 max 5.3 | raster p50 3.5 p95 5.3 max 13.4
+BENCH_RESULT vertices/r256/p3:enter         build p50 3.2 p95 4.0 max 5.3 | raster p50 11.1 p95 11.9 max 15.8
+BENCH_RESULT vertices/r256/p3:leave         build p50 3.5 p95 4.3 max 7.4 | raster p50 11.2 p95 12.4 max 17.2
+BENCH_RESULT cellTexture/r256/p3:enter      build p50 4.2 p95 7.2 max 8.7 | raster p50 0.8 p95 1.1 max 1.5
+BENCH_RESULT cellTexture/r256/p3:leave      build p50 4.2 p95 7.4 max 8.6 | raster p50 0.8 p95 1.1 max 1.7

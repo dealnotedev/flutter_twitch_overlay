@@ -2,15 +2,22 @@
  * Minimal benchmark host for the avatar pixel rain.
  *
  * Runs a Flutter AOT bundle through the OBS plugin's flutter_engine.dll with
- * the same setup as flutter_obs_source: kSoftware renderer, one merged
- * platform/UI task runner and a full-frame copy in the present callback.
+ * the same setup as flutter_obs_source: one merged platform/UI task runner and
+ * either the software renderer (full-frame copy in the present callback) or,
+ * with --gpu, OpenGL ES through ANGLE on Direct3D 11 (see gpu_renderer.cpp).
  *
  * Usage:
  *   avatar_bench_host.exe <flutter_engine.dll> <bundle dir> [width height] [--coarse-timer]
- *                         [--affinity <hex mask>]
+ *                         [--affinity <hex mask>] [--gpu] [--angle <dir>] [--gl-flush]
+ *                         [--impeller] [--dump <dir>]
  *
+ * --impeller passes --enable-impeller to the engine (Impeller GLES with --gpu).
+ * --dump <dir> saves the last frame of every entering phase as a BMP there.
  * --affinity restricts the process to the given logical processors, e.g.
  * 0x0FFF0000 for the E-cores of an i7-14700F to approximate a Ryzen 7 3700X.
+ * --angle is the directory with libEGL.dll and libGLESv2.dll; it defaults to
+ * OBS's plugin directory. --gl-flush replaces the plugin's glFinish in present
+ * with glFlush (see gpu_renderer.h).
  *
  * The bundle dir contains app.so, icudtl.dat and flutter_assets. Dart prints
  * BENCH_PHASE_BEGIN <name> / BENCH_PHASE_STOP and the host reports how many
@@ -27,6 +34,7 @@
 #include <string.h>
 
 #include "embedder.h"
+#include "gpu_renderer.h"
 
 #pragma comment(lib, "winmm.lib")
 
@@ -119,6 +127,7 @@ static int g_phase_frames;
 static double g_intervals[MAX_INTERVALS];
 static int g_interval_count;
 static double g_present_copy_total;
+static double g_present_max;
 
 static double now_ms(void)
 {
@@ -127,8 +136,75 @@ static double now_ms(void)
 	return (double)t.QuadPart * 1000.0 / (double)g_qpc_freq.QuadPart;
 }
 
+/* Called on the raster thread once a frame has been published. */
+static void record_present(double present_ms)
+{
+	const double t = now_ms();
+	EnterCriticalSection(&g_stats_cs);
+	if (g_phase_active) {
+		if (g_phase_frames > 0 && g_interval_count < MAX_INTERVALS)
+			g_intervals[g_interval_count++] = t - g_last_present;
+		++g_phase_frames;
+		g_present_copy_total += present_ms;
+		if (present_ms > g_present_max)
+			g_present_max = present_ms;
+	}
+	g_last_present = t;
+	LeaveCriticalSection(&g_stats_cs);
+}
+
 static uint8_t *g_slot;
 static size_t g_slot_capacity;
+static const char *g_dump_dir;
+static bool g_gpu;
+
+/* Writes the last software frame (BGRA, top-down) as a 32-bit BMP. */
+static bool software_dump_bmp(const char *path)
+{
+	if (!g_slot)
+		return false;
+	FILE *file = NULL;
+	if (fopen_s(&file, path, "wb") != 0 || !file)
+		return false;
+	const uint32_t image_bytes = g_width * g_height * 4;
+	BITMAPFILEHEADER file_header = {0};
+	BITMAPINFOHEADER info = {0};
+	file_header.bfType = 0x4D42;
+	file_header.bfOffBits = sizeof(file_header) + sizeof(info);
+	file_header.bfSize = file_header.bfOffBits + image_bytes;
+	info.biSize = sizeof(info);
+	info.biWidth = (LONG)g_width;
+	info.biHeight = -(LONG)g_height;
+	info.biPlanes = 1;
+	info.biBitCount = 32;
+	info.biCompression = BI_RGB;
+	info.biSizeImage = image_bytes;
+	fwrite(&file_header, sizeof(file_header), 1, file);
+	fwrite(&info, sizeof(info), 1, file);
+	fwrite(g_slot, 1, image_bytes, file);
+	fclose(file);
+	return true;
+}
+
+/* Saves the landed avatar: the last frame of an entering phase. */
+static void dump_phase_frame(const char *phase)
+{
+	const size_t length = strlen(phase);
+	if (!g_dump_dir || length < 6 || strcmp(phase + length - 6, ":enter") != 0)
+		return;
+	/* Let the final animation frame reach present; nothing animates afterwards. */
+	Sleep(400);
+	char name[256];
+	strncpy_s(name, sizeof(name), phase, _TRUNCATE);
+	for (char *c = name; *c; ++c)
+		if (*c == '/' || *c == ':')
+			*c = '_';
+	char path[MAX_PATH];
+	snprintf(path, sizeof(path), "%s\\%s.bmp", g_dump_dir, name);
+	const bool saved = g_gpu ? gpu_renderer_dump_bmp(path) : software_dump_bmp(path);
+	printf("dump %s: %s\n", path, saved ? "ok" : "failed");
+	fflush(stdout);
+}
 
 static bool surface_present(void *user_data, const void *allocation, size_t row_bytes, size_t height)
 {
@@ -143,17 +219,7 @@ static bool surface_present(void *user_data, const void *allocation, size_t row_
 	const uint8_t *source = allocation;
 	for (size_t row = 0; row < height; ++row)
 		memcpy(g_slot + row * tight, source + row * row_bytes, tight);
-	const double t = now_ms();
-
-	EnterCriticalSection(&g_stats_cs);
-	if (g_phase_active) {
-		if (g_phase_frames > 0 && g_interval_count < MAX_INTERVALS)
-			g_intervals[g_interval_count++] = t - g_last_present;
-		++g_phase_frames;
-		g_present_copy_total += t - copy_begin;
-	}
-	g_last_present = t;
-	LeaveCriticalSection(&g_stats_cs);
+	record_present(now_ms() - copy_begin);
 	return true;
 }
 
@@ -171,6 +237,7 @@ static void phase_begin(const char *name)
 	g_phase_frames = 0;
 	g_interval_count = 0;
 	g_present_copy_total = 0;
+	g_present_max = 0;
 	g_phase_active = true;
 	LeaveCriticalSection(&g_stats_cs);
 }
@@ -183,16 +250,23 @@ static void phase_stop(void)
 	const int frames = g_phase_frames;
 	const int n = g_interval_count;
 	qsort(g_intervals, n, sizeof(double), compare_double);
-	int janky = 0;
-	for (int i = 0; i < n; ++i)
+	int janky = 0, bunched = 0;
+	for (int i = 0; i < n; ++i) {
 		if (g_intervals[i] > 25.0)
 			++janky;
-	printf("HOST_RESULT %-22s presented %4d frames in %6.0f ms = %5.1f fps | interval p50 %5.1f p95 %5.1f max %6.1f ms | >25ms: %d | copy %.2f ms/frame\n",
+		/* Two frames inside one OBS tick: one of them is never shown. */
+		if (g_intervals[i] < 8.0)
+			++bunched;
+	}
+	printf("HOST_RESULT %-22s presented %4d frames in %6.0f ms = %5.1f fps | interval p50 %5.1f p95 %5.1f max %6.1f ms | >25ms: %d | <8ms: %d | present avg %.2f max %.2f ms\n",
 	       g_phase_name, frames, length, frames * 1000.0 / length, n ? g_intervals[n / 2] : 0.0,
-	       n ? g_intervals[(int)(n * 0.95)] : 0.0, n ? g_intervals[n - 1] : 0.0, janky,
-	       frames ? g_present_copy_total / frames : 0.0);
+	       n ? g_intervals[(int)(n * 0.95)] : 0.0, n ? g_intervals[n - 1] : 0.0, janky, bunched,
+	       frames ? g_present_copy_total / frames : 0.0, g_present_max);
 	fflush(stdout);
+	char phase[256];
+	strncpy_s(phase, sizeof(phase), g_phase_name, _TRUNCATE);
 	LeaveCriticalSection(&g_stats_cs);
+	dump_phase_frame(phase);
 }
 
 /* ---- engine callbacks ---- */
@@ -248,12 +322,36 @@ int main(int argc, char **argv)
 		return 1;
 	}
 	bool coarse_timer = false;
+	bool gpu = false;
+	bool gl_flush = false;
+	bool impeller = false;
+	const char *angle_dir = "C:\\Program Files\\obs-studio\\obs-plugins\\64bit";
 	DWORD_PTR affinity = 0;
 	int positional = 0;
 	const char *dll = NULL, *bundle = NULL;
 	for (int i = 1; i < argc; ++i) {
 		if (strcmp(argv[i], "--coarse-timer") == 0) {
 			coarse_timer = true;
+			continue;
+		}
+		if (strcmp(argv[i], "--gpu") == 0) {
+			gpu = true;
+			continue;
+		}
+		if (strcmp(argv[i], "--dump") == 0 && i + 1 < argc) {
+			g_dump_dir = argv[++i];
+			continue;
+		}
+		if (strcmp(argv[i], "--impeller") == 0) {
+			impeller = true;
+			continue;
+		}
+		if (strcmp(argv[i], "--gl-flush") == 0) {
+			gl_flush = true;
+			continue;
+		}
+		if (strcmp(argv[i], "--angle") == 0 && i + 1 < argc) {
+			angle_dir = argv[++i];
 			continue;
 		}
 		if (strcmp(argv[i], "--affinity") == 0 && i + 1 < argc) {
@@ -281,8 +379,8 @@ int main(int argc, char **argv)
 		fprintf(stderr, "SetProcessAffinityMask failed (%lu)\n", GetLastError());
 		return 1;
 	}
-	printf("host: %ux%u, %s timer, affinity 0x%llx\n", g_width, g_height, coarse_timer ? "default" : "1 ms",
-	       (unsigned long long)affinity);
+	printf("host: %ux%u, %s renderer, %s timer, affinity 0x%llx\n", g_width, g_height,
+	       gpu ? "ANGLE GPU" : "software", coarse_timer ? "default" : "1 ms", (unsigned long long)affinity);
 
 	QueryPerformanceFrequency(&g_qpc_freq);
 	InitializeCriticalSection(&g_task_cs);
@@ -314,9 +412,18 @@ int main(int argc, char **argv)
 	snprintf(aot, sizeof(aot), "%s\\app.so", bundle);
 
 	FlutterRendererConfig renderer = {0};
-	renderer.type = kSoftware;
-	renderer.software.struct_size = sizeof(FlutterSoftwareRendererConfig);
-	renderer.software.surface_present_callback = surface_present;
+	g_gpu = gpu;
+	if (gpu) {
+		wchar_t angle_path[MAX_PATH];
+		MultiByteToWideChar(CP_UTF8, 0, angle_dir, -1, angle_path, MAX_PATH);
+		if (!gpu_renderer_init(angle_path, g_width, g_height, gl_flush, record_present))
+			return 6;
+		renderer = gpu_renderer_config();
+	} else {
+		renderer.type = kSoftware;
+		renderer.software.struct_size = sizeof(FlutterSoftwareRendererConfig);
+		renderer.software.surface_present_callback = surface_present;
+	}
 
 	FlutterTaskRunnerDescription runner = {0};
 	runner.struct_size = sizeof(runner);
@@ -338,12 +445,12 @@ int main(int argc, char **argv)
 		return 3;
 	}
 
-	static const char *engine_args[] = {"avatar_bench_host"};
+	static const char *engine_args[] = {"avatar_bench_host", "--enable-impeller"};
 	FlutterProjectArgs project = {0};
 	project.struct_size = sizeof(project);
 	project.assets_path = assets;
 	project.icu_data_path = icu;
-	project.command_line_argc = 1;
+	project.command_line_argc = impeller ? 2 : 1;
 	project.command_line_argv = engine_args;
 	project.platform_message_callback = platform_message;
 	project.custom_task_runners = &runners;

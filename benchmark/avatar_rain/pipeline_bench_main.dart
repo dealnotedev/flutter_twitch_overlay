@@ -1,13 +1,17 @@
-// End-to-end alert benchmark for the software-rendered OBS engine.
+// End-to-end alert benchmark for the OBS engine.
 //
 // flutter build windows --release -t benchmark/avatar_rain/pipeline_bench_main.dart
 // then run the bundle with benchmark/avatar_rain/host/avatar_bench_host.c,
-// which drives the OBS plugin's flutter_engine.dll with kSoftware rendering.
+// which drives the OBS plugin's flutter_engine.dll with software or ANGLE GPU
+// rendering.
 //
 // Each scenario mounts the real SubsWidget plus an avatar layer with the same
 // timings as UserAlertWidget and reports FrameTiming statistics per phase.
-// The avatar layer is either the current RainyAvatar or one of the prototype
-// renderers below.
+// The avatar layer is either RainyAvatar with one of the renderers from lib/
+// or one of the prototype renderers below.
+//
+// --dart-define=BENCH_SET=renderers (default) compares the lib renderers;
+// --dart-define=BENCH_SET=research repeats the original prototype comparison.
 import 'dart:async';
 import 'dart:math';
 import 'dart:typed_data';
@@ -16,6 +20,7 @@ import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:image/image.dart' as img;
+import 'package:obssource/pixels/avatar_contour_renderer.dart';
 import 'package:obssource/pixels/pixel.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
@@ -25,8 +30,18 @@ enum AvatarImpl {
   /// No avatar: only SubsWidget, to separate the cost of the rest of the scene.
   none,
 
-  /// RainyAvatar as shipped: rounded-rect atlas, bilinear, color modulate.
+  /// RainyAvatar with AvatarPixelRenderer.rawAtlas: rounded-rect atlas,
+  /// bilinear, color modulate.
   current,
+
+  /// RainyAvatar with AvatarPixelRenderer.contourPoints, smoothing disabled.
+  contourPoints,
+
+  /// RainyAvatar with AvatarPixelRenderer.contourPoints, smoothing enabled.
+  contourPointsSmooth,
+
+  /// RainyAvatar with AvatarPixelRenderer.legacyCanvas: drawRRect per pixel.
+  legacyCanvas,
 
   /// drawRawAtlas with the avatar itself as the atlas: one texel per sprite,
   /// nearest sampling, no per-sprite colors. Exact colors.
@@ -44,6 +59,14 @@ enum AvatarImpl {
   /// Every 60 fps frame pre-rasterized into a cell-resolution image which is
   /// drawn upscaled with nearest sampling.
   cellFrames,
+
+  /// One drawVertices call: two triangles per particle with vertex colors.
+  /// Meant for the GPU renderer, where every draw call is expensive.
+  vertices,
+
+  /// The cell-resolution frame is rasterized in Dart every frame, uploaded
+  /// as an image and drawn upscaled with nearest sampling, one frame late.
+  cellTexture,
 }
 
 class Scenario {
@@ -54,9 +77,20 @@ class Scenario {
   const Scenario(this.impl, this.resolution, this.pixelSize);
 
   String get name => '${impl.name}/r$resolution/p${pixelSize.toInt()}';
+
+  /// The lib renderer for RainyAvatar, or null for prototypes and [none].
+  AvatarPixelRenderer? get libRenderer => switch (impl) {
+    AvatarImpl.current => AvatarPixelRenderer.rawAtlas,
+    AvatarImpl.contourPoints ||
+    AvatarImpl.contourPointsSmooth => AvatarPixelRenderer.contourPoints,
+    AvatarImpl.legacyCanvas => AvatarPixelRenderer.legacyCanvas,
+    _ => null,
+  };
+
+  bool get smoothContour => impl == AvatarImpl.contourPointsSmooth;
 }
 
-const _scenarios = [
+const _researchScenarios = [
   Scenario(AvatarImpl.none, 256, 3),
   Scenario(AvatarImpl.current, 128, 8),
   Scenario(AvatarImpl.current, 256, 3),
@@ -66,6 +100,22 @@ const _scenarios = [
   Scenario(AvatarImpl.points5Frames, 256, 3),
   Scenario(AvatarImpl.cellFrames, 256, 3),
 ];
+
+const _rendererScenarios = [
+  Scenario(AvatarImpl.none, 256, 3),
+  Scenario(AvatarImpl.current, 128, 8),
+  Scenario(AvatarImpl.current, 256, 3),
+  Scenario(AvatarImpl.contourPoints, 256, 3),
+  Scenario(AvatarImpl.contourPointsSmooth, 256, 3),
+  Scenario(AvatarImpl.texelAtlas, 256, 3),
+  Scenario(AvatarImpl.vertices, 256, 3),
+  Scenario(AvatarImpl.cellTexture, 256, 3),
+];
+
+const _scenarios =
+    String.fromEnvironment('BENCH_SET') == 'research'
+        ? _researchScenarios
+        : _rendererScenarios;
 
 const _verticalOffset = -SubsWidget.bottomTextBackplatesHeight / 2.0;
 const _enteringDuration = Duration(seconds: 5);
@@ -224,6 +274,8 @@ void _log(String message) {
 class _Prepared {
   final List<Pixel> entering;
   final List<Pixel> leaving;
+  final ContourRainData? enteringContour;
+  final ContourRainData? leavingContour;
   final AvatarRenderer? enteringRenderer;
   final AvatarRenderer? leavingRenderer;
   final String info;
@@ -231,6 +283,8 @@ class _Prepared {
   _Prepared(
     this.entering,
     this.leaving,
+    this.enteringContour,
+    this.leavingContour,
     this.enteringRenderer,
     this.leavingRenderer,
     this.info,
@@ -247,6 +301,7 @@ class _Prepared {
     BoxConstraints constraints,
   ) async {
     final sw = Stopwatch()..start();
+    final libRenderer = s.libRenderer ?? AvatarPixelRenderer.rawAtlas;
     final entering = RainyAvatar.preparePixels(
       image: avatar,
       constraints: constraints,
@@ -257,6 +312,8 @@ class _Prepared {
       verticalOffset: _verticalOffset,
       origin: RainyPixelOrigin.outside,
       direction: RainyPixelDirection.entering,
+      renderer: libRenderer,
+      smoothContour: s.smoothContour,
     );
     final leaving = RainyAvatar.preparePixels(
       image: avatar,
@@ -269,8 +326,34 @@ class _Prepared {
       origin: RainyPixelOrigin.outside,
       direction: RainyPixelDirection.leaving,
       motion: AvatarPixelMotion.horizontalWaves,
+      renderer: libRenderer,
+      smoothContour: s.smoothContour,
     );
     final pixelsMs = sw.elapsedMicroseconds / 1000.0;
+    sw.reset();
+
+    // Same as _prepareAvatar in UserAlertWidget, which runs it in an isolate.
+    ContourRainData? contour(
+      List<Pixel> pixels,
+      RainyPixelDirection direction,
+    ) =>
+        libRenderer == AvatarPixelRenderer.contourPoints
+            ? ContourRainData.prepare(
+              pixels,
+              pixelSize: s.pixelSize,
+              smoothContour: s.smoothContour,
+              contour: RainyAvatar.contourFor(
+                constraints: constraints,
+                resolution: s.resolution,
+                pixelSize: s.pixelSize,
+                verticalOffset: _verticalOffset,
+                direction: direction,
+              ),
+            )
+            : null;
+    final enteringContour = contour(entering, RainyPixelDirection.entering);
+    final leavingContour = contour(leaving, RainyPixelDirection.leaving);
+    final contourMs = sw.elapsedMicroseconds / 1000.0;
     sw.reset();
 
     final grid = AvatarGrid(
@@ -284,6 +367,9 @@ class _Prepared {
     switch (s.impl) {
       case AvatarImpl.none:
       case AvatarImpl.current:
+      case AvatarImpl.contourPoints:
+      case AvatarImpl.contourPointsSmooth:
+      case AvatarImpl.legacyCanvas:
         break;
       case AvatarImpl.texelAtlas:
         enter = await TexelAtlasRenderer.create(entering, grid, landed: false);
@@ -321,17 +407,35 @@ class _Prepared {
           landed: true,
           durationMs: _leavingDuration.inMilliseconds.toDouble(),
         );
+      case AvatarImpl.vertices:
+        enter = VerticesRenderer.create(entering, grid, landed: false);
+        leave = VerticesRenderer.create(leaving, grid, landed: true);
+      case AvatarImpl.cellTexture:
+        enter = CellTextureRenderer.create(entering, grid, landed: false);
+        leave = CellTextureRenderer.create(leaving, grid, landed: true);
     }
     final rendererMs = sw.elapsedMicroseconds / 1000.0;
     final details = [
       '${entering.length} particles',
       'preparePixels x2 ${pixelsMs.toStringAsFixed(1)} ms',
+      if (enteringContour != null)
+        'ContourRainData x2 ${contourMs.toStringAsFixed(1)} ms, '
+            '${enteringContour.groupEnds.length} color groups, '
+            '${enteringContour.edgeCount} edge cells',
       if (enter != null)
         'renderer prepare x2 ${rendererMs.toStringAsFixed(1)} ms',
       if (enter != null) enter.describe(),
       if (leave != null) 'leaving: ${leave.describe()}',
     ];
-    return _Prepared(entering, leaving, enter, leave, details.join(', '));
+    return _Prepared(
+      entering,
+      leaving,
+      enteringContour,
+      leavingContour,
+      enter,
+      leave,
+      details.join(', '),
+    );
   }
 }
 
@@ -378,7 +482,7 @@ class _AlertSceneState extends State<_AlertScene> {
           onLeaving: _handleLeaving,
           pixelRadius: const Radius.circular(1),
         ),
-        if (s.impl == AvatarImpl.current)
+        if (s.libRenderer case final renderer?)
           RainyAvatar(
             key: ValueKey(_leaving),
             image: widget.avatar,
@@ -401,7 +505,10 @@ class _AlertSceneState extends State<_AlertScene> {
                 _leaving
                     ? AvatarPixelMotion.horizontalWaves
                     : AvatarPixelMotion.linear,
+            renderer: renderer,
+            smoothContour: s.smoothContour,
             preparedPixels: _leaving ? p.leaving : p.entering,
+            preparedContour: _leaving ? p.leavingContour : p.enteringContour,
           )
         else if (s.impl != AvatarImpl.none)
           RendererAvatar(
@@ -880,5 +987,195 @@ class CellFramesRenderer extends AvatarRenderer {
     for (final frame in frames) {
       frame.dispose();
     }
+  }
+}
+
+/// All particles in one drawVertices call: two triangles per particle with
+/// the particle color on every vertex. One draw call regardless of colors.
+class VerticesRenderer extends AvatarRenderer {
+  final RainMotion motion;
+  final double pixelSize;
+  final Float32List positions;
+  final Float32List triangles;
+  final Int32List colors;
+  final Paint _paint = Paint()..isAntiAlias = false;
+
+  VerticesRenderer._(this.motion, this.pixelSize, this.colors)
+    : positions = Float32List(motion.count * 2),
+      triangles = Float32List(motion.count * 12);
+
+  factory VerticesRenderer.create(
+    List<Pixel> pixels,
+    AvatarGrid grid, {
+    required bool landed,
+  }) {
+    final n = pixels.length;
+    final colors = Int32List(n * 6);
+    for (var i = 0; i < n; i++) {
+      colors.fillRange(i * 6, i * 6 + 6, pixels[i].color.toARGB32());
+    }
+    return VerticesRenderer._(
+      RainMotion.fromPixels(
+        pixels,
+        List<int>.generate(n, (i) => i),
+        offset: 0,
+        waves: landed,
+      ),
+      grid.pixelSize,
+      colors,
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, double timeMs) {
+    motion.positions(timeMs, positions, 2, 0);
+    final s = pixelSize;
+    for (var i = 0; i < motion.count; i++) {
+      final x = positions[i * 2], y = positions[i * 2 + 1];
+      final o = i * 12;
+      triangles[o] = x;
+      triangles[o + 1] = y;
+      triangles[o + 2] = x + s;
+      triangles[o + 3] = y;
+      triangles[o + 4] = x;
+      triangles[o + 5] = y + s;
+      triangles[o + 6] = x + s;
+      triangles[o + 7] = y;
+      triangles[o + 8] = x + s;
+      triangles[o + 9] = y + s;
+      triangles[o + 10] = x;
+      triangles[o + 11] = y + s;
+    }
+    final vertices = ui.Vertices.raw(
+      ui.VertexMode.triangles,
+      triangles,
+      colors: colors,
+    );
+    // BlendMode.dst keeps the vertex colors and ignores the paint color.
+    canvas.drawVertices(vertices, BlendMode.dst, _paint);
+    vertices.dispose();
+  }
+}
+
+/// Real-time version of [CellFramesRenderer]: the next frame is rasterized in
+/// Dart into one cell-resolution buffer and uploaded while the current one
+/// is shown. No pre-rendering and no frame storage; one frame of latency.
+class CellTextureRenderer extends AvatarRenderer {
+  final RainMotion motion;
+  final Uint32List colors;
+  final Float32List positions;
+  final Uint32List buffer;
+  final int width;
+  final int height;
+  final double originX;
+  final double originY;
+  final double pixelSize;
+  final Rect source;
+  final Rect destination;
+  final Paint _paint = Paint()..filterQuality = FilterQuality.none;
+  ui.Image? _shown;
+  bool _uploading = false;
+  bool _disposed = false;
+
+  CellTextureRenderer._(
+    this.motion,
+    this.colors,
+    this.width,
+    this.height,
+    this.originX,
+    this.originY,
+    this.pixelSize,
+  ) : positions = Float32List(motion.count * 2),
+      buffer = Uint32List(width * height),
+      source = Rect.fromLTWH(0, 0, width.toDouble(), height.toDouble()),
+      destination = Rect.fromLTWH(
+        originX,
+        originY,
+        width * pixelSize,
+        height * pixelSize,
+      );
+
+  factory CellTextureRenderer.create(
+    List<Pixel> pixels,
+    AvatarGrid grid, {
+    required bool landed,
+  }) {
+    final ps = grid.pixelSize;
+    final originX = grid.left - (grid.left / ps).ceil() * ps;
+    final originY = grid.top - (grid.top / ps).ceil() * ps;
+    final view = ui.PlatformDispatcher.instance.implicitView!;
+    final size = view.physicalSize / view.devicePixelRatio;
+    final n = pixels.length;
+    final colors = Uint32List(n);
+    for (var i = 0; i < n; i++) {
+      final c = pixels[i].color.toARGB32();
+      // Little-endian RGBA8888.
+      colors[i] =
+          (c & 0xFF000000) |
+          ((c & 0xFF) << 16) |
+          (c & 0xFF00) |
+          ((c >> 16) & 0xFF);
+    }
+    return CellTextureRenderer._(
+      RainMotion.fromPixels(
+        pixels,
+        List<int>.generate(n, (i) => i),
+        offset: 0,
+        waves: landed,
+      ),
+      colors,
+      ((size.width - originX) / ps).ceil(),
+      ((size.height - originY) / ps).ceil(),
+      originX,
+      originY,
+      ps,
+    );
+  }
+
+  @override
+  void paint(Canvas canvas, double timeMs) {
+    final image = _shown;
+    if (image != null) {
+      canvas.drawImageRect(image, source, destination, _paint);
+    }
+    if (!_uploading) _upload(timeMs + _frameMs);
+  }
+
+  void _upload(double timeMs) {
+    _uploading = true;
+    motion.positions(timeMs, positions, 2, 0);
+    buffer.fillRange(0, buffer.length, 0);
+    final inv = 1 / pixelSize;
+    for (var i = 0; i < motion.count; i++) {
+      final cx = ((positions[i * 2] - originX) * inv).round();
+      final cy = ((positions[i * 2 + 1] - originY) * inv).round();
+      if (cx >= 0 && cy >= 0 && cx < width && cy < height) {
+        buffer[cy * width + cx] = colors[i];
+      }
+    }
+    ui.decodeImageFromPixels(
+      buffer.buffer.asUint8List(),
+      width,
+      height,
+      ui.PixelFormat.rgba8888,
+      (image) {
+        _uploading = false;
+        if (_disposed) {
+          image.dispose();
+          return;
+        }
+        _shown?.dispose();
+        _shown = image;
+      },
+    );
+  }
+
+  @override
+  String describe() => 'buffer ${width}x$height';
+
+  @override
+  void dispose() {
+    _disposed = true;
+    _shown?.dispose();
   }
 }

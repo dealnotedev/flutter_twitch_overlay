@@ -1,0 +1,8 @@
+cellTexture_r256_p3_enter | ganesh differs from sw: 0 px (by more than 8 levels: 0) | impeller differs from sw: 0 px (by more than 8 levels: 0)
+contourPointsSmooth_r256_p3_enter | ganesh differs from sw: 2448 px (by more than 8 levels: 710) | impeller differs from sw: 2736 px (by more than 8 levels: 835)
+contourPoints_r256_p3_enter | ganesh differs from sw: 0 px (by more than 8 levels: 0) | impeller differs from sw: 0 px (by more than 8 levels: 0)
+current_r128_p8_enter | ganesh differs from sw: 0 px (by more than 8 levels: 0) | impeller differs from sw: 0 px (by more than 8 levels: 0)
+current_r256_p3_enter | ganesh differs from sw: 0 px (by more than 8 levels: 0) | impeller differs from sw: 0 px (by more than 8 levels: 0)
+none_r256_p3_enter | ganesh differs from sw: 0 px (by more than 8 levels: 0) | impeller differs from sw: 0 px (by more than 8 levels: 0)
+texelAtlas_r256_p3_enter | ganesh differs from sw: 0 px (by more than 8 levels: 0) | impeller differs from sw: 0 px (by more than 8 levels: 0)
+vertices_r256_p3_enter | ganesh differs from sw: 0 px (by more than 8 levels: 0) | impeller differs from sw: 0 px (by more than 8 levels: 0)
