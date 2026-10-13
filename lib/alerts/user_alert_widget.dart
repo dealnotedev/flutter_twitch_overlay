@@ -14,6 +14,9 @@ class UserAlertWidget extends StatefulWidget {
   final AvatarPixelRenderer renderer;
   final int avatarResolution;
 
+  /// Hold time of the assembled text, see [SubsWidget.holdDuration].
+  final Duration holdDuration;
+
   const UserAlertWidget({
     super.key,
     required this.userName,
@@ -23,6 +26,7 @@ class UserAlertWidget extends StatefulWidget {
     this.leavingMotion = AvatarPixelMotion.horizontalWaves,
     this.renderer = AvatarPixelRenderer.rawAtlas,
     this.avatarResolution = 48,
+    this.holdDuration = const Duration(seconds: 10),
   });
 
   @override
@@ -119,6 +123,7 @@ class _UserAlertWidgetState extends State<UserAlertWidget> {
           onLeaving: _handleLeaving,
           pixelRadius: _pixelRadius,
           renderer: widget.renderer,
+          holdDuration: widget.holdDuration,
         ),
         if (avatar != null)
           RainyAvatar(

@@ -8,6 +8,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:image/image.dart' as img;
 import 'package:obssource/config/obs_config.dart';
+import 'package:obssource/config/alerts_settings.dart';
 import 'package:obssource/config/avatar_settings.dart';
 import 'package:obssource/alerts/user_alert_widget.dart';
 import 'package:obssource/config/settings.dart';
@@ -167,7 +168,15 @@ void main() {
         giftLoad['id'],
       );
       audioCommands.clear();
-      config.config.set(Config(valid: true, json: {'subscriptions': false}));
+      await settings.saveAlerts(
+        settings.alerts.copyWith(
+          subscriptions: const SubscriptionAlertSettings(
+            subscribe: false,
+            resubscribe: false,
+            gift: false,
+          ),
+        ),
+      );
       websocket.add(gift('gift-two'));
       await tester.pump();
       expect(find.byType(UserAlertWidget), findsNothing);
@@ -665,7 +674,11 @@ void main() {
     expect(find.byType(RaidWidget), findsNothing);
     expect(audioCommands, isEmpty);
 
-    config.config.set(Config(valid: true, json: {'raids': false}));
+    await settings.saveAlerts(
+      settings.alerts.copyWith(
+        raid: settings.alerts.raid.copyWith(enabled: false),
+      ),
+    );
     websocket.add(_raidMessage(viewers: 20, messageId: 'disabled'));
     await tester.pump();
     expect(find.byType(RaidWidget), findsNothing);

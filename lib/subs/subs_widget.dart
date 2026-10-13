@@ -20,6 +20,9 @@ class SubsWidget extends StatefulWidget {
   final AvatarPixelRenderer renderer;
   final Radius pixelRadius;
 
+  /// How long the assembled text stays before turning into the heart.
+  final Duration holdDuration;
+
   const SubsWidget({
     super.key,
     required this.who,
@@ -28,6 +31,7 @@ class SubsWidget extends StatefulWidget {
     this.onLeaving,
     this.renderer = AvatarPixelRenderer.rawAtlas,
     this.pixelRadius = const Radius.circular(2),
+    this.holdDuration = const Duration(seconds: 10),
   });
 
   @override
@@ -258,7 +262,7 @@ class _State extends State<SubsWidget> {
       _opacity = 1.0;
     });
 
-    await Future.delayed(Duration(seconds: 10));
+    await Future.delayed(widget.holdDuration);
 
     if (!mounted) return;
 
