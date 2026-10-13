@@ -147,6 +147,19 @@ class EffectRuntime extends ChangeNotifier {
   PauseEffect? get pause => _pause;
   KillInfo? get kill => _kill;
 
+  /// Nothing is shown or waiting, except a pause, which stays until removed.
+  bool get idle =>
+      !_stageBusy &&
+      _stage == null &&
+      _stageQueue.isEmpty &&
+      _rewardCards.isEmpty &&
+      _chatCards.isEmpty &&
+      _flashbang == null &&
+      _flashbangQueue.isEmpty &&
+      _crt == null &&
+      _kill == null &&
+      _killQueue.isEmpty;
+
   bool get screenAttackMounted {
     if (keepScreenAttackMounted) return true;
     final effects = _rewardEffects();

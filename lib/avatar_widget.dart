@@ -4,6 +4,9 @@ import 'package:flutter/material.dart';
 import 'package:obssource/generated/assets.dart';
 
 class Avatar extends StatelessWidget {
+  /// Prefix of [url]s that point to bundled assets instead of the network.
+  static const assetScheme = 'asset:';
+
   final String? url;
   final Uint8List? bytes;
   final String? asset;
@@ -21,9 +24,13 @@ class Avatar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bytes = this.bytes;
 
+    final url = this.url;
     final ImageProvider provider;
-    if (url != null) {
-      provider = CachedNetworkImageProvider(url ?? '');
+    if (url != null && url.startsWith(assetScheme)) {
+      // Local pictures of the settings preview.
+      provider = AssetImage(url.substring(assetScheme.length));
+    } else if (url != null) {
+      provider = CachedNetworkImageProvider(url);
     } else if (bytes != null) {
       provider = MemoryImage(bytes);
     } else {

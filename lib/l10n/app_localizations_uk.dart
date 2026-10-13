@@ -536,4 +536,292 @@ class AppLocalizationsUk extends AppLocalizations {
     );
     return '$broadcaster вривається рейдом разом із $_temp0!';
   }
+
+  @override
+  String get settings_group_overlay => 'Оверлей';
+
+  @override
+  String get settings_group_alerts => 'Сповіщення';
+
+  @override
+  String get settings_group_effects => 'Бали каналу';
+
+  @override
+  String get settings_group_integrations => 'Інтеграції';
+
+  @override
+  String get settings_follow => 'Фоловери';
+
+  @override
+  String get settings_follow_description =>
+      'Нові фоловери в центрі трансляції.';
+
+  @override
+  String get settings_raid => 'Рейди';
+
+  @override
+  String get settings_raid_description => 'Вхідні рейди в центрі трансляції.';
+
+  @override
+  String get settings_subscriptions => 'Підписки';
+
+  @override
+  String get settings_subscriptions_description =>
+      'Нові підписки, продовження та подарунки. Спільна черга з фоловерами й рейдами.';
+
+  @override
+  String get settings_reward_cards => 'Картки нагород';
+
+  @override
+  String get settings_reward_cards_description =>
+      'Картка ліворуч для кожної покупки за бали каналу.';
+
+  @override
+  String get settings_chat => 'Повідомлення чату';
+
+  @override
+  String get settings_chat_description =>
+      'Тварини несуть виділені повідомлення та перше повідомлення кожного глядача за цю сесію.';
+
+  @override
+  String get settings_flashbang => 'Флешбенг';
+
+  @override
+  String get settings_flashbang_description =>
+      'Граната залітає та засліплює екран.';
+
+  @override
+  String get settings_crt => 'Вимкнення екрану';
+
+  @override
+  String get settings_crt_description =>
+      'Екран вимикається, як старий телевізор, і показує, хто це зробив. Повторна покупка подовжує час.';
+
+  @override
+  String get settings_pause => 'Пауза';
+
+  @override
+  String get settings_pause_description =>
+      'Піксельна картинка збирається протягом паузи. Глядач вводить хвилини або m:ss і повідомлення; 0 знімає паузу.';
+
+  @override
+  String get settings_stickers => 'Стікери та приціл';
+
+  @override
+  String get settings_stickers_description =>
+      'Одна нагорода показує рухомий приціл, інша кидає стікер туди, куди він дивиться.';
+
+  @override
+  String get settings_kills => 'Лічильник кілів';
+
+  @override
+  String get settings_kills_description =>
+      'Локальний HTTP для трекера кілів: GET /kill?text=…&in_match=…&in_match_streak=…&total_streak=…';
+
+  @override
+  String get settings_enabled => 'Увімкнено';
+
+  @override
+  String get settings_style => 'Вигляд';
+
+  @override
+  String get settings_style_pixel => 'Пікселі';
+
+  @override
+  String get settings_sound => 'Звук';
+
+  @override
+  String get settings_sound_classic => 'Класичний';
+
+  @override
+  String get settings_sound_none => 'Без звуку';
+
+  @override
+  String get settings_volume => 'Гучність';
+
+  @override
+  String settings_percent(int value) {
+    return '$value %';
+  }
+
+  @override
+  String settings_minutes(int minutes) {
+    return '$minutes хв';
+  }
+
+  @override
+  String get settings_hold => 'Час показу тексту';
+
+  @override
+  String get settings_flight_time => 'Тривалість польоту';
+
+  @override
+  String get settings_duration => 'Тривалість';
+
+  @override
+  String get follow_style_balloons => 'Повітряні кульки';
+
+  @override
+  String get follow_sound_modern => 'Новий';
+
+  @override
+  String get raid_style_classic => 'Класичний з тваринами';
+
+  @override
+  String get raid_sound_voice => 'Озвучка кількості';
+
+  @override
+  String get raid_min_viewers => 'Мінімум глядачів';
+
+  @override
+  String get raid_max_animals => 'Максимум тварин';
+
+  @override
+  String get raid_max_animals_hint =>
+      'Одна тварина на глядача до цієї межі. Текст показує точну кількість.';
+
+  @override
+  String get subscriptions_new => 'Нова підписка';
+
+  @override
+  String get subscriptions_resub => 'Продовження';
+
+  @override
+  String get subscriptions_gift => 'Подарунки';
+
+  @override
+  String get subscriptions_show_avatar => 'Показувати аватар';
+
+  @override
+  String get subscriptions_sound_distinct => 'Різні звуки';
+
+  @override
+  String get chat_highlighted => 'Виділені повідомлення';
+
+  @override
+  String get chat_first_message => 'Перше повідомлення глядача';
+
+  @override
+  String get effect_reward => 'Нагорода';
+
+  @override
+  String get effect_reward_none => 'Не прив\'язано';
+
+  @override
+  String effect_reward_missing(String title) {
+    return '$title (не знайдено)';
+  }
+
+  @override
+  String get effect_rewards_unavailable =>
+      'Підключіть Twitch, щоб вибрати нагороду.';
+
+  @override
+  String get flashbang_pro_chance => 'Шанс золотого флешбенга';
+
+  @override
+  String get pause_max => 'Найдовша пауза';
+
+  @override
+  String get sticker_reward => 'Плюнути стікером';
+
+  @override
+  String get crosshair_reward => 'Прицілитись';
+
+  @override
+  String get crosshair_duration => 'Час прицілу';
+
+  @override
+  String get kills_address => 'Адреса';
+
+  @override
+  String get kills_port => 'Порт';
+
+  @override
+  String get kills_apply => 'Застосувати';
+
+  @override
+  String get kills_invalid => 'Введіть правильну IP-адресу та порт.';
+
+  @override
+  String kills_listening(String url) {
+    return 'Слухає $url';
+  }
+
+  @override
+  String get kills_stopped => 'Сервер вимкнено.';
+
+  @override
+  String get preview_title => 'Попередній перегляд';
+
+  @override
+  String get preview_on_air => 'Налаштування та перегляд видно в ефірі.';
+
+  @override
+  String get preview_play => 'Запустити';
+
+  @override
+  String get preview_stop => 'Зупинити';
+
+  @override
+  String get preview_repeat => 'Повторювати';
+
+  @override
+  String get preview_sound => 'Звук в ефір';
+
+  @override
+  String get preview_short_name => 'Коротке ім\'я';
+
+  @override
+  String get preview_long_name => 'Довге ім\'я';
+
+  @override
+  String get preview_viewers => 'Глядачів:';
+
+  @override
+  String preview_new_subscription(int tier) {
+    return 'Нова T$tier';
+  }
+
+  @override
+  String preview_resubscription(int months) {
+    return '$months міс.';
+  }
+
+  @override
+  String preview_gift(int count) {
+    return 'Подарунок ×$count';
+  }
+
+  @override
+  String get preview_anonymous_gift => 'Анонімний подарунок';
+
+  @override
+  String get preview_short_title => 'Коротка назва';
+
+  @override
+  String get preview_long_title => 'Довга назва';
+
+  @override
+  String get preview_emote => 'З емоутом';
+
+  @override
+  String get preview_normal => 'Звичайний';
+
+  @override
+  String get preview_golden => 'Золотий';
+
+  @override
+  String get preview_remove => 'Зняти';
+
+  @override
+  String get preview_random_sticker => 'Випадковий стікер';
+
+  @override
+  String get preview_crosshair => 'Приціл';
+
+  @override
+  String preview_streak(int streak) {
+    return 'Серія $streak';
+  }
 }

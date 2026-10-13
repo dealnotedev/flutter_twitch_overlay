@@ -254,8 +254,22 @@ class _State extends State<LoggedWidget> {
                 appLocator is AppServiceLocator
                     ? appLocator.musicRequests
                     : null,
+            // An injected catalog means a test that must not reach Twitch.
+            loadAllRewards:
+                widget.rewardCatalog != null ? null : _loadAllRewards,
           ),
     );
+  }
+
+  Future<List<TwitchCustomReward>> _loadAllRewards() {
+    final broadcasterId = _settings.twitchAuth?.broadcasterId;
+    if (broadcasterId == null) {
+      throw StateError('Connect Twitch to choose channel points rewards');
+    }
+    return TwitchApi(
+      settings: _settings,
+      clientSecret: twitchClientSecret,
+    ).getCustomRewards(broadcasterUserId: broadcasterId);
   }
 
   Widget _createConfigInfo(BuildContext context) {

@@ -338,3 +338,145 @@ class _NeonSettingsInputState extends State<NeonSettingsInput>
     ),
   );
 }
+
+/// Rounded panel grouping related settings.
+class NeonSettingsCard extends StatelessWidget {
+  final Widget child;
+
+  const NeonSettingsCard({super.key, required this.child});
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.fromLTRB(20, 14, 20, 14),
+    decoration: BoxDecoration(
+      color: MusicPlayerPalette.midnight.withValues(alpha: 0.76),
+      borderRadius: BorderRadius.circular(16),
+      border: Border.all(
+        color: MusicPlayerPalette.neonPink.withValues(alpha: 0.25),
+      ),
+    ),
+    child: child,
+  );
+}
+
+/// Title and description of a settings page.
+class NeonSettingsHeader extends StatelessWidget {
+  final String title;
+  final String description;
+
+  const NeonSettingsHeader({
+    super.key,
+    required this.title,
+    required this.description,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text(
+        title,
+        style: const TextStyle(
+          color: MusicPlayerPalette.neonPinkBright,
+          fontFamily: 'Segoe Script',
+          fontSize: 22,
+          fontStyle: FontStyle.italic,
+          shadows: MusicPlayerPalette.pinkTextGlow,
+        ),
+      ),
+      const Gap(6),
+      Text(
+        description,
+        style: const TextStyle(
+          color: MusicPlayerPalette.textSecondary,
+          fontSize: 12,
+        ),
+      ),
+    ],
+  );
+}
+
+class NeonSettingsSwitch extends StatelessWidget {
+  final Key switchKey;
+  final String label;
+  final bool value;
+  final ValueChanged<bool>? onChanged;
+
+  const NeonSettingsSwitch({
+    super.key,
+    required this.switchKey,
+    required this.label,
+    required this.value,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => Row(
+    children: [
+      Expanded(
+        child: Text(
+          label,
+          style: const TextStyle(
+            color: MusicPlayerPalette.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ),
+      const Gap(12),
+      Switch(
+        key: switchKey,
+        value: value,
+        activeThumbColor: MusicPlayerPalette.neonPinkBright,
+        onChanged: onChanged,
+      ),
+    ],
+  );
+}
+
+/// One of several options, shown as radio buttons in a row.
+class NeonSettingsChoice<T extends Enum> extends StatelessWidget {
+  final String keyPrefix;
+  final String label;
+  final T value;
+  final Map<T, String> options;
+  final ValueChanged<T>? onChanged;
+
+  const NeonSettingsChoice({
+    super.key,
+    required this.keyPrefix,
+    required this.label,
+    required this.value,
+    required this.options,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Text(
+        label,
+        style: const TextStyle(
+          color: MusicPlayerPalette.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+      const Gap(8),
+      Wrap(
+        spacing: 24,
+        runSpacing: 8,
+        children: [
+          for (final MapEntry(key: option, value: title) in options.entries)
+            NeonSettingsButton(
+              key: ValueKey('${keyPrefix}_${option.name}'),
+              label: title,
+              selected: option == value,
+              onPressed: onChanged == null ? null : () => onChanged!(option),
+            ),
+        ],
+      ),
+    ],
+  );
+}

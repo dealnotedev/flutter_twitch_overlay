@@ -520,4 +520,292 @@ class AppLocalizationsEn extends AppLocalizations {
   String raid_text(String broadcaster, int raiders) {
     return '$broadcaster is raiding with a party of $raiders';
   }
+
+  @override
+  String get settings_group_overlay => 'Overlay';
+
+  @override
+  String get settings_group_alerts => 'Alerts';
+
+  @override
+  String get settings_group_effects => 'Channel points';
+
+  @override
+  String get settings_group_integrations => 'Integrations';
+
+  @override
+  String get settings_follow => 'Follows';
+
+  @override
+  String get settings_follow_description =>
+      'New followers in the center of the stream.';
+
+  @override
+  String get settings_raid => 'Raids';
+
+  @override
+  String get settings_raid_description =>
+      'Incoming raids in the center of the stream.';
+
+  @override
+  String get settings_subscriptions => 'Subscriptions';
+
+  @override
+  String get settings_subscriptions_description =>
+      'New subscriptions, resubscriptions and gifts. Shares the queue with follows and raids.';
+
+  @override
+  String get settings_reward_cards => 'Reward cards';
+
+  @override
+  String get settings_reward_cards_description =>
+      'A card on the left for every channel points redemption.';
+
+  @override
+  String get settings_chat => 'Chat messages';
+
+  @override
+  String get settings_chat_description =>
+      'Animals carry highlighted messages and the first message of every viewer in this session.';
+
+  @override
+  String get settings_flashbang => 'Flashbang';
+
+  @override
+  String get settings_flashbang_description =>
+      'A grenade flies in and blinds the screen.';
+
+  @override
+  String get settings_crt => 'Screen off';
+
+  @override
+  String get settings_crt_description =>
+      'The screen switches off like an old TV and shows who did it. Another redemption extends the time.';
+
+  @override
+  String get settings_pause => 'Pause';
+
+  @override
+  String get settings_pause_description =>
+      'A pixel picture assembles over the pause. The viewer enters minutes or m:ss and a message; 0 removes the pause.';
+
+  @override
+  String get settings_stickers => 'Stickers and crosshair';
+
+  @override
+  String get settings_stickers_description =>
+      'One reward shows a moving crosshair, the other spits a sticker where it points.';
+
+  @override
+  String get settings_kills => 'Kill counter';
+
+  @override
+  String get settings_kills_description =>
+      'Local HTTP endpoint for a kill tracker: GET /kill?text=…&in_match=…&in_match_streak=…&total_streak=…';
+
+  @override
+  String get settings_enabled => 'Enabled';
+
+  @override
+  String get settings_style => 'Look';
+
+  @override
+  String get settings_style_pixel => 'Pixels';
+
+  @override
+  String get settings_sound => 'Sound';
+
+  @override
+  String get settings_sound_classic => 'Classic';
+
+  @override
+  String get settings_sound_none => 'No sound';
+
+  @override
+  String get settings_volume => 'Volume';
+
+  @override
+  String settings_percent(int value) {
+    return '$value %';
+  }
+
+  @override
+  String settings_minutes(int minutes) {
+    return '$minutes min';
+  }
+
+  @override
+  String get settings_hold => 'Text stays';
+
+  @override
+  String get settings_flight_time => 'Flight time';
+
+  @override
+  String get settings_duration => 'Duration';
+
+  @override
+  String get follow_style_balloons => 'Balloons';
+
+  @override
+  String get follow_sound_modern => 'New';
+
+  @override
+  String get raid_style_classic => 'Classic with animals';
+
+  @override
+  String get raid_sound_voice => 'Viewer count voice';
+
+  @override
+  String get raid_min_viewers => 'Minimum viewers';
+
+  @override
+  String get raid_max_animals => 'Maximum animals';
+
+  @override
+  String get raid_max_animals_hint =>
+      'One animal per viewer up to this limit. The text keeps the exact count.';
+
+  @override
+  String get subscriptions_new => 'New subscription';
+
+  @override
+  String get subscriptions_resub => 'Resubscription';
+
+  @override
+  String get subscriptions_gift => 'Gifts';
+
+  @override
+  String get subscriptions_show_avatar => 'Show avatar';
+
+  @override
+  String get subscriptions_sound_distinct => 'Distinct sounds';
+
+  @override
+  String get chat_highlighted => 'Highlighted messages';
+
+  @override
+  String get chat_first_message => 'First message of a viewer';
+
+  @override
+  String get effect_reward => 'Reward';
+
+  @override
+  String get effect_reward_none => 'Not bound';
+
+  @override
+  String effect_reward_missing(String title) {
+    return '$title (not found)';
+  }
+
+  @override
+  String get effect_rewards_unavailable => 'Connect Twitch to choose a reward.';
+
+  @override
+  String get flashbang_pro_chance => 'Golden flashbang chance';
+
+  @override
+  String get pause_max => 'Longest pause';
+
+  @override
+  String get sticker_reward => 'Spit a sticker';
+
+  @override
+  String get crosshair_reward => 'Take aim';
+
+  @override
+  String get crosshair_duration => 'Crosshair time';
+
+  @override
+  String get kills_address => 'Address';
+
+  @override
+  String get kills_port => 'Port';
+
+  @override
+  String get kills_apply => 'Apply';
+
+  @override
+  String get kills_invalid => 'Enter a valid IP address and port.';
+
+  @override
+  String kills_listening(String url) {
+    return 'Listening on $url';
+  }
+
+  @override
+  String get kills_stopped => 'The server is off.';
+
+  @override
+  String get preview_title => 'Preview';
+
+  @override
+  String get preview_on_air => 'Settings and preview are visible on stream.';
+
+  @override
+  String get preview_play => 'Play';
+
+  @override
+  String get preview_stop => 'Stop';
+
+  @override
+  String get preview_repeat => 'Repeat';
+
+  @override
+  String get preview_sound => 'Sound on stream';
+
+  @override
+  String get preview_short_name => 'Short name';
+
+  @override
+  String get preview_long_name => 'Long name';
+
+  @override
+  String get preview_viewers => 'Viewers:';
+
+  @override
+  String preview_new_subscription(int tier) {
+    return 'New T$tier';
+  }
+
+  @override
+  String preview_resubscription(int months) {
+    return '$months months';
+  }
+
+  @override
+  String preview_gift(int count) {
+    return 'Gift ×$count';
+  }
+
+  @override
+  String get preview_anonymous_gift => 'Anonymous gift';
+
+  @override
+  String get preview_short_title => 'Short title';
+
+  @override
+  String get preview_long_title => 'Long title';
+
+  @override
+  String get preview_emote => 'With emote';
+
+  @override
+  String get preview_normal => 'Normal';
+
+  @override
+  String get preview_golden => 'Golden';
+
+  @override
+  String get preview_remove => 'Remove';
+
+  @override
+  String get preview_random_sticker => 'Random sticker';
+
+  @override
+  String get preview_crosshair => 'Crosshair';
+
+  @override
+  String preview_streak(int streak) {
+    return 'Streak $streak';
+  }
 }

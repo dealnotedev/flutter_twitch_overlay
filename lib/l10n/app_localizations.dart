@@ -906,6 +906,528 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{broadcaster} is raiding with a party of {raiders}'**
   String raid_text(String broadcaster, int raiders);
+
+  /// No description provided for @settings_group_overlay.
+  ///
+  /// In en, this message translates to:
+  /// **'Overlay'**
+  String get settings_group_overlay;
+
+  /// No description provided for @settings_group_alerts.
+  ///
+  /// In en, this message translates to:
+  /// **'Alerts'**
+  String get settings_group_alerts;
+
+  /// No description provided for @settings_group_effects.
+  ///
+  /// In en, this message translates to:
+  /// **'Channel points'**
+  String get settings_group_effects;
+
+  /// No description provided for @settings_group_integrations.
+  ///
+  /// In en, this message translates to:
+  /// **'Integrations'**
+  String get settings_group_integrations;
+
+  /// No description provided for @settings_follow.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows'**
+  String get settings_follow;
+
+  /// No description provided for @settings_follow_description.
+  ///
+  /// In en, this message translates to:
+  /// **'New followers in the center of the stream.'**
+  String get settings_follow_description;
+
+  /// No description provided for @settings_raid.
+  ///
+  /// In en, this message translates to:
+  /// **'Raids'**
+  String get settings_raid;
+
+  /// No description provided for @settings_raid_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Incoming raids in the center of the stream.'**
+  String get settings_raid_description;
+
+  /// No description provided for @settings_subscriptions.
+  ///
+  /// In en, this message translates to:
+  /// **'Subscriptions'**
+  String get settings_subscriptions;
+
+  /// No description provided for @settings_subscriptions_description.
+  ///
+  /// In en, this message translates to:
+  /// **'New subscriptions, resubscriptions and gifts. Shares the queue with follows and raids.'**
+  String get settings_subscriptions_description;
+
+  /// No description provided for @settings_reward_cards.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward cards'**
+  String get settings_reward_cards;
+
+  /// No description provided for @settings_reward_cards_description.
+  ///
+  /// In en, this message translates to:
+  /// **'A card on the left for every channel points redemption.'**
+  String get settings_reward_cards_description;
+
+  /// No description provided for @settings_chat.
+  ///
+  /// In en, this message translates to:
+  /// **'Chat messages'**
+  String get settings_chat;
+
+  /// No description provided for @settings_chat_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Animals carry highlighted messages and the first message of every viewer in this session.'**
+  String get settings_chat_description;
+
+  /// No description provided for @settings_flashbang.
+  ///
+  /// In en, this message translates to:
+  /// **'Flashbang'**
+  String get settings_flashbang;
+
+  /// No description provided for @settings_flashbang_description.
+  ///
+  /// In en, this message translates to:
+  /// **'A grenade flies in and blinds the screen.'**
+  String get settings_flashbang_description;
+
+  /// No description provided for @settings_crt.
+  ///
+  /// In en, this message translates to:
+  /// **'Screen off'**
+  String get settings_crt;
+
+  /// No description provided for @settings_crt_description.
+  ///
+  /// In en, this message translates to:
+  /// **'The screen switches off like an old TV and shows who did it. Another redemption extends the time.'**
+  String get settings_crt_description;
+
+  /// No description provided for @settings_pause.
+  ///
+  /// In en, this message translates to:
+  /// **'Pause'**
+  String get settings_pause;
+
+  /// No description provided for @settings_pause_description.
+  ///
+  /// In en, this message translates to:
+  /// **'A pixel picture assembles over the pause. The viewer enters minutes or m:ss and a message; 0 removes the pause.'**
+  String get settings_pause_description;
+
+  /// No description provided for @settings_stickers.
+  ///
+  /// In en, this message translates to:
+  /// **'Stickers and crosshair'**
+  String get settings_stickers;
+
+  /// No description provided for @settings_stickers_description.
+  ///
+  /// In en, this message translates to:
+  /// **'One reward shows a moving crosshair, the other spits a sticker where it points.'**
+  String get settings_stickers_description;
+
+  /// No description provided for @settings_kills.
+  ///
+  /// In en, this message translates to:
+  /// **'Kill counter'**
+  String get settings_kills;
+
+  /// No description provided for @settings_kills_description.
+  ///
+  /// In en, this message translates to:
+  /// **'Local HTTP endpoint for a kill tracker: GET /kill?text=…&in_match=…&in_match_streak=…&total_streak=…'**
+  String get settings_kills_description;
+
+  /// No description provided for @settings_enabled.
+  ///
+  /// In en, this message translates to:
+  /// **'Enabled'**
+  String get settings_enabled;
+
+  /// No description provided for @settings_style.
+  ///
+  /// In en, this message translates to:
+  /// **'Look'**
+  String get settings_style;
+
+  /// No description provided for @settings_style_pixel.
+  ///
+  /// In en, this message translates to:
+  /// **'Pixels'**
+  String get settings_style_pixel;
+
+  /// No description provided for @settings_sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound'**
+  String get settings_sound;
+
+  /// No description provided for @settings_sound_classic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic'**
+  String get settings_sound_classic;
+
+  /// No description provided for @settings_sound_none.
+  ///
+  /// In en, this message translates to:
+  /// **'No sound'**
+  String get settings_sound_none;
+
+  /// No description provided for @settings_volume.
+  ///
+  /// In en, this message translates to:
+  /// **'Volume'**
+  String get settings_volume;
+
+  /// No description provided for @settings_percent.
+  ///
+  /// In en, this message translates to:
+  /// **'{value} %'**
+  String settings_percent(int value);
+
+  /// No description provided for @settings_minutes.
+  ///
+  /// In en, this message translates to:
+  /// **'{minutes} min'**
+  String settings_minutes(int minutes);
+
+  /// No description provided for @settings_hold.
+  ///
+  /// In en, this message translates to:
+  /// **'Text stays'**
+  String get settings_hold;
+
+  /// No description provided for @settings_flight_time.
+  ///
+  /// In en, this message translates to:
+  /// **'Flight time'**
+  String get settings_flight_time;
+
+  /// No description provided for @settings_duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Duration'**
+  String get settings_duration;
+
+  /// No description provided for @follow_style_balloons.
+  ///
+  /// In en, this message translates to:
+  /// **'Balloons'**
+  String get follow_style_balloons;
+
+  /// No description provided for @follow_sound_modern.
+  ///
+  /// In en, this message translates to:
+  /// **'New'**
+  String get follow_sound_modern;
+
+  /// No description provided for @raid_style_classic.
+  ///
+  /// In en, this message translates to:
+  /// **'Classic with animals'**
+  String get raid_style_classic;
+
+  /// No description provided for @raid_sound_voice.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewer count voice'**
+  String get raid_sound_voice;
+
+  /// No description provided for @raid_min_viewers.
+  ///
+  /// In en, this message translates to:
+  /// **'Minimum viewers'**
+  String get raid_min_viewers;
+
+  /// No description provided for @raid_max_animals.
+  ///
+  /// In en, this message translates to:
+  /// **'Maximum animals'**
+  String get raid_max_animals;
+
+  /// No description provided for @raid_max_animals_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'One animal per viewer up to this limit. The text keeps the exact count.'**
+  String get raid_max_animals_hint;
+
+  /// No description provided for @subscriptions_new.
+  ///
+  /// In en, this message translates to:
+  /// **'New subscription'**
+  String get subscriptions_new;
+
+  /// No description provided for @subscriptions_resub.
+  ///
+  /// In en, this message translates to:
+  /// **'Resubscription'**
+  String get subscriptions_resub;
+
+  /// No description provided for @subscriptions_gift.
+  ///
+  /// In en, this message translates to:
+  /// **'Gifts'**
+  String get subscriptions_gift;
+
+  /// No description provided for @subscriptions_show_avatar.
+  ///
+  /// In en, this message translates to:
+  /// **'Show avatar'**
+  String get subscriptions_show_avatar;
+
+  /// No description provided for @subscriptions_sound_distinct.
+  ///
+  /// In en, this message translates to:
+  /// **'Distinct sounds'**
+  String get subscriptions_sound_distinct;
+
+  /// No description provided for @chat_highlighted.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighted messages'**
+  String get chat_highlighted;
+
+  /// No description provided for @chat_first_message.
+  ///
+  /// In en, this message translates to:
+  /// **'First message of a viewer'**
+  String get chat_first_message;
+
+  /// No description provided for @effect_reward.
+  ///
+  /// In en, this message translates to:
+  /// **'Reward'**
+  String get effect_reward;
+
+  /// No description provided for @effect_reward_none.
+  ///
+  /// In en, this message translates to:
+  /// **'Not bound'**
+  String get effect_reward_none;
+
+  /// No description provided for @effect_reward_missing.
+  ///
+  /// In en, this message translates to:
+  /// **'{title} (not found)'**
+  String effect_reward_missing(String title);
+
+  /// No description provided for @effect_rewards_unavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect Twitch to choose a reward.'**
+  String get effect_rewards_unavailable;
+
+  /// No description provided for @flashbang_pro_chance.
+  ///
+  /// In en, this message translates to:
+  /// **'Golden flashbang chance'**
+  String get flashbang_pro_chance;
+
+  /// No description provided for @pause_max.
+  ///
+  /// In en, this message translates to:
+  /// **'Longest pause'**
+  String get pause_max;
+
+  /// No description provided for @sticker_reward.
+  ///
+  /// In en, this message translates to:
+  /// **'Spit a sticker'**
+  String get sticker_reward;
+
+  /// No description provided for @crosshair_reward.
+  ///
+  /// In en, this message translates to:
+  /// **'Take aim'**
+  String get crosshair_reward;
+
+  /// No description provided for @crosshair_duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosshair time'**
+  String get crosshair_duration;
+
+  /// No description provided for @kills_address.
+  ///
+  /// In en, this message translates to:
+  /// **'Address'**
+  String get kills_address;
+
+  /// No description provided for @kills_port.
+  ///
+  /// In en, this message translates to:
+  /// **'Port'**
+  String get kills_port;
+
+  /// No description provided for @kills_apply.
+  ///
+  /// In en, this message translates to:
+  /// **'Apply'**
+  String get kills_apply;
+
+  /// No description provided for @kills_invalid.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a valid IP address and port.'**
+  String get kills_invalid;
+
+  /// No description provided for @kills_listening.
+  ///
+  /// In en, this message translates to:
+  /// **'Listening on {url}'**
+  String kills_listening(String url);
+
+  /// No description provided for @kills_stopped.
+  ///
+  /// In en, this message translates to:
+  /// **'The server is off.'**
+  String get kills_stopped;
+
+  /// No description provided for @preview_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get preview_title;
+
+  /// No description provided for @preview_on_air.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings and preview are visible on stream.'**
+  String get preview_on_air;
+
+  /// No description provided for @preview_play.
+  ///
+  /// In en, this message translates to:
+  /// **'Play'**
+  String get preview_play;
+
+  /// No description provided for @preview_stop.
+  ///
+  /// In en, this message translates to:
+  /// **'Stop'**
+  String get preview_stop;
+
+  /// No description provided for @preview_repeat.
+  ///
+  /// In en, this message translates to:
+  /// **'Repeat'**
+  String get preview_repeat;
+
+  /// No description provided for @preview_sound.
+  ///
+  /// In en, this message translates to:
+  /// **'Sound on stream'**
+  String get preview_sound;
+
+  /// No description provided for @preview_short_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Short name'**
+  String get preview_short_name;
+
+  /// No description provided for @preview_long_name.
+  ///
+  /// In en, this message translates to:
+  /// **'Long name'**
+  String get preview_long_name;
+
+  /// No description provided for @preview_viewers.
+  ///
+  /// In en, this message translates to:
+  /// **'Viewers:'**
+  String get preview_viewers;
+
+  /// No description provided for @preview_new_subscription.
+  ///
+  /// In en, this message translates to:
+  /// **'New T{tier}'**
+  String preview_new_subscription(int tier);
+
+  /// No description provided for @preview_resubscription.
+  ///
+  /// In en, this message translates to:
+  /// **'{months} months'**
+  String preview_resubscription(int months);
+
+  /// No description provided for @preview_gift.
+  ///
+  /// In en, this message translates to:
+  /// **'Gift ×{count}'**
+  String preview_gift(int count);
+
+  /// No description provided for @preview_anonymous_gift.
+  ///
+  /// In en, this message translates to:
+  /// **'Anonymous gift'**
+  String get preview_anonymous_gift;
+
+  /// No description provided for @preview_short_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Short title'**
+  String get preview_short_title;
+
+  /// No description provided for @preview_long_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Long title'**
+  String get preview_long_title;
+
+  /// No description provided for @preview_emote.
+  ///
+  /// In en, this message translates to:
+  /// **'With emote'**
+  String get preview_emote;
+
+  /// No description provided for @preview_normal.
+  ///
+  /// In en, this message translates to:
+  /// **'Normal'**
+  String get preview_normal;
+
+  /// No description provided for @preview_golden.
+  ///
+  /// In en, this message translates to:
+  /// **'Golden'**
+  String get preview_golden;
+
+  /// No description provided for @preview_remove.
+  ///
+  /// In en, this message translates to:
+  /// **'Remove'**
+  String get preview_remove;
+
+  /// No description provided for @preview_random_sticker.
+  ///
+  /// In en, this message translates to:
+  /// **'Random sticker'**
+  String get preview_random_sticker;
+
+  /// No description provided for @preview_crosshair.
+  ///
+  /// In en, this message translates to:
+  /// **'Crosshair'**
+  String get preview_crosshair;
+
+  /// No description provided for @preview_streak.
+  ///
+  /// In en, this message translates to:
+  /// **'Streak {streak}'**
+  String preview_streak(int streak);
 }
 
 class _AppLocalizationsDelegate

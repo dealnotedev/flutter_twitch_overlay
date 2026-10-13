@@ -6,9 +6,12 @@ import 'package:gap/gap.dart';
 
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/settings/alert_settings_page.dart';
 import 'package:obssource/settings/avatar_settings_controls.dart';
+import 'package:obssource/settings/kills_settings_page.dart';
 
 import 'package:obssource/music/music_player_visuals.dart';
+import 'package:obssource/settings/reward_effect_settings_page.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/settings/music_settings_controls.dart';
@@ -25,6 +28,10 @@ class OverlaySettingsDialog extends StatefulWidget {
   final YoutubeConnectionController? youtubeConnection;
   final MusicRequestManager? musicRequests;
 
+  /// Every channel points reward, for binding effects; `null` without
+  /// Twitch.
+  final Future<List<TwitchCustomReward>> Function()? loadAllRewards;
+
   const OverlaySettingsDialog({
     super.key,
     required this.settings,
@@ -33,16 +40,34 @@ class OverlaySettingsDialog extends StatefulWidget {
     this.musicRewardController,
     this.youtubeConnection,
     this.musicRequests,
+    this.loadAllRewards,
   });
 
   @override
   State<OverlaySettingsDialog> createState() => _OverlaySettingsDialogState();
 }
 
-enum _SettingsSection { player, avatar }
+// Player and avatar come first: their indexes are used by the IndexedStack.
+enum _SettingsSection {
+  player,
+  avatar,
+  follow,
+  raid,
+  subscriptions,
+  rewardCards,
+  chat,
+  flashbang,
+  crt,
+  pause,
+  stickers,
+  kills,
+}
 
 class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   _SettingsSection _section = _SettingsSection.player;
+  List<TwitchCustomReward>? _allRewards;
+  bool _allRewardsLoading = false;
+  bool _allRewardsFailed = false;
   List<TwitchCustomReward> _rewards = const [];
   String? _selectedRewardId;
   Object? _error;
@@ -144,30 +169,65 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
     }
   }
 
+  Future<void> _loadAllRewards() async {
+    final load = widget.loadAllRewards;
+    if (load == null) return;
+    setState(() {
+      _allRewardsLoading = true;
+      _allRewardsFailed = false;
+    });
+    try {
+      final rewards = await load();
+      if (!mounted) return;
+      setState(() => _allRewards = rewards);
+    } catch (_) {
+      if (mounted) setState(() => _allRewardsFailed = true);
+    } finally {
+      if (mounted) setState(() => _allRewardsLoading = false);
+    }
+  }
+
+  void _select(_SettingsSection section) {
+    setState(() => _section = section);
+    final effects = section.index >= _SettingsSection.flashbang.index;
+    if (effects &&
+        _allRewards == null &&
+        !_allRewardsLoading &&
+        !_allRewardsFailed) {
+      unawaited(_loadAllRewards());
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.transparent,
       insetPadding: const EdgeInsets.all(24),
-      child: SizedBox(
-        width: 1040,
-        height: 680,
-        child: CosmicMusicSurface(
-          width: 1040,
-          height: 680,
-          borderRadius: 22,
-          padding: EdgeInsets.zero,
-          child: Column(
-            children: [
-              _buildHeader(context),
-              Container(
-                height: 1,
-                color: MusicPlayerPalette.neonPink.withValues(alpha: 0.22),
+      child: LayoutBuilder(
+        // Uses the whole overlay: forms and the stream-sized preview need room.
+        builder:
+            (context, constraints) => SizedBox(
+              width: constraints.maxWidth,
+              height: constraints.maxHeight,
+              child: CosmicMusicSurface(
+                width: constraints.maxWidth,
+                height: constraints.maxHeight,
+                borderRadius: 22,
+                padding: EdgeInsets.zero,
+                child: Column(
+                  children: [
+                    _buildHeader(context),
+                    Container(
+                      height: 1,
+                      color: MusicPlayerPalette.neonPink.withValues(
+                        alpha: 0.22,
+                      ),
+                    ),
+                    Expanded(child: _buildBody(context)),
+                  ],
+                ),
               ),
-              Expanded(child: _buildBody(context)),
-            ],
-          ),
-        ),
+            ),
       ),
     );
   }
@@ -206,25 +266,43 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   }
 
   Widget _buildBody(BuildContext context) {
+    final music =
+        _section == _SettingsSection.player ||
+        _section == _SettingsSection.avatar;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(width: 198, child: _buildNavigation(context)),
+        SizedBox(width: 214, child: _buildNavigation(context)),
         Container(
           width: 1,
           color: MusicPlayerPalette.neonBlue.withValues(alpha: 0.13),
         ),
         Expanded(
-          child: IndexedStack(
-            index: _section.index,
-            sizing: StackFit.expand,
+          child: Stack(
+            fit: StackFit.expand,
             children: [
-              _buildPlayerSettings(context),
-              SingleChildScrollView(
-                key: const ValueKey('avatar_settings_scroll'),
-                padding: const EdgeInsets.fromLTRB(28, 22, 28, 26),
-                child: AvatarSettingsControls(settings: widget.settings),
+              // Kept alive while other pages are open, like before.
+              Offstage(
+                offstage: !music,
+                child: TickerMode(
+                  enabled: music,
+                  child: IndexedStack(
+                    index: music ? _section.index : 0,
+                    sizing: StackFit.expand,
+                    children: [
+                      _buildPlayerSettings(context),
+                      SingleChildScrollView(
+                        key: const ValueKey('avatar_settings_scroll'),
+                        padding: const EdgeInsets.fromLTRB(28, 22, 28, 26),
+                        child: AvatarSettingsControls(
+                          settings: widget.settings,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
+              if (!music) _buildPage(),
             ],
           ),
         ),
@@ -232,45 +310,176 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
     );
   }
 
+  Widget _buildPage() {
+    final rewards = RewardChoices(
+      rewards: _allRewards,
+      loading: _allRewardsLoading,
+      failed: _allRewardsFailed,
+      onRefresh: widget.loadAllRewards == null ? null : _loadAllRewards,
+    );
+    final key = ValueKey(_section);
+    AlertSettingsPage alert(AlertPage page) =>
+        AlertSettingsPage(key: key, page: page, settings: widget.settings);
+    RewardEffectSettingsPage effect(EffectPage page) =>
+        RewardEffectSettingsPage(
+          key: key,
+          page: page,
+          settings: widget.settings,
+          rewards: rewards,
+        );
+
+    return switch (_section) {
+      _SettingsSection.player ||
+      _SettingsSection.avatar => const SizedBox.shrink(),
+      _SettingsSection.follow => alert(AlertPage.follow),
+      _SettingsSection.raid => alert(AlertPage.raid),
+      _SettingsSection.subscriptions => alert(AlertPage.subscriptions),
+      _SettingsSection.rewardCards => alert(AlertPage.rewardCards),
+      _SettingsSection.chat => alert(AlertPage.chat),
+      _SettingsSection.flashbang => effect(EffectPage.flashbang),
+      _SettingsSection.crt => effect(EffectPage.crt),
+      _SettingsSection.pause => effect(EffectPage.pause),
+      _SettingsSection.stickers => effect(EffectPage.stickers),
+      _SettingsSection.kills => KillsSettingsPage(
+        key: key,
+        settings: widget.settings,
+      ),
+    };
+  }
+
   Widget _buildNavigation(BuildContext context) {
+    final l = context.localizations;
     return Container(
       color: MusicPlayerPalette.voidBlack.withValues(alpha: 0.38),
-      padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10),
-            child: Text(
-              context.localizations.overlay_settings_sections.toUpperCase(),
-              style: TextStyle(
-                color: MusicPlayerPalette.textSecondary.withValues(alpha: 0.65),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 1.5,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _navigationGroup(l.settings_group_overlay, [
+              _navigationItem(
+                const ValueKey('overlay_settings_player_section'),
+                l.overlay_settings_player,
+                Icons.graphic_eq_rounded,
+                _SettingsSection.player,
               ),
-            ),
-          ),
-          const Gap(12),
-          NeonSettingsButton.section(
-            key: const ValueKey('overlay_settings_player_section'),
-            label: context.localizations.overlay_settings_player,
-            icon: Icons.graphic_eq_rounded,
-            selected: _section == _SettingsSection.player,
-            onPressed: () => setState(() => _section = _SettingsSection.player),
-          ),
-          const Gap(8),
-          NeonSettingsButton.section(
-            key: const ValueKey('overlay_settings_avatar_section'),
-            label: context.localizations.overlay_settings_avatar,
-            icon: Icons.account_circle_outlined,
-            selected: _section == _SettingsSection.avatar,
-            onPressed: () => setState(() => _section = _SettingsSection.avatar),
-          ),
-        ],
+              _navigationItem(
+                const ValueKey('overlay_settings_avatar_section'),
+                l.overlay_settings_avatar,
+                Icons.account_circle_outlined,
+                _SettingsSection.avatar,
+              ),
+            ]),
+            const Gap(18),
+            _navigationGroup(l.settings_group_alerts, [
+              _navigationItem(
+                const ValueKey('overlay_settings_follow_section'),
+                l.settings_follow,
+                Icons.favorite_border_rounded,
+                _SettingsSection.follow,
+              ),
+              _navigationItem(
+                const ValueKey('overlay_settings_raid_section'),
+                l.settings_raid,
+                Icons.groups_rounded,
+                _SettingsSection.raid,
+              ),
+              _navigationItem(
+                const ValueKey('overlay_settings_subscriptions_section'),
+                l.settings_subscriptions,
+                Icons.star_border_rounded,
+                _SettingsSection.subscriptions,
+              ),
+              _navigationItem(
+                const ValueKey('overlay_settings_reward_cards_section'),
+                l.settings_reward_cards,
+                Icons.card_giftcard_rounded,
+                _SettingsSection.rewardCards,
+              ),
+              _navigationItem(
+                const ValueKey('overlay_settings_chat_section'),
+                l.settings_chat,
+                Icons.chat_bubble_outline_rounded,
+                _SettingsSection.chat,
+              ),
+            ]),
+            const Gap(18),
+            _navigationGroup(l.settings_group_effects, [
+              _navigationItem(
+                const ValueKey('overlay_settings_flashbang_section'),
+                l.settings_flashbang,
+                Icons.flash_on_rounded,
+                _SettingsSection.flashbang,
+              ),
+              _navigationItem(
+                const ValueKey('overlay_settings_crt_section'),
+                l.settings_crt,
+                Icons.tv_off_rounded,
+                _SettingsSection.crt,
+              ),
+              _navigationItem(
+                const ValueKey('overlay_settings_pause_section'),
+                l.settings_pause,
+                Icons.pause_circle_outline_rounded,
+                _SettingsSection.pause,
+              ),
+              _navigationItem(
+                const ValueKey('overlay_settings_stickers_section'),
+                l.settings_stickers,
+                Icons.gps_fixed_rounded,
+                _SettingsSection.stickers,
+              ),
+            ]),
+            const Gap(18),
+            _navigationGroup(l.settings_group_integrations, [
+              _navigationItem(
+                const ValueKey('overlay_settings_kills_section'),
+                l.settings_kills,
+                Icons.sports_esports_outlined,
+                _SettingsSection.kills,
+              ),
+            ]),
+          ],
+        ),
       ),
     );
   }
+
+  Widget _navigationGroup(String title, List<Widget> items) => Column(
+    crossAxisAlignment: CrossAxisAlignment.stretch,
+    children: [
+      Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10),
+        child: Text(
+          title.toUpperCase(),
+          style: TextStyle(
+            color: MusicPlayerPalette.textSecondary.withValues(alpha: 0.65),
+            fontSize: 10,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ),
+      const Gap(10),
+      for (final (index, item) in items.indexed) ...[
+        if (index > 0) const Gap(6),
+        item,
+      ],
+    ],
+  );
+
+  Widget _navigationItem(
+    Key key,
+    String label,
+    IconData icon,
+    _SettingsSection section,
+  ) => NeonSettingsButton.section(
+    key: key,
+    label: label,
+    icon: icon,
+    selected: _section == section,
+    onPressed: () => _select(section),
+  );
 
   Widget _buildPlayerSettings(BuildContext context) {
     return SingleChildScrollView(
