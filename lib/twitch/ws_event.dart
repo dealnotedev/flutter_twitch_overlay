@@ -69,6 +69,13 @@ class WsMessageEvent {
   final WsRaid? raid;
   final WsSubscription? subscription;
 
+  /// Chat sender of a `channel.chat.message` event.
+  final UserInfo? chatter;
+
+  /// Chat message kind, e.g. `text` or `channel_points_highlighted`.
+  final String? messageType;
+  final WsChatMessage? chatMessage;
+
   WsMessageEvent({
     required this.id,
     required this.user,
@@ -80,6 +87,9 @@ class WsMessageEvent {
     this.subscription,
     this.redemptionStatus,
     this.broadcasterId,
+    this.chatter,
+    this.messageType,
+    this.chatMessage,
   });
 
   factory WsMessageEvent.fromJson(dynamic json, {String? eventType}) {
@@ -92,6 +102,10 @@ class WsMessageEvent {
       reward: rewardJson != null ? WsReward.fromJson(rewardJson) : null,
       userInput: json['user_input'] as String?,
       messageText: messageJson is Map ? messageJson['text'] as String? : null,
+      chatter: ParseUtil.parseUserInfo(json, prefix: 'chatter_'),
+      messageType: json['message_type'] as String?,
+      chatMessage:
+          messageJson is Map ? WsChatMessage.fromJson(messageJson) : null,
       redeemedAt: DateTime.tryParse(json['redeemed_at'] as String? ?? ''),
       redemptionStatus: TwitchRedemptionStatus.fromApi(
         json['status'] as String?,
@@ -147,10 +161,10 @@ class UserInfo {
 class ParseUtil {
   ParseUtil._();
 
-  static UserInfo? parseUserInfo(dynamic json) {
-    final id = json['user_id'] as String?;
-    final login = json['user_login'] as String?;
-    final name = json['user_name'] as String?;
+  static UserInfo? parseUserInfo(dynamic json, {String prefix = ''}) {
+    final id = json['${prefix}user_id'] as String?;
+    final login = json['${prefix}user_login'] as String?;
+    final name = json['${prefix}user_name'] as String?;
 
     if (id == null || login == null || name == null) {
       return null;
@@ -167,5 +181,79 @@ class WsMessageSubscription {
 
   factory WsMessageSubscription.fromJson(dynamic json) {
     return WsMessageSubscription(type: json['type'] as String);
+  }
+}
+
+class WsChatMessage {
+  final String? text;
+  final List<WsChatMessageFragment> fragments;
+
+  const WsChatMessage({required this.text, required this.fragments});
+
+  factory WsChatMessage.fromJson(dynamic json) {
+    final fragments = json['fragments'];
+    return WsChatMessage(
+      text: json['text'] as String?,
+      fragments:
+          fragments is List
+              ? fragments
+                  .whereType<Map>()
+                  .map(WsChatMessageFragment.fromJson)
+                  .toList(growable: false)
+              : const [],
+    );
+  }
+}
+
+enum WsFragmentType {
+  mention,
+  text,
+  emote,
+  unknown;
+
+  static WsFragmentType fromString(String? type) => WsFragmentType.values
+      .firstWhere((value) => value.name == type, orElse: () => unknown);
+}
+
+class WsChatMessageFragment {
+  final WsFragmentType type;
+  final String? text;
+  final WsChatEmote? emote;
+
+  const WsChatMessageFragment({
+    required this.type,
+    required this.text,
+    this.emote,
+  });
+
+  factory WsChatMessageFragment.fromJson(dynamic json) {
+    final emoteJson = json['emote'];
+    return WsChatMessageFragment(
+      type: WsFragmentType.fromString(json['type'] as String?),
+      text: json['text'] as String?,
+      emote: emoteJson is Map ? WsChatEmote.tryParse(emoteJson) : null,
+    );
+  }
+}
+
+class WsChatEmote {
+  final String id;
+  final List<String> format;
+
+  const WsChatEmote({required this.id, required this.format});
+
+  bool get animated => format.contains('animated');
+
+  static WsChatEmote? tryParse(dynamic json) {
+    final id = json['id'];
+    if (id is! String) return null;
+    final format = json['format'];
+    return WsChatEmote(
+      id: id,
+      format:
+          format is List
+              ? format.map((value) => value.toString()).toList(growable: false)
+              : const [],
+    );
   }
 }
