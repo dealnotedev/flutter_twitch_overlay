@@ -1,5 +1,40 @@
 # Freydis Overlay Changelog
 
+## [Unreleased]
+
+One build now serves both channels: the effects of the old master build are back, and every effect
+is chosen and tuned in the overlay settings instead of the code or the OBS source JSON.
+
+### Notifications
+
+- Follows, raids and subscriptions share one queue, so alerts no longer overlap.
+- Follows can use the pixel animation or the classic balloons; raids can use the pixel animation or
+  the classic plate with running animals, limited to a configurable number.
+- Sounds are chosen independently of the look: modern, classic or none for follows; viewer count
+  voice, classic or none for raids; distinct, classic or none for subscriptions; each with volume.
+- Alert hold time, minimum raid size, subscription avatars and every subscription type can be
+  configured.
+- Highlighted messages and the first message of a viewer can be shown as chat cards.
+
+### Channel points and integrations
+
+- Flashbang, screen switch-off, pause, stickers and crosshair are back and bound to any channel
+  reward by ID; rewards of the old master build are matched once by their titles.
+- The pause accepts minutes or `m:ss` with a message, ignores malformed input and is capped by a
+  configurable limit; `0` removes it.
+- The local kill counter endpoint starts only when enabled, uses a configurable address and port and
+  answers malformed requests with 400.
+
+### Settings
+
+- The settings dialog fills the overlay and groups pages into overlay, alerts, channel points and
+  integrations.
+- Every effect has a preview with sample events on a stream-sized canvas; the preview sound is off by
+  default because it plays on stream.
+- Existing installations are migrated once: the old master build keeps its classic look, freydis
+  keeps its pixel look, and OBS alert switches are imported with their previous meaning. The old
+  master Twitch login has to be renewed for the `channel:manage:redemptions` scope.
+
 ## [1.0.0] — 2026-09-03
 
 The first release of Freydis Overlay, a Twitch overlay for OBS featuring pixel-art notifications and
