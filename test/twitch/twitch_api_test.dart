@@ -170,7 +170,7 @@ void main() {
                   'data': [
                     {
                       'id': 'created-reward',
-                      'title': 'Music Request (Freydis)',
+                      'title': 'Music Request',
                       'cost': 1000,
                       'is_enabled': true,
                       'is_user_input_required': true,
@@ -186,7 +186,7 @@ void main() {
 
     final reward = await api.createCustomReward(
       broadcasterUserId: 'broadcaster-1',
-      title: 'Music Request (Freydis)',
+      title: 'Music Request',
       cost: 1000,
       prompt: 'Paste a YouTube link',
       backgroundColor: '#9147FF',
@@ -197,7 +197,7 @@ void main() {
       'broadcaster_id': 'broadcaster-1',
     });
     expect(capturedRequest?.data, {
-      'title': 'Music Request (Freydis)',
+      'title': 'Music Request',
       'cost': 1000,
       'prompt': 'Paste a YouTube link',
       'background_color': '#9147FF',

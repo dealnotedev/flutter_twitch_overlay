@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:obssource/config/legacy_reward_binder.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
@@ -31,6 +32,8 @@ class AppServiceLocator extends ServiceLocator {
   final ObsConfig config;
   final Map<Type, Object> map = {};
   late final StreamSubscription<MusicSettings> _musicSettingsSubscription;
+  late final StreamSubscription<Config> _obsConfigSubscription;
+  late final StreamSubscription<void> _legacyRewardsSubscription;
   MusicControlServerController? musicControlServer;
   late final MusicRewardController musicRewardController;
   late final YoutubeConnectionController youtubeConnection;
@@ -180,6 +183,36 @@ class AppServiceLocator extends ServiceLocator {
       },
     );
 
+    void importObsFlags(Config value) {
+      final json = value.json;
+      if (!value.valid || json is! Map<String, dynamic>) return;
+      unawaited(
+        settings.importLegacyObsFlags(json).catchError((Object error) {
+          stderr.writeln('Unable to import OBS alert switches: $error');
+        }),
+      );
+    }
+
+    importObsFlags(config.config.current);
+    _obsConfigSubscription = config.config.changes.listen(importObsFlags);
+
+    final legacyRewards = LegacyRewardBinder(
+      settings: settings,
+      loadRewards: () async {
+        final broadcasterId = settings.twitchAuth?.broadcasterId;
+        if (broadcasterId == null) return const [];
+        return musicApi.getCustomRewards(broadcasterUserId: broadcasterId);
+      },
+    );
+    _legacyRewardsSubscription = settings.twitchAuthStream
+        .where((creds) => creds?.broadcasterId != null)
+        .asyncMap(
+          (_) => legacyRewards.run().catchError((Object error) {
+            stderr.writeln('Unable to bind legacy rewards: $error');
+          }),
+        )
+        .listen(null);
+
     musicControlServer = MusicControlServerController(requests: musicRequests);
     unawaited(
       musicControlServer?.configure(
@@ -217,6 +250,8 @@ class AppServiceLocator extends ServiceLocator {
   T provide<T>() => map[T] as T;
 
   Future<void> close() async {
+    await _obsConfigSubscription.cancel();
+    await _legacyRewardsSubscription.cancel();
     await _musicSettingsSubscription.cancel();
     await _musicUpdates;
     await musicRewardController.close();
