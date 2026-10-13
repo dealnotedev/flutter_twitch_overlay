@@ -27,20 +27,45 @@ set from `16` to `128`; its pixel size remains fixed at `8`.
 The old `alert_animation_renderer` and `alert_avatar_resolution` options in OBS
 JSON are ignored and are not migrated. Defaults are 48 and Optimized.
 
-## OBS source configuration
+## Alerts and channel points effects
 
-Subscription alerts are enabled by default; set `"subscriptions": false` in
-the OBS source JSON to disable them. They handle new subscriptions, shared
-resubscription messages (total months), and single or bulk gifts. Gift recipients
-do not trigger duplicate alerts. Anonymous givers appear as `Анонім`.
-The alerts use l10n translations (Ukrainian and English), the shared avatar animation, a
-20-second lifetime, and a dedicated sound for each subscription event. Subscription alerts play in
-arrival order, one at a time, with audio starting when each alert is shown.
-The bundled sounds in `assets/subscriptions/` are `subscription_purchase.wav`
-for a new subscription, `subscription_renewal.wav` for a shared resubscription
-message, and `subscription_gift.wav` for a single or bulk gift.
-Twitch authorization requires
-`channel:read:subscriptions`; older tokens without this scope need a new login.
+One build serves every channel; each streamer picks the look locally in
+**Overlay settings**. Every page saves immediately and has a preview with
+sample events on a 1920×1080 canvas. The settings dialog is part of the OBS
+source, so settings and previews are visible on stream; the preview sound is
+off by default because it would play on stream too.
+
+| Page | Options |
+| --- | --- |
+| Follows | Pixel animation or balloons; modern, classic or no sound; volume; hold time |
+| Raids | Pixel animation or the classic plate with running animals (capped); viewer count voice, classic or no sound; minimum viewers |
+| Subscriptions | New, resubscription and gift alerts separately; avatar; distinct, classic or no sound |
+| Reward cards | On or off; duration |
+| Chat messages | Highlighted messages; first message of a viewer in this session |
+| Flashbang, Screen off, Pause, Stickers and crosshair | The Twitch reward that triggers the effect, volume and effect limits |
+| Kill counter | Local HTTP endpoint, address and port, duration |
+
+Follows, raids and subscriptions share one queue and are shown one at a time
+in arrival order. Subscriptions cover new subscriptions, shared resubscription
+messages (total months), and single or bulk gifts; gift recipients do not
+trigger duplicate alerts and anonymous givers appear as `Анонім`.
+
+Channel points effects are bound to rewards by ID and can use any reward of the
+channel; the music reward is excluded. The pause accepts minutes or `m:ss` and
+an optional message, for example `1:30 Back soon`; `0` or an empty input
+removes it.
+
+The kill counter listens only while enabled, by default on `0.0.0.0:4080`:
+`GET /kill?text=…&in_match=…&in_match_streak=…&total_streak=…`.
+
+On the first start an installation is migrated once. The old master build keeps
+its classic look and binds its rewards by their old titles after the next
+Twitch login; its saved login must be renewed for `channel:manage:redemptions`.
+The alert switches of the OBS source JSON (`followers`, `raids`,
+`subscriptions`, `first_chat_message`, `screen_attack_game`) are imported from
+the first valid configuration and are not read afterwards. Twitch authorization
+requires `channel:read:subscriptions`; older tokens without this scope need a
+new login.
 
 ## Twitch music requests MVP
 
