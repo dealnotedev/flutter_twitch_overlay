@@ -222,5 +222,46 @@
   "overlay_settings_no_rewards_body": "Створіть стандартну винагороду для музики, налаштуйте її у Twitch та оновіть список.",
   "overlay_settings_load_error": "Не вдалося завантажити винагороди Twitch",
   "settings_on": "Увімкнено",
-  "settings_off": "Вимкнено"
+  "settings_off": "Вимкнено",
+  "by_user": "від {user_avatar} {user}",
+  "@by_user": {
+    "placeholders": {
+      "user_avatar": {
+        "type": "String",
+        "example": "url"
+      },
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      }
+    }
+  },
+  "user_now_following_title": "{user_avatar} {user} тепер з нами!",
+  "@user_now_following_title": {
+    "placeholders": {
+      "user_avatar": {
+        "type": "String",
+        "example": "url"
+      },
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      }
+    }
+  },
+  "chat_message_first": "Перше",
+  "chat_message_highlighted": "Важливе",
+  "raid_text": "{broadcaster} вривається рейдом разом із {raiders,plural, =1{{raiders} глядачем} other{{raiders} глядачами}}!",
+  "@raid_text": {
+    "placeholders": {
+      "broadcaster": {
+        "type": "String",
+        "example": "kekotopko"
+      },
+      "raiders": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  }
 }

@@ -499,4 +499,25 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settings_off => 'Off';
+
+  @override
+  String by_user(String user_avatar, String user) {
+    return 'by $user_avatar $user';
+  }
+
+  @override
+  String user_now_following_title(String user_avatar, String user) {
+    return '$user_avatar $user just followed!';
+  }
+
+  @override
+  String get chat_message_first => 'First message';
+
+  @override
+  String get chat_message_highlighted => 'Highlighted';
+
+  @override
+  String raid_text(String broadcaster, int raiders) {
+    return '$broadcaster is raiding with a party of $raiders';
+  }
 }

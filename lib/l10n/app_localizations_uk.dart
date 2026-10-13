@@ -509,4 +509,31 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get settings_off => 'Вимкнено';
+
+  @override
+  String by_user(String user_avatar, String user) {
+    return 'від $user_avatar $user';
+  }
+
+  @override
+  String user_now_following_title(String user_avatar, String user) {
+    return '$user_avatar $user тепер з нами!';
+  }
+
+  @override
+  String get chat_message_first => 'Перше';
+
+  @override
+  String get chat_message_highlighted => 'Важливе';
+
+  @override
+  String raid_text(String broadcaster, int raiders) {
+    String _temp0 = intl.Intl.pluralLogic(
+      raiders,
+      locale: localeName,
+      other: '$raiders глядачами',
+      one: '$raiders глядачем',
+    );
+    return '$broadcaster вривається рейдом разом із $_temp0!';
+  }
 }

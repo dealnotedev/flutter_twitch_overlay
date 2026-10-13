@@ -876,6 +876,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off'**
   String get settings_off;
+
+  /// No description provided for @by_user.
+  ///
+  /// In en, this message translates to:
+  /// **'by {user_avatar} {user}'**
+  String by_user(String user_avatar, String user);
+
+  /// No description provided for @user_now_following_title.
+  ///
+  /// In en, this message translates to:
+  /// **'{user_avatar} {user} just followed!'**
+  String user_now_following_title(String user_avatar, String user);
+
+  /// No description provided for @chat_message_first.
+  ///
+  /// In en, this message translates to:
+  /// **'First message'**
+  String get chat_message_first;
+
+  /// No description provided for @chat_message_highlighted.
+  ///
+  /// In en, this message translates to:
+  /// **'Highlighted'**
+  String get chat_message_highlighted;
+
+  /// No description provided for @raid_text.
+  ///
+  /// In en, this message translates to:
+  /// **'{broadcaster} is raiding with a party of {raiders}'**
+  String raid_text(String broadcaster, int raiders);
 }
 
 class _AppLocalizationsDelegate

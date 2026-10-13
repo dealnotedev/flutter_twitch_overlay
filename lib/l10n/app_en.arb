@@ -229,5 +229,46 @@
   "overlay_settings_no_rewards_body": "Create a default music request reward, then customize it on Twitch and refresh this list.",
   "overlay_settings_load_error": "Could not load Twitch rewards",
   "settings_on": "On",
-  "settings_off": "Off"
+  "settings_off": "Off",
+  "by_user": "by {user_avatar} {user}",
+  "@by_user": {
+    "placeholders": {
+      "user_avatar": {
+        "type": "String",
+        "example": "url"
+      },
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      }
+    }
+  },
+  "user_now_following_title": "{user_avatar} {user} just followed!",
+  "@user_now_following_title": {
+    "placeholders": {
+      "user_avatar": {
+        "type": "String",
+        "example": "url"
+      },
+      "user": {
+        "type": "String",
+        "example": "kekotopko"
+      }
+    }
+  },
+  "chat_message_first": "First message",
+  "chat_message_highlighted": "Highlighted",
+  "raid_text": "{broadcaster} is raiding with a party of {raiders}",
+  "@raid_text": {
+    "placeholders": {
+      "broadcaster": {
+        "type": "String",
+        "example": "kekotopko"
+      },
+      "raiders": {
+        "type": "int",
+        "example": "5"
+      }
+    }
+  }
 }
