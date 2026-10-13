@@ -1,6 +1,6 @@
 import 'package:obssource/generated/assets.dart';
 
-class FollowBallonsConfig {
+class FollowBalloonsConfig {
   final double width;
   final double height;
 
@@ -9,7 +9,7 @@ class FollowBallonsConfig {
   final double msgTop;
   final double msgLeft;
 
-  FollowBallonsConfig({
+  FollowBalloonsConfig({
     required this.width,
     required this.height,
     required this.lottie,
@@ -17,8 +17,8 @@ class FollowBallonsConfig {
     required this.msgLeft,
   });
 
-  static FollowBallonsConfig get() {
-    return FollowBallonsConfig(
+  static FollowBalloonsConfig get() {
+    return FollowBalloonsConfig(
       width: 280,
       height: 280,
       lottie: Assets.assetsBallons,

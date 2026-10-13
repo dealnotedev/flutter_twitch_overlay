@@ -6,22 +6,43 @@ import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:image/image.dart' as img;
 import 'package:lottie/lottie.dart';
-import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/generated/assets.dart';
-import 'package:obssource/twitch/ws_event.dart';
-import 'package:obssource/twitch/ws_manager.dart';
 
-class ScreenAttackGameWidget extends StatefulWidget {
-  final ServiceLocator locator;
-
-  const ScreenAttackGameWidget({super.key, required this.locator});
-
-  @override
-  State<StatefulWidget> createState() => _State();
+sealed class ScreenAttackCommand {
+  const ScreenAttackCommand();
 }
 
-class _State extends State<ScreenAttackGameWidget> {
-  final _available = <String>[
+/// Throws a sticker at the crosshair position.
+class StickerCommand extends ScreenAttackCommand {
+  /// Specific sticker, or a random one.
+  final String? asset;
+
+  const StickerCommand([this.asset]);
+}
+
+/// Shows the moving crosshair.
+class AimCommand extends ScreenAttackCommand {
+  final Duration duration;
+
+  const AimCommand(this.duration);
+}
+
+/// Drives [ScreenAttackGameWidget] from the effect runtime.
+class ScreenAttackController {
+  final _commands = StreamController<ScreenAttackCommand>.broadcast();
+
+  Stream<ScreenAttackCommand> get commands => _commands.stream;
+
+  void sticker([String? asset]) => _commands.add(StickerCommand(asset));
+
+  void aim(Duration duration) => _commands.add(AimCommand(duration));
+
+  Future<void> close() => _commands.close();
+}
+
+/// Viewers spit stickers at the screen where the crosshair points.
+class ScreenAttackGameWidget extends StatefulWidget {
+  static const stickers = <String>[
     Assets.assetsImgSticker1,
     Assets.assetsImgSticker2,
     Assets.assetsImgSticker3,
@@ -35,9 +56,18 @@ class _State extends State<ScreenAttackGameWidget> {
     Assets.assetsImgSticker11,
   ];
 
+  final ScreenAttackController controller;
+
+  const ScreenAttackGameWidget({super.key, required this.controller});
+
+  @override
+  State<StatefulWidget> createState() => _State();
+}
+
+class _State extends State<ScreenAttackGameWidget> {
   Ticker? _ticker;
 
-  StreamSubscription<WsMessage>? _eventsSubscription;
+  StreamSubscription<ScreenAttackCommand>? _commandsSubscription;
 
   late Offset velocity;
 
@@ -127,8 +157,7 @@ class _State extends State<ScreenAttackGameWidget> {
 
     velocity = Offset(cos(angle), sin(angle));
 
-    final ws = widget.locator.provide<WebSocketManager>();
-    _eventsSubscription = ws.messages.listen(_handleWebsocketMessage);
+    _commandsSubscription = widget.controller.commands.listen(_handleCommand);
 
     _ticker = Ticker(_handleTimerTick)..start();
     super.initState();
@@ -136,7 +165,7 @@ class _State extends State<ScreenAttackGameWidget> {
 
   @override
   void dispose() {
-    _eventsSubscription?.cancel();
+    _commandsSubscription?.cancel();
     _ticker?.dispose();
     super.dispose();
   }
@@ -175,11 +204,12 @@ class _State extends State<ScreenAttackGameWidget> {
   late double _width;
   late double _height;
 
-  void _addRandomStickerToScreen() async {
-    final randomSticker = _available[_random.nextInt(_available.length)];
+  Future<void> _addStickerToScreen(String? asset) async {
+    final stickers = ScreenAttackGameWidget.stickers;
+    final randomSticker = asset ?? stickers[_random.nextInt(stickers.length)];
 
     final image = await _loadImageFromAssets(randomSticker);
-    if (image == null) {
+    if (image == null || !mounted) {
       return;
     }
 
@@ -203,6 +233,7 @@ class _State extends State<ScreenAttackGameWidget> {
     });
 
     await Future.delayed(Duration(milliseconds: 1000));
+    if (!mounted) return;
 
     setState(() {
       sticker.anim = false;
@@ -276,27 +307,16 @@ class _State extends State<ScreenAttackGameWidget> {
     );
   }
 
-  final _receivedEventIds = <String>{};
-
-  void _handleWebsocketMessage(WsMessage message) async {
-    final eventId = message.payload.event?.id;
-
-    if (eventId != null && !_receivedEventIds.add(eventId)) {
-      // Remove duplicates
-      return;
-    }
-
-    switch (message.payload.event?.reward?.title) {
-      case 'Плюнуть в екран':
+  Future<void> _handleCommand(ScreenAttackCommand command) async {
+    switch (command) {
+      case StickerCommand(:final asset):
         await Future.delayed(Duration(milliseconds: 500));
-        _addRandomStickerToScreen();
-        break;
+        if (mounted) await _addStickerToScreen(asset);
 
-      case 'Прицілитись':
+      case AimCommand(:final duration):
         setState(() {
-          _crosshairVisibility = DateTime.now().add(Duration(seconds: 60));
+          _crosshairVisibility = DateTime.now().add(duration);
         });
-        break;
     }
   }
 

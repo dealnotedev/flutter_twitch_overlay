@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:image/image.dart' as img;
 import 'package:obssource/config/avatar_settings.dart';
 import 'package:obssource/config/obs_config.dart';
+import 'package:obssource/config/reward_effects_settings.dart';
+import 'package:obssource/data/events.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
@@ -12,6 +14,7 @@ import 'package:obssource/effects/effect_stage.dart';
 import 'package:obssource/events/alert_event.dart';
 import 'package:obssource/events/alert_event_mapper.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/kills/kill_server.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:obssource/music/music_requests.dart';
@@ -45,6 +48,8 @@ class _State extends State<LoggedWidget> {
   StreamSubscription<WsStateEvent>? _stateSubscription;
   StreamSubscription<AvatarSettings>? _avatarSettingsSubscription;
   StreamSubscription<void>? _playerSettingsSubscription;
+  StreamSubscription<RewardEffectsSettings>? _rewardEffectsSubscription;
+  StreamSubscription<KillInfo>? _killsSubscription;
   late Settings _settings;
   late ObsConfig _obsConfig;
   late WsState _wsState;
@@ -78,12 +83,25 @@ class _State extends State<LoggedWidget> {
 
     _runtime = EffectRuntime(
       alerts: () => _settings.alerts,
+      rewardEffects: () => _settings.rewardEffects,
+      kills: () => _settings.kills,
       loadUser: _loadUser,
       loadAvatar: widget.avatarLoader ?? RainyAvatar.loadImageFromUrl,
     );
     _mapper = AlertEventMapper(
       broadcasterId: () => _settings.twitchAuth?.broadcasterId,
     );
+    // Bound sticker rewards decide whether the sticker layer is mounted.
+    _rewardEffectsSubscription = _settings.rewardEffectsChanges.listen((_) {
+      if (mounted) setState(() {});
+    });
+    try {
+      _killsSubscription = widget.locator.provide<KillServer>().kills.listen(
+        (kill) => _runtime.handle(KillEvent(kill)),
+      );
+    } catch (_) {
+      // Test and debug locators may not provide the kill server.
+    }
 
     final ws = widget.locator.provide<WebSocketManager>();
     _wsState = ws.currentState;
@@ -97,6 +115,8 @@ class _State extends State<LoggedWidget> {
     _stateSubscription?.cancel();
     _avatarSettingsSubscription?.cancel();
     _playerSettingsSubscription?.cancel();
+    _rewardEffectsSubscription?.cancel();
+    _killsSubscription?.cancel();
     _runtime.dispose();
     _musicOverlayController.dispose();
     super.dispose();

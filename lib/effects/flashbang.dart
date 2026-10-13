@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:obssource/animated_mover.dart';
 import 'package:obssource/generated/assets.dart';
-import 'package:obssource/obs_audio.dart';
 
 class FlashbangWidget extends StatefulWidget {
   final Flashbang flashbang;
   final BoxConstraints constraints;
 
+  /// Called when the grenade starts to bang, to play its sound in sync.
+  final VoidCallback? onBang;
+
   const FlashbangWidget({
     super.key,
     required this.constraints,
     required this.flashbang,
+    this.onBang,
   });
 
   @override
@@ -18,7 +21,12 @@ class FlashbangWidget extends StatefulWidget {
 }
 
 class Flashbang {
+  /// Grenade, flash and fade-out.
+  static const duration = Duration(seconds: 5);
+
   final String id;
+
+  /// Golden grenade.
   final bool pro;
 
   Flashbang({required this.id, required this.pro});
@@ -48,11 +56,7 @@ class _State extends State<FlashbangWidget>
 
     if (!await _sleep(350)) return;
 
-    //ObsAudio.playWavAssetsDebug(Assets.assetsWavFlashbang);
-
-    ObsAudio.loadAsset(Assets.assetsWavFlashbang).then((id) {
-      ObsAudio.play(id);
-    });
+    widget.onBang?.call();
 
     if (!await _sleep(400)) return;
 

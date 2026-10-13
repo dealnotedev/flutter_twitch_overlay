@@ -1,11 +1,20 @@
 import 'package:animated_reorderable_list/animated_reorderable_list.dart';
 import 'package:flutter/material.dart';
 import 'package:obssource/alerts/user_alert_widget.dart';
+import 'package:obssource/config/alerts_settings.dart';
 import 'package:obssource/config/avatar_settings.dart';
+import 'package:obssource/effects/chat_card.dart';
+import 'package:obssource/effects/crt_off.dart';
 import 'package:obssource/effects/effect_runtime.dart';
+import 'package:obssource/effects/flashbang.dart';
+import 'package:obssource/effects/kill_widget.dart';
+import 'package:obssource/effects/pause_effect.dart';
 import 'package:obssource/effects/reward_card.dart';
+import 'package:obssource/effects/screen_attack_game.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/follow/follow_balloons.dart';
 import 'package:obssource/follow/follow_widget.dart';
+import 'package:obssource/raid/classic_raid_widget.dart';
 import 'package:obssource/raid/raid_widget.dart';
 import 'package:obssource/subs/subscription_text.dart';
 
@@ -18,7 +27,7 @@ class EffectStage extends StatelessWidget {
   final BoxConstraints constraints;
   final AvatarSettings avatar;
 
-  /// Drawn above alerts, e.g. the music player.
+  /// Drawn above alerts and below the flashbang, e.g. the music player.
   final Widget? foreground;
 
   const EffectStage({
@@ -35,11 +44,55 @@ class EffectStage extends StatelessWidget {
       listenable: runtime,
       builder: (context, _) {
         final stage = runtime.stage;
+        final crt = runtime.crt;
+        final pause = runtime.pause;
+        final kill = runtime.kill;
+        final flashbang = runtime.flashbang;
+
         return Stack(
           children: [
+            if (runtime.screenAttackMounted)
+              Positioned.fill(
+                child: ScreenAttackGameWidget(controller: runtime.screenAttack),
+              ),
+            if (crt != null)
+              Positioned.fill(
+                child: CrtOffEffectWidget(
+                  key: ValueKey(('crt', crt.session)),
+                  effect: crt,
+                ),
+              ),
+            if (pause != null)
+              Positioned.fill(
+                child: PauseEffectWidget(
+                  key: ObjectKey(pause),
+                  effect: pause,
+                  constraints: constraints,
+                ),
+              ),
+            for (final card in runtime.chatCards)
+              ChatCardWidget(
+                key: ObjectKey(card),
+                card: card,
+                constraints: constraints,
+              ),
             _buildRewardCards(),
             if (stage != null) _buildStage(context, stage),
+            if (kill != null)
+              KillWidget(
+                key: ObjectKey(kill),
+                text: kill.text,
+                streak: kill.inMatch,
+                constraints: constraints,
+              ),
             if (foreground case final foreground?) foreground,
+            if (flashbang != null)
+              FlashbangWidget(
+                key: ObjectKey(flashbang),
+                flashbang: flashbang,
+                constraints: constraints,
+                onBang: runtime.playFlashbangSound,
+              ),
           ],
         );
       },
@@ -63,7 +116,7 @@ class EffectStage extends StatelessWidget {
 
   Widget _buildStage(BuildContext context, StageAlert alert) {
     return switch (alert) {
-      FollowStageAlert(:final event) => FollowWidget(
+      FollowStageAlert(:final event, style: FollowStyle.pixel) => FollowWidget(
         key: ObjectKey(alert),
         event: event,
         constraints: constraints,
@@ -71,7 +124,14 @@ class EffectStage extends StatelessWidget {
         avatarResolution: avatar.resolution,
         holdDuration: alert.hold,
       ),
-      RaidStageAlert(:final event) => RaidWidget(
+      FollowStageAlert(:final event, style: FollowStyle.balloons) =>
+        FollowBalloonsWidget(
+          key: ObjectKey(alert),
+          event: event,
+          duration: alert.hold,
+          constraints: constraints,
+        ),
+      RaidStageAlert(:final event, style: RaidStyle.pixel) => RaidWidget(
         key: ObjectKey(alert),
         event: event,
         constraints: constraints,
@@ -79,6 +139,20 @@ class EffectStage extends StatelessWidget {
         avatarResolution: avatar.resolution,
         holdDuration: alert.hold,
       ),
+      RaidStageAlert(:final event, :final from, style: RaidStyle.classic) =>
+        ClassicRaidWidget(
+          key: ObjectKey(alert),
+          raid: ClassicRaid(
+            avatar: event.avatar,
+            who: from,
+            raiders: event.viewers,
+          ),
+          constraints: constraints,
+          maxAnimals: alert.maxAnimals,
+          renderer: avatar.renderer,
+          avatarResolution: avatar.resolution,
+          onDone: () => runtime.completeStage(alert),
+        ),
       SubscriptionStageAlert(:final event) => UserAlertWidget(
         key: ObjectKey(alert),
         userName:

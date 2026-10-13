@@ -4,17 +4,17 @@ import 'package:obssource/animated_mover.dart';
 import 'package:obssource/avatar_widget.dart';
 import 'package:obssource/data/events.dart';
 import 'package:obssource/extensions.dart';
-import 'package:obssource/follow/follow_ballons_config.dart';
+import 'package:obssource/follow/follow_balloons_config.dart';
 import 'package:obssource/span_util.dart';
 
-class FollowBallonsWidget extends StatelessWidget {
+class FollowBalloonsWidget extends StatelessWidget {
   static const _avatarPlaceholder = '{avatart_placeholder}';
 
   final UserFollowEvent event;
   final Duration duration;
   final BoxConstraints constraints;
 
-  const FollowBallonsWidget({
+  const FollowBalloonsWidget({
     super.key,
     required this.event,
     required this.duration,
@@ -23,7 +23,7 @@ class FollowBallonsWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final config = FollowBallonsConfig.get();
+    final config = FollowBalloonsConfig.get();
 
     return AnimatedVerticalMover(
       duration: duration,

@@ -43,10 +43,8 @@ class Assets {
   static const String assetsRooster = 'assets/rooster.json';
   static const String assetsRunningDogBlue = 'assets/running_dog_blue.json';
   static const String assetsRunningDogBrown = 'assets/running_dog_brown.json';
-  static const String assetsRunningDogOrange =
-      'assets/running_dog_orange.json';
-  static const String assetsRunningSomething =
-      'assets/running_something.json';
+  static const String assetsRunningDogOrange = 'assets/running_dog_orange.json';
+  static const String assetsRunningSomething = 'assets/running_something.json';
   static const String assetsSub = 'assets/sub.mp3';
   static const String assetsTvOffSound = 'assets/tv_off_sound.wav';
   static const String assetsWavFlashbang = 'assets/wav_flashbang.wav';

@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:obssource/config/kills_settings.dart';
 import 'package:obssource/config/legacy_reward_binder.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/di/service_locator.dart';
+import 'package:obssource/kills/kill_server.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/music_requests.dart';
@@ -34,6 +36,8 @@ class AppServiceLocator extends ServiceLocator {
   late final StreamSubscription<MusicSettings> _musicSettingsSubscription;
   late final StreamSubscription<Config> _obsConfigSubscription;
   late final StreamSubscription<void> _legacyRewardsSubscription;
+  late final StreamSubscription<KillsSettings> _killsSettingsSubscription;
+  final killServer = KillServer();
   MusicControlServerController? musicControlServer;
   late final MusicRewardController musicRewardController;
   late final YoutubeConnectionController youtubeConnection;
@@ -213,6 +217,18 @@ class AppServiceLocator extends ServiceLocator {
         )
         .listen(null);
 
+    void configureKills(KillsSettings value) => unawaited(
+      killServer.configure(
+        enabled: value.enabled,
+        address: value.address,
+        port: value.port,
+      ),
+    );
+
+    configureKills(settings.kills);
+    _killsSettingsSubscription = settings.killsChanges.listen(configureKills);
+    map[KillServer] = killServer;
+
     musicControlServer = MusicControlServerController(requests: musicRequests);
     unawaited(
       musicControlServer?.configure(
@@ -252,6 +268,8 @@ class AppServiceLocator extends ServiceLocator {
   Future<void> close() async {
     await _obsConfigSubscription.cancel();
     await _legacyRewardsSubscription.cancel();
+    await _killsSettingsSubscription.cancel();
+    await killServer.close();
     await _musicSettingsSubscription.cancel();
     await _musicUpdates;
     await musicRewardController.close();
