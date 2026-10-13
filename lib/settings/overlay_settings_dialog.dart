@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/kills/kill_server.dart';
 import 'package:obssource/settings/alert_settings_page.dart';
 import 'package:obssource/settings/avatar_settings_controls.dart';
 import 'package:obssource/settings/kills_settings_page.dart';
@@ -32,6 +33,9 @@ class OverlaySettingsDialog extends StatefulWidget {
   /// Twitch.
   final Future<List<TwitchCustomReward>> Function()? loadAllRewards;
 
+  /// Running kill server, to show whether it listens.
+  final KillServer? killServer;
+
   const OverlaySettingsDialog({
     super.key,
     required this.settings,
@@ -41,6 +45,7 @@ class OverlaySettingsDialog extends StatefulWidget {
     this.youtubeConnection,
     this.musicRequests,
     this.loadAllRewards,
+    this.killServer,
   });
 
   @override
@@ -189,7 +194,9 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
 
   void _select(_SettingsSection section) {
     setState(() => _section = section);
-    final effects = section.index >= _SettingsSection.flashbang.index;
+    final effects =
+        section.index >= _SettingsSection.flashbang.index &&
+        section != _SettingsSection.kills;
     if (effects &&
         _allRewards == null &&
         !_allRewardsLoading &&
@@ -343,6 +350,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
       _SettingsSection.kills => KillsSettingsPage(
         key: key,
         settings: widget.settings,
+        killServer: widget.killServer,
       ),
     };
   }

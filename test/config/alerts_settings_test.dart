@@ -184,6 +184,31 @@ void main() {
       expect(prefs.containsKey('twitch_credentials'), isFalse);
     });
 
+    test('early freydis builds left the old key behind', () async {
+      // Freydis builds before the scope change also wrote twitch_credentials.
+      final settings = await load({
+        'twitch_credentials': jsonEncode(_creds),
+        'twitch_login': jsonEncode(_creds),
+        'music_reward_id': 'music',
+      });
+
+      expect(settings.alerts.toJson(), const AlertsSettings().toJson());
+      expect(settings.kills.enabled, isFalse);
+      expect(settings.legacyRewardTitlesPending, isFalse);
+      expect(settings.twitchAuth?.broadcasterId, 'channel');
+      final prefs = await SharedPreferences.getInstance();
+      expect(prefs.containsKey('twitch_credentials'), isFalse);
+    });
+
+    test('freydis data without a login still means freydis', () async {
+      final settings = await load({
+        'twitch_credentials': jsonEncode(_creds),
+        'avatar_settings': jsonEncode({'resolution': 40}),
+      });
+      expect(settings.alerts.follow.style, FollowStyle.pixel);
+      expect(settings.kills.enabled, isFalse);
+    });
+
     test('a second start keeps user changes', () async {
       final settings = await load({'twitch_credentials': jsonEncode(_creds)});
       await settings.saveAlerts(
@@ -233,7 +258,12 @@ void main() {
   group('OBS switches', () {
     test('freydis semantics: missing followers off, others on', () async {
       final settings = await load({'twitch_login': jsonEncode(_creds)});
-      await settings.importLegacyObsFlags({'subscriptions': false});
+      await settings.importLegacyObsFlags({
+        'subscriptions': false,
+        // Freydis never read these; importing them would change her stream.
+        'first_chat_message': true,
+        'screen_attack_game': false,
+      });
 
       expect(settings.alerts.follow.enabled, isFalse);
       expect(settings.alerts.raid.enabled, isTrue);
@@ -241,7 +271,18 @@ void main() {
       expect(settings.alerts.chat.firstMessage, isFalse);
       expect(
         settings.rewardEffects.binding(RewardAction.sticker).enabled,
-        isFalse,
+        isTrue,
+      );
+    });
+
+    test('new installations keep the defaults', () async {
+      final settings = await load();
+      await settings.importLegacyObsFlags({'followers': false, 'raids': false});
+
+      expect(settings.alerts.toJson(), const AlertsSettings().toJson());
+      expect(
+        settings.rewardEffects.toJson(),
+        const RewardEffectsSettings().toJson(),
       );
     });
 
@@ -268,7 +309,7 @@ void main() {
     });
 
     test('switches are imported only once', () async {
-      final settings = await load();
+      final settings = await load({'twitch_login': jsonEncode(_creds)});
       await settings.importLegacyObsFlags({'followers': true});
       await settings.importLegacyObsFlags({'followers': false});
       expect(settings.alerts.follow.enabled, isTrue);

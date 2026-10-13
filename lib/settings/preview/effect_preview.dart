@@ -43,7 +43,8 @@ class PreviewTarget {
   PreviewTarget(this.runtime);
 }
 
-/// Local sample data: no Twitch, network or channel points involved.
+/// Local sample data: no Twitch API or channel points involved. Only emote
+/// pictures come from the Twitch CDN, as they do on stream.
 abstract final class PreviewData {
   static const avatarUrl =
       '${Avatar.assetScheme}${Assets.assetsIcDefaultAvatar96dp}';
@@ -57,8 +58,13 @@ abstract final class PreviewData {
 
   static String rewardId(RewardAction action) => 'preview-${action.name}';
 
-  static Future<UserDto?> loadUser(String id) async =>
-      UserDto(id: id, login: id, displayName: id, profileImageUrl: avatarUrl);
+  static Future<UserDto?> loadUser(String id) async => UserDto(
+    id: id,
+    login: id,
+    // Sample users are `preview-<name>`; show just the name.
+    displayName: id.replaceFirst('preview-', ''),
+    profileImageUrl: avatarUrl,
+  );
 
   static Future<img.Image?> loadAvatar(String url) =>
       url.startsWith(Avatar.assetScheme)
@@ -85,7 +91,8 @@ class EffectPreview extends StatefulWidget {
   /// Keeps the sticker layer ready for sticker samples.
   final bool screenAttack;
 
-  /// Shows reward cards even when they are turned off.
+  /// Shows the card of every redemption, even when cards are turned off.
+  /// Other previews hide cards to show only their effect.
   final bool rewardCards;
 
   const EffectPreview({
@@ -163,10 +170,8 @@ class _EffectPreviewState extends State<EffectPreview> {
         resubscribe: true,
         gift: true,
       ),
-      rewardCard:
-          widget.rewardCards
-              ? alerts.rewardCard.copyWith(enabled: true)
-              : alerts.rewardCard,
+      // Only the reward card page shows cards; elsewhere they hide the effect.
+      rewardCard: alerts.rewardCard.copyWith(enabled: widget.rewardCards),
       chat: alerts.chat.copyWith(highlighted: true, firstMessage: true),
     );
   }
@@ -207,7 +212,10 @@ class _EffectPreviewState extends State<EffectPreview> {
 
   void _repeatIfIdle() {
     final last = _lastPlay;
-    if (!_repeat || last == null || !_runtime.idle) return;
+    // A pause stays until removed; repeating would restart its picture.
+    if (!_repeat || last == null || !_runtime.idle || _runtime.pause != null) {
+      return;
+    }
     if (DateTime.now().difference(last) < const Duration(seconds: 2)) return;
     _play();
   }

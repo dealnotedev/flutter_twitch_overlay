@@ -58,12 +58,15 @@ removes it.
 The kill counter listens only while enabled, by default on `0.0.0.0:4080`:
 `GET /kill?text=…&in_match=…&in_match_streak=…&total_streak=…`.
 
-On the first start an installation is migrated once. The old master build keeps
-its classic look and binds its rewards by their old titles after the next
-Twitch login; its saved login must be renewed for `channel:manage:redemptions`.
+On the first start an installation is migrated once. Data of freydis builds
+keeps the pixel look; only the old master token without freydis data means the
+old master build, which keeps its classic look and binds its rewards by their
+old titles after the next Twitch login. The old master login is dropped and must
+be renewed for `channel:manage:redemptions`.
 The alert switches of the OBS source JSON (`followers`, `raids`,
 `subscriptions`, `first_chat_message`, `screen_attack_game`) are imported from
-the first valid configuration and are not read afterwards. Twitch authorization
+the first valid configuration, only those the installed build read, and are not
+read afterwards; new installations keep the defaults. Twitch authorization
 requires `channel:read:subscriptions`; older tokens without this scope need a
 new login.
 

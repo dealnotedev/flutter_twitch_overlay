@@ -217,6 +217,51 @@ void main() {
     await finish(tester);
   });
 
+  testWidgets('layers changing around the foreground keep its state', (
+    tester,
+  ) async {
+    var created = 0;
+    await tester.pumpWidget(
+      MaterialApp(
+        localizationsDelegates: AppLocalizations.localizationsDelegates,
+        supportedLocales: AppLocalizations.supportedLocales,
+        home: LayoutBuilder(
+          builder:
+              (context, constraints) => Stack(
+                children: [
+                  Positioned.fill(
+                    child: EffectStage(
+                      runtime: runtime,
+                      constraints: constraints,
+                      foreground: Positioned(
+                        right: 0,
+                        bottom: 0,
+                        child: _Probe(onCreate: () => created++),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+        ),
+      ),
+    );
+    runtime.handle(_chat('card', chatter: 'viewer'));
+    await tester.pump();
+    await tester.pump();
+    expect(find.byType(ChatCardWidget), findsOneWidget);
+
+    // The chat card below leaves in the frame the flashbang above appears.
+    await tester.pump(const Duration(milliseconds: 9900));
+    runtime.handle(_redemption('flashbang'));
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.byType(ChatCardWidget), findsNothing);
+    expect(find.byType(FlashbangWidget), findsOneWidget);
+    expect(created, 1);
+
+    await play(tester, Flashbang.duration);
+    await finish(tester);
+  });
+
   testWidgets('kill text is shown for its duration', (tester) async {
     await pumpStage(tester);
     runtime.handle(
@@ -260,3 +305,23 @@ ChatEvent _chat(String id, {required String chatter, String type = 'text'}) =>
         ],
       ),
     );
+
+class _Probe extends StatefulWidget {
+  final VoidCallback onCreate;
+
+  const _Probe({required this.onCreate});
+
+  @override
+  State<_Probe> createState() => _ProbeState();
+}
+
+class _ProbeState extends State<_Probe> {
+  @override
+  void initState() {
+    super.initState();
+    widget.onCreate();
+  }
+
+  @override
+  Widget build(BuildContext context) => const SizedBox(width: 10, height: 10);
+}

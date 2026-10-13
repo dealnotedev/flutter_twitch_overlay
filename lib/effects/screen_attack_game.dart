@@ -92,6 +92,8 @@ class _State extends State<ScreenAttackGameWidget> {
 
     final double maxX = size.width - margin;
     final double maxY = size.height - margin;
+    // Too small to move inside the margins, e.g. while the layout settles.
+    if (maxX <= minX || maxY <= minY) return;
 
     Offset next = crosshairPos + crosshairVelocity * (speed * dt);
 

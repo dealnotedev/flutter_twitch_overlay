@@ -5,6 +5,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:obssource/data/events.dart';
 
+enum KillServerState { stopped, listening, failed }
+
 /// Local HTTP endpoint for an external kill tracker:
 /// `GET /kill?text=…&in_match=…&in_match_streak=…&total_streak=…`.
 class KillServer {
@@ -12,6 +14,9 @@ class KillServer {
   HttpServer? _server;
   (String, int)? _binding;
   Future<void> _updates = Future.value();
+
+  /// Shown on the settings page; a failed bind leaves the server stopped.
+  final state = ValueNotifier(KillServerState.stopped);
 
   Stream<KillInfo> get kills => _kills.stream;
 
@@ -33,15 +38,20 @@ class KillServer {
     await _server?.close(force: true);
     _server = null;
     _binding = null;
-    if (!enabled) return;
+    if (!enabled) {
+      state.value = KillServerState.stopped;
+      return;
+    }
 
     try {
       final server = await HttpServer.bind(address, port);
       _server = server;
       _binding = binding;
       server.listen(_handle);
+      state.value = KillServerState.listening;
     } on SocketException catch (error) {
       debugPrint('Kill server could not listen on $address:$port: $error');
+      state.value = KillServerState.failed;
     }
   }
 

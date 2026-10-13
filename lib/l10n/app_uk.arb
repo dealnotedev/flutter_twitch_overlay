@@ -333,6 +333,8 @@
   "kills_listening": "Слухає {url}",
   "@kills_listening": {"placeholders": {"url": {"type": "String"}}},
   "kills_stopped": "Сервер вимкнено.",
+  "kills_failed": "Не вдалося слухати {url}: адреса недоступна або порт зайнятий.",
+  "@kills_failed": {"placeholders": {"url": {"type": "String"}}},
   "preview_title": "Попередній перегляд",
   "preview_on_air": "Налаштування та перегляд видно в ефірі.",
   "preview_play": "Запустити",

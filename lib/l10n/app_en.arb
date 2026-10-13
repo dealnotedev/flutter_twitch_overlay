@@ -340,6 +340,8 @@
   "kills_listening": "Listening on {url}",
   "@kills_listening": {"placeholders": {"url": {"type": "String"}}},
   "kills_stopped": "The server is off.",
+  "kills_failed": "Could not listen on {url}: the address is unavailable or the port is busy.",
+  "@kills_failed": {"placeholders": {"url": {"type": "String"}}},
   "preview_title": "Preview",
   "preview_on_air": "Settings and preview are visible on stream.",
   "preview_play": "Play",

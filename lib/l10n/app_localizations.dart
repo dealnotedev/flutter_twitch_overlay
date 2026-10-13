@@ -1297,6 +1297,12 @@ abstract class AppLocalizations {
   /// **'The server is off.'**
   String get kills_stopped;
 
+  /// No description provided for @kills_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not listen on {url}: the address is unavailable or the port is busy.'**
+  String kills_failed(String url);
+
   /// No description provided for @preview_title.
   ///
   /// In en, this message translates to:

@@ -736,6 +736,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get kills_stopped => 'The server is off.';
 
   @override
+  String kills_failed(String url) {
+    return 'Could not listen on $url: the address is unavailable or the port is busy.';
+  }
+
+  @override
   String get preview_title => 'Preview';
 
   @override

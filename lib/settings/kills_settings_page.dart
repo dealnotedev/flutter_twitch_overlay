@@ -6,6 +6,7 @@ import 'package:gap/gap.dart';
 import 'package:obssource/config/kills_settings.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/extensions.dart';
+import 'package:obssource/kills/kill_server.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/settings/preview/effect_preview.dart';
@@ -16,7 +17,10 @@ import 'package:obssource/settings/settings_page_layout.dart';
 class KillsSettingsPage extends StatefulWidget {
   final Settings settings;
 
-  const KillsSettingsPage({super.key, required this.settings});
+  /// Running server, for its real state; absent in tests.
+  final KillServer? killServer;
+
+  const KillsSettingsPage({super.key, required this.settings, this.killServer});
 
   @override
   State<KillsSettingsPage> createState() => _KillsSettingsPageState();
@@ -144,22 +148,35 @@ class _KillsSettingsPageState extends State<KillsSettingsPage> {
                   ],
                 ),
                 const Gap(8),
-                Text(
-                  _invalid
-                      ? l.kills_invalid
-                      : kills.enabled
-                      ? l.kills_listening(
-                        'http://${kills.address}:${kills.port}/kill',
-                      )
-                      : l.kills_stopped,
-                  style: TextStyle(
-                    color:
-                        _invalid
-                            ? MusicPlayerPalette.error
-                            : MusicPlayerPalette.textSecondary,
-                    fontSize: 12,
+                if (_invalid)
+                  _status(l.kills_invalid, error: true)
+                else if (widget.killServer case final server?)
+                  ValueListenableBuilder(
+                    valueListenable: server.state,
+                    builder:
+                        (context, state, _) => switch (state) {
+                          KillServerState.listening => _status(
+                            l.kills_listening(
+                              _endpoint(kills.address, server.port),
+                            ),
+                          ),
+                          KillServerState.failed => _status(
+                            l.kills_failed(
+                              _endpoint(kills.address, kills.port),
+                            ),
+                            error: true,
+                          ),
+                          KillServerState.stopped => _status(l.kills_stopped),
+                        },
+                  )
+                else
+                  _status(
+                    kills.enabled
+                        ? l.kills_listening(
+                          _endpoint(kills.address, kills.port),
+                        )
+                        : l.kills_stopped,
                   ),
-                ),
                 const Gap(14),
                 NeonSettingsSlider(
                   sliderKey: const ValueKey('kills_seconds'),
@@ -199,6 +216,20 @@ class _KillsSettingsPageState extends State<KillsSettingsPage> {
       ),
     );
   }
+
+  static String _endpoint(String address, int? port) {
+    final host = address.contains(':') ? '[$address]' : address;
+    return 'http://$host:${port ?? ''}/kill';
+  }
+
+  static Widget _status(String text, {bool error = false}) => Text(
+    text,
+    style: TextStyle(
+      color:
+          error ? MusicPlayerPalette.error : MusicPlayerPalette.textSecondary,
+      fontSize: 12,
+    ),
+  );
 
   static Widget _labeled(String label, Widget child) => Column(
     crossAxisAlignment: CrossAxisAlignment.stretch,

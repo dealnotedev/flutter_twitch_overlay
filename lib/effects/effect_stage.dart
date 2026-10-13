@@ -49,23 +49,26 @@ class EffectStage extends StatelessWidget {
         final kill = runtime.kill;
         final flashbang = runtime.flashbang;
 
+        // Every layer is keyed: layers appear and disappear independently, and
+        // an unkeyed one between them would be rebuilt from scratch, e.g.
+        // reopening the music player or restarting the CRT animation.
         return Stack(
           children: [
             if (runtime.screenAttackMounted)
               Positioned.fill(
+                // A new runtime (preview stop) gets a fresh sticker layer.
+                key: ObjectKey(runtime.screenAttack),
                 child: ScreenAttackGameWidget(controller: runtime.screenAttack),
               ),
             if (crt != null)
               Positioned.fill(
-                child: CrtOffEffectWidget(
-                  key: ValueKey(('crt', crt.session)),
-                  effect: crt,
-                ),
+                key: ValueKey(('crt', crt.session)),
+                child: CrtOffEffectWidget(effect: crt),
               ),
             if (pause != null)
               Positioned.fill(
+                key: ObjectKey(pause),
                 child: PauseEffectWidget(
-                  key: ObjectKey(pause),
                   effect: pause,
                   constraints: constraints,
                 ),
@@ -76,7 +79,10 @@ class EffectStage extends StatelessWidget {
                 card: card,
                 constraints: constraints,
               ),
-            _buildRewardCards(),
+            KeyedSubtree(
+              key: const ValueKey('reward_cards'),
+              child: _buildRewardCards(),
+            ),
             if (stage != null) _buildStage(context, stage),
             if (kill != null)
               KillWidget(
@@ -85,7 +91,11 @@ class EffectStage extends StatelessWidget {
                 streak: kill.inMatch,
                 constraints: constraints,
               ),
-            if (foreground case final foreground?) foreground,
+            if (foreground case final foreground?)
+              KeyedSubtree(
+                key: const ValueKey('foreground'),
+                child: foreground,
+              ),
             if (flashbang != null)
               FlashbangWidget(
                 key: ObjectKey(flashbang),

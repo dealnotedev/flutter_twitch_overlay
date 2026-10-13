@@ -5,6 +5,7 @@ import 'package:obssource/config/reward_effects_settings.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/effects/flashbang.dart';
 import 'package:obssource/effects/kill_widget.dart';
+import 'package:obssource/effects/screen_attack_game.dart';
 import 'package:obssource/follow/follow_balloons.dart';
 import 'package:obssource/follow/follow_widget.dart';
 import 'package:obssource/l10n/app_localizations.dart';
@@ -219,6 +220,22 @@ void main() {
     expect(find.byType(KillWidget), findsOneWidget);
     await play(tester, const Duration(seconds: 3));
     expect(find.byType(KillWidget), findsNothing);
+    await close(tester);
+  });
+
+  testWidgets('sticker preview keeps working after stop', (tester) async {
+    await open(tester);
+    await section(tester, 'stickers');
+
+    await tapKey(tester, 'preview_sample_crosshair');
+    expect(find.byType(HuntCrosshair), findsOneWidget);
+
+    await tapKey(tester, 'preview_stop');
+    await tester.pump();
+    expect(find.byType(HuntCrosshair), findsNothing);
+
+    await tapKey(tester, 'preview_sample_crosshair');
+    expect(find.byType(HuntCrosshair), findsOneWidget);
     await close(tester);
   });
 

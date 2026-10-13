@@ -752,6 +752,11 @@ class AppLocalizationsUk extends AppLocalizations {
   String get kills_stopped => 'Сервер вимкнено.';
 
   @override
+  String kills_failed(String url) {
+    return 'Не вдалося слухати $url: адреса недоступна або порт зайнятий.';
+  }
+
+  @override
   String get preview_title => 'Попередній перегляд';
 
   @override

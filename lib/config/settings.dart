@@ -23,11 +23,22 @@ class Settings {
 
   // Migration bookkeeping, see [_migrate].
   static const _kSchema = 'settings_schema';
-  static const _kLegacyMasterTwitchAuth = 'twitch_credentials';
-  static const _kLegacyMaster = 'legacy_master_install';
+  static const _kOldTwitchAuth = 'twitch_credentials';
+  static const _kInstallOrigin = 'install_origin';
   static const _kLegacyRewardTitlesPending = 'legacy_reward_titles_pending';
   static const _kObsFlagsImported = 'obs_flags_imported';
   static const _schemaVersion = 1;
+
+  /// Keys written only by freydis builds. Early freydis builds also used
+  /// `twitch_credentials`, so that key alone does not identify master.
+  static const _freydisKeys = [
+    _kTwitchAuth,
+    _kMusicRewardId,
+    _kMusicSettings,
+    _kAvatarSettings,
+    _kPlayerCollapseSeconds,
+    _kPlayerAlwaysExpanded,
+  ];
 
   Future<void> init() async {
     final prefs = await SharedPreferences.getInstance();
@@ -38,7 +49,10 @@ class Settings {
       _readJson(prefs, _kRewardEffects),
     );
     kills = KillsSettings.fromJson(_readJson(prefs, _kKills));
-    _legacyMaster = prefs.getBool(_kLegacyMaster) ?? false;
+    _origin = _InstallOrigin.values.firstWhere(
+      (origin) => origin.name == prefs.getString(_kInstallOrigin),
+      orElse: () => _InstallOrigin.fresh,
+    );
     legacyRewardTitlesPending =
         prefs.getBool(_kLegacyRewardTitlesPending) ?? false;
     _obsFlagsImported = prefs.getBool(_kObsFlagsImported) ?? false;
@@ -78,14 +92,21 @@ class Settings {
 
   /// One-time upgrade of installations made by the master or freydis builds.
   ///
-  /// The old master build stored its token under `twitch_credentials`; such
-  /// installations start with the master look so the stream does not change
-  /// after the update. The token itself is dropped because it lacks the
-  /// `channel:manage:redemptions` scope, so a new login is required anyway.
+  /// Installations with data of freydis builds keep the freydis look. Only
+  /// `twitch_credentials` without any freydis data means the old master
+  /// build; it starts with the master look so the stream does not change
+  /// after the update. That token is dropped in both cases because it lacks
+  /// the `channel:manage:redemptions` scope.
   Future<void> _migrate(SharedPreferences prefs) async {
     if ((prefs.getInt(_kSchema) ?? 0) >= _schemaVersion) return;
 
-    final legacyMaster = prefs.containsKey(_kLegacyMasterTwitchAuth);
+    final origin =
+        _freydisKeys.any(prefs.containsKey)
+            ? _InstallOrigin.freydis
+            : prefs.containsKey(_kOldTwitchAuth)
+            ? _InstallOrigin.master
+            : _InstallOrigin.fresh;
+    final legacyMaster = origin == _InstallOrigin.master;
     if (!prefs.containsKey(_kAlerts)) {
       final alerts =
           legacyMaster
@@ -100,11 +121,9 @@ class Settings {
         KillsSettings(enabled: legacyMaster).toJson(),
       );
     }
-    if (legacyMaster) {
-      await prefs.setBool(_kLegacyMaster, true);
-      await prefs.setBool(_kLegacyRewardTitlesPending, true);
-      await prefs.remove(_kLegacyMasterTwitchAuth);
-    }
+    if (legacyMaster) await prefs.setBool(_kLegacyRewardTitlesPending, true);
+    await prefs.setString(_kInstallOrigin, origin.name);
+    await prefs.remove(_kOldTwitchAuth);
     if (!await prefs.setInt(_kSchema, _schemaVersion)) {
       throw StateError('Could not save settings schema');
     }
@@ -130,7 +149,7 @@ class Settings {
     }
   }
 
-  bool _legacyMaster = false;
+  _InstallOrigin _origin = _InstallOrigin.fresh;
   bool _obsFlagsImported = false;
 
   /// Old master rewards are still to be matched by their hard-coded titles.
@@ -182,9 +201,11 @@ class Settings {
 
   /// Moves the alert switches of the OBS source JSON into local settings once.
   ///
-  /// Missing keys keep the meaning they had in the build that wrote them:
-  /// master treated every missing switch as off, freydis treated missing
-  /// raids and subscriptions as on and missing followers as off.
+  /// Only switches the installed build actually read are imported, and
+  /// missing keys keep their meaning there: master treated every missing
+  /// switch as off; freydis read only `followers` (missing means off),
+  /// `raids` and `subscriptions` (missing means on). New installations had no
+  /// behavior to keep and use the defaults.
   Future<void> importLegacyObsFlags(Map<String, dynamic> json) async {
     if (_obsFlagsImported) return;
     _obsFlagsImported = true;
@@ -194,31 +215,39 @@ class Settings {
       return value is bool ? value : missing;
     }
 
-    final subscriptions = flag('subscriptions', !_legacyMaster);
-    await saveAlerts(
-      alerts.copyWith(
-        follow: alerts.follow.copyWith(enabled: flag('followers', false)),
-        raid: alerts.raid.copyWith(enabled: flag('raids', !_legacyMaster)),
-        subscriptions: alerts.subscriptions.copyWith(
-          subscribe: subscriptions,
-          resubscribe: subscriptions,
-          gift: subscriptions,
+    final master = _origin == _InstallOrigin.master;
+    if (_origin != _InstallOrigin.fresh) {
+      final subscriptions = flag('subscriptions', !master);
+      await saveAlerts(
+        alerts.copyWith(
+          follow: alerts.follow.copyWith(enabled: flag('followers', false)),
+          raid: alerts.raid.copyWith(enabled: flag('raids', !master)),
+          subscriptions: alerts.subscriptions.copyWith(
+            subscribe: subscriptions,
+            resubscribe: subscriptions,
+            gift: subscriptions,
+          ),
+          chat:
+              master
+                  ? alerts.chat.copyWith(
+                    firstMessage: flag('first_chat_message', false),
+                  )
+                  : alerts.chat,
         ),
-        chat: alerts.chat.copyWith(
-          firstMessage: flag('first_chat_message', false),
-        ),
-      ),
-    );
-
-    final screenAttack = flag('screen_attack_game', false);
-    var effects = rewardEffects;
-    for (final action in [RewardAction.sticker, RewardAction.crosshair]) {
-      effects = effects.withBinding(
-        action,
-        effects.binding(action).copyWith(enabled: screenAttack),
       );
     }
-    await saveRewardEffects(effects);
+
+    if (master) {
+      final screenAttack = flag('screen_attack_game', false);
+      var effects = rewardEffects;
+      for (final action in [RewardAction.sticker, RewardAction.crosshair]) {
+        effects = effects.withBinding(
+          action,
+          effects.binding(action).copyWith(enabled: screenAttack),
+        );
+      }
+      await saveRewardEffects(effects);
+    }
 
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(_kObsFlagsImported, true);
@@ -327,3 +356,6 @@ class Settings {
     musicRewardId = prefs.getString(_kMusicRewardId);
   }
 }
+
+/// Build that wrote the settings before the merged overlay.
+enum _InstallOrigin { master, freydis, fresh }

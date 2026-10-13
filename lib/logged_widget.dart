@@ -254,6 +254,8 @@ class _State extends State<LoggedWidget> {
                 appLocator is AppServiceLocator
                     ? appLocator.musicRequests
                     : null,
+            killServer:
+                appLocator is AppServiceLocator ? appLocator.killServer : null,
             // An injected catalog means a test that must not reach Twitch.
             loadAllRewards:
                 widget.rewardCatalog != null ? null : _loadAllRewards,
