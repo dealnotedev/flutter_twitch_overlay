@@ -45,3 +45,12 @@ app.*.map.json
 /android/app/release
 
 /lib/secrets.dart
+
+# Downloaded/built runtime tools are restored with tools/download_tools.ps1.
+/tools/*.exe
+/tools/*.download
+/tools/*.zip
+/tools/ffmpeg-build.txt
+
+# Local development overrides must not affect portable builds.
+pubspec_overrides.yaml

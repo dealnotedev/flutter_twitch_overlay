@@ -1,0 +1,838 @@
+import 'dart:async';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/twitch/twitch_redemption.dart';
+import 'package:obssource/twitch/twitch_redemption_service.dart';
+import 'package:obssource/twitch/ws_event.dart';
+
+void main() {
+  late StreamController<WsMessage> events;
+  late Directory cache;
+  late _FakeFetcher fetcher;
+  late _FakePlayer player;
+  late _FakeRedemptionService redemptions;
+  MusicRequestManager? manager;
+
+  setUp(() async {
+    events = StreamController<WsMessage>.broadcast();
+    cache = await Directory.systemTemp.createTemp('music_requests_test_');
+    fetcher = _FakeFetcher(cache);
+    player = _FakePlayer();
+    redemptions = _FakeRedemptionService();
+  });
+
+  tearDown(() async {
+    await manager?.close();
+    await events.close();
+    if (await cache.exists()) await cache.delete(recursive: true);
+  });
+
+  MusicRequestManager createManager({
+    String? rewardId = 'reward-1',
+    Stream<String?>? rewardIdChanges,
+    int maxQueueLength = 10,
+    Duration heldRequestTimeout = const Duration(minutes: 15),
+    void Function(MusicQueueErrorType reason, Uri sourceUrl)? onHeld,
+  }) {
+    return manager = MusicRequestManager(
+      events: events.stream,
+      fetcher: fetcher,
+      player: player,
+      enabled: true,
+      maxQueueLength: maxQueueLength,
+      maxDuration: const Duration(minutes: 10),
+      rewardId: rewardId,
+      rewardIdChanges: rewardIdChanges,
+      redemptionService: redemptions,
+      heldRequestTimeout: heldRequestTimeout,
+      onPreparationHeld: onHeld,
+    );
+  }
+
+  test(
+    'disabling refunds new requests and preserves accepted playback',
+    () async {
+      final subject = createManager();
+      events.add(_redemption(id: 'playing'));
+      await _waitUntil(() => subject.current.nowPlaying != null);
+      subject.updateSettings(const MusicSettings(enabled: false));
+      events.add(_redemption(id: 'disabled'));
+      events.add(_redemption(id: 'disabled'));
+      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      expect(subject.current.nowPlaying?.item.id, 'playing');
+      expect(redemptions.settlements.single.redemptionId, 'disabled');
+      expect(
+        redemptions.settlements.single.status,
+        TwitchRedemptionStatus.canceled,
+      );
+      subject.updateSettings(const MusicSettings());
+      events.add(_redemption(id: 'enabled'));
+      await _waitUntil(
+        () => subject.current.queue.any((item) => item.id == 'enabled'),
+      );
+      expect(fetcher.inspected, hasLength(2));
+    },
+  );
+
+  test(
+    'cueing time is excluded from playback position, including pause and seek',
+    () async {
+      player.deferStart = true;
+      final subject = createManager();
+      events.add(_redemption(id: 'cueing'));
+      await _waitUntil(() => subject.current.nowPlaying != null);
+      expect(subject.current.nowPlaying!.starting, isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 35));
+      await subject.setPaused(true);
+      expect(subject.current.nowPlaying!.position, Duration.zero);
+      await subject.seek(const Duration(seconds: 20));
+      await subject.setPaused(false);
+      expect(subject.current.nowPlaying!.position, const Duration(seconds: 20));
+      player.startCurrent!();
+      expect(subject.current.nowPlaying!.starting, isFalse);
+      expect(
+        subject.current.nowPlaying!.position.inMilliseconds,
+        inInclusiveRange(20000, 20010),
+      );
+    },
+  );
+
+  test(
+    'new queue limit counts playing track without removing accepted tracks',
+    () async {
+      final subject = createManager();
+      events.add(_redemption(id: 'playing'));
+      events.add(_redemption(id: 'queued'));
+      await _waitUntil(
+        () =>
+            subject.current.nowPlaying != null &&
+            subject.current.queue.length == 1,
+      );
+      subject.updateSettings(const MusicSettings(maxQueue: 1));
+      events.add(_redemption(id: 'over-limit'));
+      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      expect(subject.current.nowPlaying?.item.id, 'playing');
+      expect(subject.current.queue.single.id, 'queued');
+      expect(redemptions.settlements.single.redemptionId, 'over-limit');
+      expect(subject.current.lastError?.type, MusicQueueErrorType.queueFull);
+    },
+  );
+
+  test(
+    'duration changes apply only to requests accepted after the change',
+    () async {
+      final subject = createManager();
+      fetcher.blockedDownloads.add('first');
+      events.add(_redemption(id: 'first', input: 'https://youtu.be/first'));
+      events.add(
+        _redemption(id: 'accepted', input: 'https://youtu.be/accepted'),
+      );
+      await _waitUntil(() => fetcher.activeBlocks.containsKey('first'));
+      subject.updateSettings(const MusicSettings(maxDurationSeconds: 60));
+      events.add(
+        _redemption(id: 'too-long', input: 'https://youtu.be/too-long'),
+      );
+      fetcher.activeBlocks['first']!.complete();
+      await _waitUntil(() => redemptions.settlements.isNotEmpty);
+      expect(subject.current.queue.single.id, 'accepted');
+      expect(redemptions.settlements.single.redemptionId, 'too-long');
+      expect(
+        subject.current.lastError?.type,
+        MusicQueueErrorType.trackTooLongOrLive,
+      );
+    },
+  );
+
+  test('ignores redemptions for a different reward', () async {
+    final subject = createManager(rewardId: 'reward-1');
+
+    events.add(_redemption(id: 'one', rewardId: 'reward-2'));
+    await _flushEvents();
+
+    expect(fetcher.inspected, isEmpty);
+    expect(subject.current.queue, isEmpty);
+    expect(subject.current.nowPlaying, isNull);
+  });
+
+  test('ignores all redemptions when no reward is selected', () async {
+    final subject = createManager(rewardId: null);
+
+    events.add(_redemption(id: 'one'));
+    await _flushEvents();
+
+    expect(fetcher.inspected, isEmpty);
+    expect(subject.current.queue, isEmpty);
+    expect(subject.current.nowPlaying, isNull);
+  });
+
+  test('switches to the selected reward id without restarting', () async {
+    final rewardIds = StreamController<String?>.broadcast();
+    addTearDown(rewardIds.close);
+    final subject = createManager(
+      rewardId: 'reward-1',
+      rewardIdChanges: rewardIds.stream,
+    );
+
+    events.add(
+      _redemption(id: 'wrong', rewardId: 'reward-2', title: 'Play Music'),
+    );
+    await _flushEvents();
+    expect(fetcher.inspected, isEmpty);
+
+    rewardIds.add('reward-2');
+    await _flushEvents();
+    events.add(
+      _redemption(
+        id: 'accepted',
+        rewardId: 'reward-2',
+        title: 'Renamed on Twitch',
+      ),
+    );
+    await _waitUntil(() => subject.current.nowPlaying?.item.id == 'accepted');
+
+    expect(subject.current.nowPlaying?.item.id, 'accepted');
+  });
+
+  for (final (input, expected) in [
+    (
+      'youtube.com/watch?v=qsQXPIqfXUk',
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    (
+      '  www.youtube.com/watch?v=qsQXPIqfXUk&t=42  ',
+      'https://www.youtube.com/watch?v=qsQXPIqfXUk&t=42',
+    ),
+    (
+      'm.youtube.com/watch?v=qsQXPIqfXUk',
+      'https://m.youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    ('youtu.be/qsQXPIqfXUk', 'https://youtu.be/qsQXPIqfXUk'),
+    (
+      '//youtube.com/watch?v=qsQXPIqfXUk',
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    (
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+      'https://youtube.com/watch?v=qsQXPIqfXUk',
+    ),
+    ('http://youtu.be/qsQXPIqfXUk', 'http://youtu.be/qsQXPIqfXUk'),
+  ]) {
+    test('accepts YouTube URL: $input', () async {
+      final subject = createManager();
+      final expectedUrl = Uri.parse(expected);
+
+      events.add(_redemption(id: 'one', input: input));
+      await _waitUntil(
+        () => subject.current.lastError != null || player.played.isNotEmpty,
+      );
+
+      expect(subject.current.lastError, isNull);
+      expect(fetcher.inspected, [expectedUrl]);
+      expect(fetcher.downloaded, [expectedUrl]);
+      expect(subject.current.nowPlaying?.item.sourceUrl, expectedUrl);
+      expect(player.played.single.metadata.sourceUrl, expectedUrl);
+      expect(redemptions.settlements, isEmpty);
+    });
+  }
+
+  for (final input in [
+    'https://example.com/not-youtube',
+    'example.com/watch?v=qsQXPIqfXUk',
+    'youtube.com.example.com/watch?v=qsQXPIqfXUk',
+    'notyoutube.com/watch?v=qsQXPIqfXUk',
+    'youtube.com@example.com/watch?v=qsQXPIqfXUk',
+    'ftp://youtube.com/watch?v=qsQXPIqfXUk',
+    'not a YouTube URL',
+    'https://[invalid',
+  ]) {
+    test(
+      'rejects invalid YouTube URL without invoking yt-dlp: $input',
+      () async {
+        final subject = createManager();
+
+        events.add(_redemption(id: 'one', input: input));
+        await _waitUntil(
+          () =>
+              subject.current.lastError != null &&
+              redemptions.settlements.isNotEmpty,
+        );
+
+        expect(
+          subject.current.lastError?.type,
+          MusicQueueErrorType.invalidYoutubeUrl,
+        );
+        expect(subject.current.lastError?.requester, 'Viewer one');
+        expect(fetcher.inspected, isEmpty);
+        expect(player.played, isEmpty);
+        expect(redemptions.settlements.single.redemptionId, 'one');
+        expect(
+          redemptions.settlements.single.status,
+          TwitchRedemptionStatus.canceled,
+        );
+      },
+    );
+  }
+
+  test('refunds a redemption with missing viewer input', () async {
+    final subject = createManager();
+
+    events.add(_redemption(id: 'one', input: '  '));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.missingYoutubeUrl,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('refunds a redemption when the queue is full', () async {
+    final subject = createManager(maxQueueLength: 1);
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    events.add(_redemption(id: 'two', input: 'https://youtu.be/two'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(subject.current.lastError?.type, MusicQueueErrorType.queueFull);
+    expect(redemptions.settlements.single.redemptionId, 'two');
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('refunds a track that is too long', () async {
+    final subject = createManager();
+    fetcher.inspectedDuration = const Duration(minutes: 11);
+
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.trackTooLongOrLive,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('refunds a redemption when track preparation fails', () async {
+    final subject = createManager();
+    fetcher.inspectError = StateError('yt-dlp failed');
+
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.operationFailed,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test(
+    'a YouTube block pauses preparation instead of refunding the queue',
+    () async {
+      final held = <(MusicQueueErrorType, Uri)>[];
+      final subject = createManager(
+        onHeld: (reason, url) => held.add((reason, url)),
+      );
+      fetcher.inspectError = const MusicTrackException(
+        "ERROR: [youtube] video: Sign in to confirm you're not a bot.",
+        errorType: MusicQueueErrorType.youtubeAccessRequired,
+      );
+      events.add(_redemption(id: 'first', input: 'https://youtu.be/first'));
+      events.add(_redemption(id: 'second', input: 'https://youtu.be/second'));
+      await _waitUntil(
+        () => subject.current.hold != null && subject.current.queue.length == 2,
+      );
+      await _flushEvents();
+
+      expect(fetcher.inspected, [Uri.parse('https://youtu.be/first')]);
+      expect(redemptions.settlements, isEmpty);
+      expect(subject.current.hold, MusicQueueErrorType.youtubeAccessRequired);
+      expect(
+        subject.current.lastError?.type,
+        MusicQueueErrorType.youtubeAccessRequired,
+      );
+      expect(subject.current.lastError?.details, isNull);
+      expect(
+        subject.current.queue.map((item) => item.phase),
+        everyElement(MusicQueueItemPhase.resolving),
+      );
+      expect(held, [
+        (
+          MusicQueueErrorType.youtubeAccessRequired,
+          Uri.parse('https://youtu.be/first'),
+        ),
+      ]);
+
+      fetcher.inspectError = null;
+      expect(subject.resumePreparation(), isTrue);
+      expect(subject.resumePreparation(), isFalse);
+      await _waitUntil(() => subject.current.nowPlaying?.item.id == 'first');
+      expect(subject.current.hold, isNull);
+      expect(subject.current.lastError, isNull);
+      expect(redemptions.settlements, isEmpty);
+    },
+  );
+
+  test('a blocked audio download is held and re-inspected later', () async {
+    final subject = createManager();
+    fetcher.downloadError = const MusicTrackException(
+      'blocked',
+      errorType: MusicQueueErrorType.youtubeDownloadBlocked,
+    );
+    events.add(_redemption(id: 'blocked'));
+    await _waitUntil(() => subject.current.hold != null);
+    final item = subject.current.queue.single;
+    expect(item.phase, MusicQueueItemPhase.resolving);
+    expect(item.title, isNull);
+    expect(item.downloadProgress, isNull);
+
+    // New redemptions wait during the hold without contacting YouTube.
+    events.add(_redemption(id: 'later'));
+    await _waitUntil(() => subject.current.queue.length == 2);
+    expect(fetcher.inspected, hasLength(1));
+
+    fetcher.downloadError = null;
+    subject.resumePreparation();
+    await _waitUntil(() => player.played.length == 1);
+    expect(player.played.single.itemId, 'blocked');
+    await _waitUntil(
+      () => subject.current.queue.single.phase == MusicQueueItemPhase.ready,
+    );
+    expect(fetcher.inspected, hasLength(3));
+  });
+
+  test('requests waiting longer than the hold timeout are refunded', () async {
+    final subject = createManager(
+      heldRequestTimeout: const Duration(milliseconds: 40),
+    );
+    fetcher.inspectError = const MusicTrackException(
+      'rate limited',
+      errorType: MusicQueueErrorType.youtubeRateLimited,
+    );
+    events.add(_redemption(id: 'first'));
+    events.add(_redemption(id: 'second'));
+    await _waitUntil(() => redemptions.settlements.length == 2);
+    expect(
+      redemptions.settlements.map((settlement) => settlement.status),
+      everyElement(TwitchRedemptionStatus.canceled),
+    );
+    expect(subject.current.queue, isEmpty);
+    expect(
+      subject.current.hold,
+      MusicQueueErrorType.youtubeRateLimited,
+      reason: 'The reward stays paused until the streamer resumes requests',
+    );
+  });
+
+  test('removing a held request refunds it once', () async {
+    final subject = createManager(
+      heldRequestTimeout: const Duration(milliseconds: 40),
+    );
+    fetcher.inspectError = const MusicTrackException(
+      'bot',
+      errorType: MusicQueueErrorType.youtubeAccessRequired,
+    );
+    events.add(_redemption(id: 'held'));
+    await _waitUntil(() => subject.current.hold != null);
+    expect(await subject.remove('held'), isTrue);
+    await Future<void>.delayed(const Duration(milliseconds: 80));
+    expect(redemptions.settlements.single.redemptionId, 'held');
+  });
+
+  test('a single unavailable video is refunded without a hold', () async {
+    final subject = createManager();
+    fetcher.inspectError = const MusicTrackException(
+      'private',
+      errorType: MusicQueueErrorType.youtubeUnavailable,
+    );
+    events.add(_redemption(id: 'private'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+    expect(subject.current.hold, isNull);
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.youtubeUnavailable,
+    );
+  });
+
+  test('fulfills a redemption after normal playback completion', () async {
+    final subject = createManager();
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    player.finishCurrent();
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(redemptions.settlements.single.redemptionId, 'one');
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.fulfilled,
+    );
+    expect(subject.current.nowPlaying, isNull);
+  });
+
+  test('fulfills a redemption when playback is skipped', () async {
+    final subject = createManager();
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    expect(await subject.skip(), isTrue);
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.fulfilled,
+    );
+  });
+
+  test('refunds a redemption when playback fails', () async {
+    final subject = createManager();
+    player.playError = StateError('native player failed');
+
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+
+    expect(
+      subject.current.lastError?.type,
+      MusicQueueErrorType.operationFailed,
+    );
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('downloads and plays accepted requests in FIFO order', () async {
+    final subject = createManager();
+
+    events
+      ..add(_redemption(id: 'one', input: 'https://youtu.be/one'))
+      ..add(_redemption(id: 'two', input: 'https://youtube.com/watch?v=two'));
+
+    await _waitUntil(
+      () => player.played.length == 1 && fetcher.downloaded.length == 2,
+    );
+    expect(player.played.single.itemId, 'one');
+    expect(subject.current.nowPlaying?.item.id, 'one');
+    expect(subject.current.queue.map((item) => item.id), ['two']);
+
+    player.finishCurrent();
+    await _waitUntil(() => player.played.length == 2);
+
+    expect(player.played.map((track) => track.itemId), ['one', 'two']);
+    expect(subject.current.nowPlaying?.item.id, 'two');
+    expect(
+      await File('${cache.path}${Platform.pathSeparator}one.mp3').exists(),
+      isTrue,
+    );
+  });
+
+  test('pauses and resumes the current track without advancing', () async {
+    final subject = createManager();
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    expect(await subject.setPaused(true), isTrue);
+    expect(subject.current.nowPlaying?.paused, isTrue);
+    expect(player.pauseChanges, [true]);
+
+    await _flushEvents();
+    expect(subject.current.nowPlaying?.item.id, 'one');
+
+    expect(await subject.setPaused(false), isTrue);
+    expect(subject.current.nowPlaying?.paused, isFalse);
+    expect(player.pauseChanges, [true, false]);
+  });
+
+  test('cannot pause when no track is playing', () async {
+    final subject = createManager();
+
+    expect(await subject.setPaused(true), isFalse);
+    expect(player.pauseChanges, isEmpty);
+  });
+
+  test('seeks the current track and updates its reported position', () async {
+    final subject = createManager();
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => player.played.length == 1);
+
+    expect(await subject.seek(const Duration(minutes: 2)), isTrue);
+
+    expect(player.seekPositions, [const Duration(minutes: 2)]);
+    expect(subject.current.nowPlaying?.position.inSeconds, 120);
+  });
+
+  test('removes a waiting track without deleting its cached file', () async {
+    final subject = createManager();
+    events
+      ..add(_redemption(id: 'one', input: 'https://youtu.be/one'))
+      ..add(_redemption(id: 'two', input: 'https://youtu.be/two'));
+    await _waitUntil(
+      () => player.played.length == 1 && fetcher.downloaded.length == 2,
+    );
+    final queuedFile = File('${cache.path}${Platform.pathSeparator}two.mp3');
+    expect(await queuedFile.exists(), isTrue);
+
+    expect(await subject.remove('two'), isTrue);
+
+    expect(subject.current.queue, isEmpty);
+    expect(await queuedFile.exists(), isTrue);
+    expect(await subject.remove('one'), isFalse);
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+    expect(redemptions.settlements.single.redemptionId, 'two');
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('removing the track being downloaded cancels the fetcher', () async {
+    final subject = createManager();
+    fetcher.blockedDownloads.add('default');
+    events.add(_redemption(id: 'one'));
+    await _waitUntil(() => fetcher.activeBlocks.containsKey('default'));
+
+    expect(await subject.remove('one'), isTrue);
+
+    expect(subject.current.queue, isEmpty);
+    expect(fetcher.cancelCount, 1);
+    await _waitUntil(() => redemptions.settlements.isNotEmpty);
+    expect(
+      redemptions.settlements.single.status,
+      TwitchRedemptionStatus.canceled,
+    );
+  });
+
+  test('does not retry a failed Twitch status update', () async {
+    redemptions.settleError = StateError('network unavailable');
+    createManager();
+
+    events.add(_redemption(id: 'one', input: 'not a YouTube URL'));
+    await _waitUntil(() => redemptions.settlements.length == 1);
+    events.add(_redemption(id: 'one', input: 'not a YouTube URL'));
+    await _flushEvents();
+
+    expect(redemptions.settlements.length, 1);
+  });
+
+  test(
+    'does not settle active playback while the application is closing',
+    () async {
+      final subject = createManager();
+      events.add(_redemption(id: 'one'));
+      await _waitUntil(() => player.played.length == 1);
+
+      await subject.close();
+      manager = null;
+
+      expect(redemptions.settlements, isEmpty);
+    },
+  );
+}
+
+WsMessage _redemption({
+  required String id,
+  String rewardId = 'reward-1',
+  String title = 'Play Music',
+  String input = 'https://youtu.be/default',
+}) {
+  return WsMessage.fromJson({
+    'payload': {
+      'subscription': {
+        'type': 'channel.channel_points_custom_reward_redemption.add',
+      },
+      'event': {
+        'id': id,
+        'user_id': 'user-$id',
+        'user_login': 'viewer_$id',
+        'user_name': 'Viewer $id',
+        'user_input': input,
+        'redeemed_at': '2026-09-03T12:30:00Z',
+        'reward': {'id': rewardId, 'title': title, 'cost': 100},
+      },
+    },
+  });
+}
+
+Future<void> _flushEvents() async {
+  await Future<void>.delayed(const Duration(milliseconds: 20));
+}
+
+Future<void> _waitUntil(bool Function() condition) async {
+  final deadline = DateTime.now().add(const Duration(seconds: 2));
+  while (!condition()) {
+    if (DateTime.now().isAfter(deadline)) {
+      fail('Timed out waiting for an asynchronous music queue transition');
+    }
+    await Future<void>.delayed(const Duration(milliseconds: 5));
+  }
+}
+
+class _FakeFetcher implements MusicTrackFetcher {
+  final Directory cache;
+  final List<Uri> inspected = [];
+  final List<Uri> downloaded = [];
+  final Set<String> blockedDownloads = {};
+  final Map<String, Completer<void>> activeBlocks = {};
+  int cancelCount = 0;
+  Duration inspectedDuration = const Duration(minutes: 3);
+  Object? inspectError;
+  Object? downloadError;
+
+  _FakeFetcher(this.cache);
+
+  @override
+  Future<MusicTrackMetadata> inspect(Uri sourceUrl) async {
+    inspected.add(sourceUrl);
+    final inspectError = this.inspectError;
+    if (inspectError != null) throw inspectError;
+    final videoId =
+        sourceUrl.pathSegments.lastOrNull ??
+        sourceUrl.queryParameters['v'] ??
+        'video';
+    return MusicTrackMetadata(
+      videoId: videoId,
+      title: 'Track $videoId',
+      author: 'Artist',
+      duration: inspectedDuration,
+      thumbnail: null,
+      sourceUrl: sourceUrl,
+    );
+  }
+
+  @override
+  Future<String> obtain({
+    required MusicTrackMetadata metadata,
+    required void Function(MusicDownloadProgress progress) onProgress,
+  }) async {
+    downloaded.add(metadata.sourceUrl);
+    final downloadError = this.downloadError;
+    if (downloadError != null) throw downloadError;
+    if (blockedDownloads.contains(metadata.videoId)) {
+      final blocker = Completer<void>();
+      activeBlocks[metadata.videoId] = blocker;
+      await blocker.future;
+      activeBlocks.remove(metadata.videoId);
+    }
+    onProgress(
+      const MusicDownloadProgress(
+        downloadedBytes: 50,
+        totalBytes: 100,
+        eta: Duration(seconds: 1),
+      ),
+    );
+    final file = File(
+      '${cache.path}${Platform.pathSeparator}${metadata.videoId}.mp3',
+    );
+    await file.writeAsBytes([1, 2, 3]);
+    return file.path;
+  }
+
+  @override
+  Future<void> cancel() async {
+    cancelCount++;
+    for (final blocker in activeBlocks.values) {
+      if (!blocker.isCompleted) blocker.complete();
+    }
+    activeBlocks.clear();
+  }
+}
+
+class _FakePlayer implements MusicTrackPlayer {
+  final List<DownloadedMusicTrack> played = [];
+  final List<bool> pauseChanges = [];
+  final List<Duration> seekPositions = [];
+  Completer<void>? _current;
+  Object? playError;
+  bool deferStart = false;
+  void Function()? startCurrent;
+
+  @override
+  Future<void> play(
+    DownloadedMusicTrack track, {
+    void Function()? onStarted,
+  }) async {
+    played.add(track);
+    final playError = this.playError;
+    if (playError != null) throw playError;
+    final completer = Completer<void>();
+    _current = completer;
+    if (deferStart) {
+      startCurrent = onStarted;
+    } else {
+      onStarted?.call();
+    }
+    await completer.future;
+  }
+
+  void finishCurrent() {
+    final completer = _current;
+    if (completer != null && !completer.isCompleted) completer.complete();
+  }
+
+  @override
+  Future<void> setPaused(bool paused) async {
+    pauseChanges.add(paused);
+  }
+
+  @override
+  Future<void> seek(Duration position) async {
+    seekPositions.add(position);
+  }
+
+  @override
+  Future<void> stop() async => finishCurrent();
+}
+
+class _FakeRedemptionService implements TwitchRedemptionService {
+  final List<_Settlement> settlements = [];
+  Object? settleError;
+
+  @override
+  Future<void> settle({
+    required String rewardId,
+    required String redemptionId,
+    required TwitchRedemptionStatus status,
+  }) async {
+    settlements.add(
+      _Settlement(
+        rewardId: rewardId,
+        redemptionId: redemptionId,
+        status: status,
+      ),
+    );
+    final error = settleError;
+    if (error != null) throw error;
+  }
+}
+
+class _Settlement {
+  final String rewardId;
+  final String redemptionId;
+  final TwitchRedemptionStatus status;
+
+  const _Settlement({
+    required this.rewardId,
+    required this.redemptionId,
+    required this.status,
+  });
+}
+
+extension on List<String> {
+  String? get lastOrNull => this.isEmpty ? null : last;
+}

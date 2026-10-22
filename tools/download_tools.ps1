@@ -1,0 +1,81 @@
+[CmdletBinding()]
+param()
+
+$ErrorActionPreference = 'Stop'
+$ProgressPreference = 'SilentlyContinue'
+
+$toolDirectory = $PSScriptRoot
+$temporaryDirectory = Join-Path `
+  ([System.IO.Path]::GetTempPath()) `
+  ("obssource-tools-" + [System.Guid]::NewGuid().ToString('N'))
+
+function Download-File {
+  param(
+    [Parameter(Mandatory = $true)][string]$Uri,
+    [Parameter(Mandatory = $true)][string]$Destination
+  )
+
+  Write-Host "Downloading $Uri"
+  Invoke-WebRequest -Uri $Uri -OutFile $Destination -UseBasicParsing
+}
+
+function Assert-Sha256 {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path,
+    [Parameter(Mandatory = $true)][string]$Expected
+  )
+
+  $actual = (Get-FileHash -LiteralPath $Path -Algorithm SHA256).Hash
+  if ($actual -ne $Expected.Trim().ToUpperInvariant()) {
+    throw "SHA256 mismatch for $Path. Expected $Expected, got $actual"
+  }
+}
+
+function Read-Sha256 {
+  param(
+    [Parameter(Mandatory = $true)][string]$Path
+  )
+
+  $match = [System.Text.RegularExpressions.Regex]::Match(
+    (Get-Content -LiteralPath $Path -Raw),
+    '(?i)[a-f0-9]{64}'
+  )
+  if (-not $match.Success) {
+    throw "SHA256 value was not found in $Path"
+  }
+  return $match.Value
+}
+
+New-Item -ItemType Directory -Path $temporaryDirectory | Out-Null
+
+try {
+  # yt-dlp is pinned in yt-dlp.json; the Windows build checks it as well.
+  & (Join-Path $toolDirectory 'ensure_yt_dlp.ps1')
+
+  $denoArchive = Join-Path $temporaryDirectory 'deno.zip'
+  $denoChecksum = Join-Path $temporaryDirectory 'deno.zip.sha256sum'
+  Download-File `
+    -Uri 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip' `
+    -Destination $denoArchive
+  Download-File `
+    -Uri 'https://github.com/denoland/deno/releases/latest/download/deno-x86_64-pc-windows-msvc.zip.sha256sum' `
+    -Destination $denoChecksum
+  Assert-Sha256 `
+    -Path $denoArchive `
+    -Expected (Read-Sha256 -Path $denoChecksum)
+  $denoExtractDirectory = Join-Path $temporaryDirectory 'deno'
+  Expand-Archive -LiteralPath $denoArchive -DestinationPath $denoExtractDirectory
+  Copy-Item `
+    -LiteralPath (Join-Path $denoExtractDirectory 'deno.exe') `
+    -Destination (Join-Path $toolDirectory 'deno.exe') `
+    -Force
+
+  & (Join-Path $toolDirectory 'build_ffmpeg.ps1')
+
+  Write-Host 'Tools downloaded and verified; minimal FFmpeg built from source.'
+}
+finally {
+  if (Test-Path -LiteralPath $temporaryDirectory) {
+    Remove-Item -LiteralPath $temporaryDirectory -Recurse -Force
+  }
+}
