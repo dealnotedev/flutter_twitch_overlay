@@ -256,12 +256,6 @@ class _ExpandedMusicPlayer extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final visibleQueue =
-        maxVisibleQueueItems == null
-            ? state.queue
-            : state.queue.take(maxVisibleQueueItems!).toList(growable: false);
-    final hiddenQueueCount = state.queue.length - visibleQueue.length;
-
     final content = Column(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -280,35 +274,12 @@ class _ExpandedMusicPlayer extends StatelessWidget {
           ),
         if (state.queue.isNotEmpty) ...[
           const Gap(12),
-          Text(
-            context.localizations.music_queue_next,
-            style: const TextStyle(
-              color: MusicPlayerPalette.neonPinkBright,
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2.2,
-              shadows: MusicPlayerPalette.pinkTextGlow,
-            ),
+          MusicQueueList(
+            items: state.queue,
+            held: state.hold != null,
+            onRemove: onRemove,
+            maxVisibleItems: maxVisibleQueueItems,
           ),
-          const Gap(7),
-          ...visibleQueue.map(
-            (item) => _QueueRow(
-              item: item,
-              held: state.hold != null,
-              onRemove: () => onRemove(item.id),
-            ),
-          ),
-          if (hiddenQueueCount > 0)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: Text(
-                context.localizations.music_queue_more(hiddenQueueCount),
-                style: const TextStyle(
-                  color: MusicPlayerPalette.textSecondary,
-                  fontSize: 11,
-                ),
-              ),
-            ),
         ],
         if (state.lastError case final error?) ...[
           const Gap(10),
@@ -1038,15 +1009,86 @@ class _WaitingForTrack extends StatelessWidget {
   }
 }
 
+enum MusicQueueStyle { cosmic, turntable }
+
+/// Queue content shared by the cosmic player and the turntable's chassis.
+class MusicQueueList extends StatelessWidget {
+  final List<MusicQueueItem> items;
+  final bool held;
+  final ValueChanged<String> onRemove;
+  final int? maxVisibleItems;
+  final MusicQueueStyle style;
+
+  const MusicQueueList({
+    super.key,
+    required this.items,
+    required this.held,
+    required this.onRemove,
+    this.maxVisibleItems,
+    this.style = MusicQueueStyle.cosmic,
+  }) : assert(maxVisibleItems == null || maxVisibleItems >= 0);
+
+  @override
+  Widget build(BuildContext context) {
+    if (items.isEmpty) return const SizedBox.shrink();
+    final visible =
+        maxVisibleItems == null
+            ? items
+            : items.take(maxVisibleItems!).toList(growable: false);
+    final hiddenCount = items.length - visible.length;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (style == MusicQueueStyle.cosmic) ...[
+          Text(
+            context.localizations.music_queue_next,
+            style: const TextStyle(
+              color: MusicPlayerPalette.neonPinkBright,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2.2,
+              shadows: MusicPlayerPalette.pinkTextGlow,
+            ),
+          ),
+          const Gap(7),
+        ],
+        for (final (index, item) in visible.indexed) ...[
+          if (style == MusicQueueStyle.turntable && index > 0) const Gap(16),
+          _QueueRow(
+            item: item,
+            held: held,
+            onRemove: () => onRemove(item.id),
+            style: style,
+          ),
+        ],
+        if (hiddenCount > 0)
+          Padding(
+            padding: const EdgeInsets.only(top: 4),
+            child: Text(
+              context.localizations.music_queue_more(hiddenCount),
+              style: const TextStyle(
+                color: MusicPlayerPalette.textSecondary,
+                fontSize: 11,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _QueueRow extends StatelessWidget {
   final MusicQueueItem item;
   final bool held;
   final VoidCallback onRemove;
+  final MusicQueueStyle style;
 
   const _QueueRow({
     required this.item,
     required this.held,
     required this.onRemove,
+    required this.style,
   });
 
   @override
@@ -1063,6 +1105,29 @@ class _QueueRow extends StatelessWidget {
       MusicQueueItemPhase.ready =>
         context.localizations.music_queue_status_ready,
     };
+
+    if (style == MusicQueueStyle.turntable) {
+      return Row(
+        children: [
+          Expanded(
+            child: MusicTrackInfo(
+              status: status,
+              title: item.title ?? item.sourceUrl.toString(),
+              subtitle:
+                  '${item.author ?? context.localizations.music_source_youtube} · ${item.requestedBy}',
+            ),
+          ),
+          const Gap(8),
+          NeonMusicIconButton(
+            key: ValueKey('remove_music_${item.id}'),
+            icon: Icons.close_rounded,
+            onPressed: onRemove,
+            size: 24,
+            iconSize: 16,
+          ),
+        ],
+      );
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 5),
@@ -1117,23 +1182,25 @@ class _QueueRow extends StatelessWidget {
             ),
           ),
           const Gap(2),
-          SizedBox(
-            width: 24,
-            height: 24,
-            child: IconButton(
-              key: ValueKey('remove_music_${item.id}'),
-              padding: EdgeInsets.zero,
-              color: MusicPlayerPalette.textSecondary,
-              hoverColor: MusicPlayerPalette.neonPink.withValues(alpha: 0.14),
-              iconSize: 17,
-              onPressed: onRemove,
-              icon: const Icon(Icons.close_rounded),
-            ),
-          ),
+          _removeButton,
         ],
       ),
     );
   }
+
+  Widget get _removeButton => SizedBox(
+    width: 24,
+    height: 24,
+    child: IconButton(
+      key: ValueKey('remove_music_${item.id}'),
+      padding: EdgeInsets.zero,
+      color: MusicPlayerPalette.textSecondary,
+      hoverColor: MusicPlayerPalette.neonPink.withValues(alpha: 0.14),
+      iconSize: 17,
+      onPressed: onRemove,
+      icon: const Icon(Icons.close_rounded),
+    ),
+  );
 }
 
 class _Artwork extends StatelessWidget {

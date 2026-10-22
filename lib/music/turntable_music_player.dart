@@ -17,13 +17,11 @@ import 'package:obssource/music/turntable_playback_controller.dart';
 class TurntableMusicPlayer extends StatefulWidget {
   final MusicRequests requests;
   final TurntablePlaybackController playback;
-  final VoidCallback? onShowQueue;
 
   const TurntableMusicPlayer({
     super.key,
     required this.requests,
     required this.playback,
-    this.onShowQueue,
   });
 
   @override
@@ -38,6 +36,7 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
   StreamSubscription<MusicQueueSnapshot>? _subscription;
   final _items = <String, MusicQueueItem>{};
   Duration _previousElapsed = Duration.zero;
+  bool _queueExpanded = false;
 
   @override
   void initState() {
@@ -53,9 +52,13 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
     widget.playback.attach();
     widget.playback.addListener(_syncMotion);
     _snapshot = widget.requests.current;
+    _queueExpanded = false;
     _subscription = widget.requests.states.listen((snapshot) {
       if (!mounted) return;
-      setState(() => _snapshot = snapshot);
+      setState(() {
+        _snapshot = snapshot;
+        if (snapshot.queue.isEmpty) _queueExpanded = false;
+      });
       _syncMotion();
     });
     _syncMotion();
@@ -92,6 +95,11 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
       _previousElapsed = Duration.zero;
       _ticker.start();
     }
+  }
+
+  void _toggleQueue() {
+    if (_snapshot.queue.isEmpty) return;
+    setState(() => _queueExpanded = !_queueExpanded);
   }
 
   void _tick(Duration elapsed) {
@@ -139,7 +147,17 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
         alignment: Alignment.bottomRight,
         child: AnimatedBuilder(
           animation: _motion,
-          builder: (context, _) {
+          child:
+              _queueExpanded
+                  ? MusicQueueList(
+                    key: const ValueKey('turntable_inline_queue'),
+                    items: _snapshot.queue,
+                    held: _snapshot.hold != null,
+                    onRemove: (id) => unawaited(widget.requests.remove(id)),
+                    style: MusicQueueStyle.turntable,
+                  )
+                  : null,
+          builder: (context, inlineQueue) {
             if (_motion.phase == TurntablePhase.hidden &&
                 _snapshot.lastError != null) {
               return MusicQueueOverlay(
@@ -244,94 +262,139 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
                               padding: EdgeInsets.symmetric(
                                 horizontal: TurntableGeometry.chassisOrigin.dx,
                               ),
-                              child: Padding(
+                              child: ConstrainedBox(
                                 key: const ValueKey('turntable_info_panel'),
-                                padding: const EdgeInsets.all(16),
-                                child: Row(
-                                  children: [
-                                    Expanded(
-                                      child: Column(
-                                        mainAxisSize: MainAxisSize.min,
-                                        crossAxisAlignment:
-                                            CrossAxisAlignment.start,
+                                constraints: const BoxConstraints(
+                                  maxHeight: 480,
+                                ),
+                                child: SingleChildScrollView(
+                                  key: const ValueKey('turntable_info_scroll'),
+                                  primary: false,
+                                  physics: const ClampingScrollPhysics(),
+                                  padding: const EdgeInsets.all(16),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
+                                    children: [
+                                      Row(
                                         children: [
-                                          Text(
-                                            status.toUpperCase(),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color:
-                                                  MusicPlayerPalette.neonPink,
+                                          Expanded(
+                                            child: MusicTrackInfo(
+                                              status: status,
+                                              title:
+                                                  item?.title ??
+                                                  context
+                                                      .localizations
+                                                      .music_turntable_preparing,
+                                              subtitle:
+                                                  item == null
+                                                      ? ''
+                                                      : '${item.author ?? context.localizations.music_source_youtube} · ${item.requestedBy}',
+                                            ),
+                                          ),
+                                          const Gap(8),
+                                          if (active) ...[
+                                            NeonMusicIconButton(
+                                              key: const ValueKey(
+                                                'turntable_pause',
+                                              ),
+                                              icon:
+                                                  playing.paused
+                                                      ? Icons.play_arrow_rounded
+                                                      : Icons.pause_rounded,
+                                              onPressed:
+                                                  () => unawaited(
+                                                    widget.requests.setPaused(
+                                                      !playing.paused,
+                                                    ),
+                                                  ),
+                                            ),
+                                            const Gap(6),
+                                            NeonMusicIconButton(
+                                              key: const ValueKey(
+                                                'turntable_skip',
+                                              ),
+                                              icon: Icons.skip_next_rounded,
+                                              onPressed:
+                                                  () => unawaited(
+                                                    widget.requests.skip(),
+                                                  ),
+                                            ),
+                                            const Gap(6),
+                                          ],
+                                          Badge(
+                                            key: const ValueKey(
+                                              'turntable_queue',
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            isLabelVisible:
+                                                _snapshot.queue.isNotEmpty,
+                                            backgroundColor: Colors.transparent,
+                                            textColor: Colors.white,
+                                            textStyle: Theme.of(
+                                              context,
+                                            ).textTheme.labelSmall?.copyWith(
                                               fontSize: 9,
                                               fontWeight: FontWeight.w700,
-                                              letterSpacing: 1.8,
                                             ),
-                                          ),
-                                          const Gap(4),
-                                          Text(
-                                            item?.title ??
-                                                context
-                                                    .localizations
-                                                    .music_turntable_preparing,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color:
-                                                  MusicPlayerPalette
-                                                      .textPrimary,
-                                              fontSize: 14,
-                                              fontWeight: FontWeight.w600,
+                                            label: Container(
+                                              width: 20,
+                                              height: 20,
+                                              padding: const EdgeInsets.all(3),
+                                              decoration:
+                                                  neonMusicControlDecoration(
+                                                    backdrop: const Color(
+                                                      0xFF704E49,
+                                                    ),
+                                                    enabled:
+                                                        _snapshot
+                                                            .queue
+                                                            .isNotEmpty,
+                                                  ),
+                                              child: Center(
+                                                child: FittedBox(
+                                                  fit: BoxFit.scaleDown,
+                                                  child: Text(
+                                                    '${_snapshot.queue.length}',
+                                                    key: const ValueKey(
+                                                      'turntable_queue_count',
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
                                             ),
-                                          ),
-                                          const Gap(2),
-                                          Text(
-                                            item == null
-                                                ? ''
-                                                : '${item.author ?? context.localizations.music_source_youtube} · ${item.requestedBy}',
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              color:
-                                                  MusicPlayerPalette
-                                                      .textSecondary,
-                                              fontSize: 10,
+                                            child: NeonMusicIconButton(
+                                              icon:
+                                                  _queueExpanded
+                                                      ? Icons
+                                                          .expand_less_rounded
+                                                      : Icons
+                                                          .queue_music_rounded,
+                                              onPressed:
+                                                  _snapshot.queue.isEmpty
+                                                      ? null
+                                                      : _toggleQueue,
                                             ),
                                           ),
                                         ],
                                       ),
-                                    ),
-                                    const Gap(8),
-                                    if (active) ...[
-                                      NeonMusicIconButton(
-                                        key: const ValueKey('turntable_pause'),
-                                        icon:
-                                            playing.paused
-                                                ? Icons.play_arrow_rounded
-                                                : Icons.pause_rounded,
-                                        onPressed:
-                                            () => unawaited(
-                                              widget.requests.setPaused(
-                                                !playing.paused,
-                                              ),
-                                            ),
-                                      ),
-                                      const Gap(6),
-                                      NeonMusicIconButton(
-                                        key: const ValueKey('turntable_skip'),
-                                        icon: Icons.skip_next_rounded,
-                                        onPressed:
-                                            () => unawaited(
-                                              widget.requests.skip(),
-                                            ),
-                                      ),
-                                      const Gap(6),
+                                      if (inlineQueue != null) ...[
+                                        const Gap(16),
+                                        Divider(
+                                          key: const ValueKey(
+                                            'turntable_queue_divider',
+                                          ),
+                                          height: 1,
+                                          thickness: 1,
+                                          color: MusicPlayerPalette.textPrimary
+                                              .withValues(alpha: 0.12),
+                                        ),
+                                        const Gap(16),
+                                        inlineQueue,
+                                      ],
                                     ],
-                                    NeonMusicIconButton(
-                                      key: const ValueKey('turntable_queue'),
-                                      icon: Icons.queue_music_rounded,
-                                      onPressed: widget.onShowQueue,
-                                    ),
-                                  ],
+                                  ),
                                 ),
                               ),
                             ),

@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+import 'package:gap/gap.dart';
 
 abstract final class MusicPlayerPalette {
   static const voidBlack = Color(0xFF030518);
@@ -22,6 +23,88 @@ abstract final class MusicPlayerPalette {
     Shadow(color: Color(0xFFFF3EA5), blurRadius: 8),
     Shadow(color: Color(0x99FF168F), blurRadius: 18),
   ];
+}
+
+BoxDecoration neonMusicControlDecoration({
+  bool enabled = true,
+  bool hovered = false,
+  Color? backdrop,
+}) {
+  final activeHover = enabled && hovered;
+  final fill = MusicPlayerPalette.neonPink.withValues(
+    alpha: enabled ? (activeHover ? 0.24 : 0.12) : 0.05,
+  );
+  return BoxDecoration(
+    color: backdrop == null ? fill : Color.alphaBlend(fill, backdrop),
+    shape: BoxShape.circle,
+    border: Border.all(
+      color: MusicPlayerPalette.neonPink.withValues(
+        alpha: enabled ? (activeHover ? 0.92 : 0.62) : 0.18,
+      ),
+    ),
+    boxShadow: [
+      BoxShadow(
+        color: MusicPlayerPalette.neonPink.withValues(
+          alpha: enabled ? (activeHover ? 0.48 : 0.24) : 0.08,
+        ),
+        blurRadius: activeHover ? 16 : 10,
+        spreadRadius: activeHover ? 1 : 0,
+      ),
+    ],
+  );
+}
+
+class MusicTrackInfo extends StatelessWidget {
+  final String status;
+  final String title;
+  final String subtitle;
+
+  const MusicTrackInfo({
+    super.key,
+    required this.status,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) => Column(
+    mainAxisSize: MainAxisSize.min,
+    crossAxisAlignment: CrossAxisAlignment.start,
+    children: [
+      Text(
+        status.toUpperCase(),
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: MusicPlayerPalette.neonPink,
+          fontSize: 9,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.8,
+        ),
+      ),
+      const Gap(4),
+      Text(
+        title,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: MusicPlayerPalette.textPrimary,
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      const Gap(2),
+      Text(
+        subtitle,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: const TextStyle(
+          color: MusicPlayerPalette.textSecondary,
+          fontSize: 10,
+        ),
+      ),
+    ],
+  );
 }
 
 class NeonMusicIconButton extends StatefulWidget {
@@ -48,7 +131,6 @@ class _NeonMusicIconButtonState extends State<NeonMusicIconButton> {
   @override
   Widget build(BuildContext context) {
     final enabled = widget.onPressed != null;
-    final glow = enabled ? (_hovered ? 0.48 : 0.24) : 0.08;
     final button = MouseRegion(
       cursor: enabled ? SystemMouseCursors.click : SystemMouseCursors.basic,
       onEnter: enabled ? (_) => setState(() => _hovered = true) : null,
@@ -57,29 +139,14 @@ class _NeonMusicIconButtonState extends State<NeonMusicIconButton> {
         duration: const Duration(milliseconds: 140),
         width: widget.size,
         height: widget.size,
-        decoration: BoxDecoration(
-          color: MusicPlayerPalette.neonPink.withValues(
-            alpha: enabled ? (_hovered ? 0.24 : 0.12) : 0.05,
-          ),
-          shape: BoxShape.circle,
-          border: Border.all(
-            color: MusicPlayerPalette.neonPink.withValues(
-              alpha: enabled ? (_hovered ? 0.92 : 0.62) : 0.18,
-            ),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: MusicPlayerPalette.neonPink.withValues(alpha: glow),
-              blurRadius: _hovered ? 16 : 10,
-              spreadRadius: _hovered ? 1 : 0,
-            ),
-          ],
+        decoration: neonMusicControlDecoration(
+          enabled: enabled,
+          hovered: _hovered,
         ),
         child: IconButton(
           padding: EdgeInsets.zero,
-          color: MusicPlayerPalette.neonPinkBright.withValues(
-            alpha: enabled ? 1 : 0.35,
-          ),
+          color: MusicPlayerPalette.neonPinkBright,
+          disabledColor: Colors.white,
           iconSize: widget.iconSize,
           onPressed: widget.onPressed,
           icon: Icon(widget.icon),

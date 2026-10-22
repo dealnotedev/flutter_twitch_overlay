@@ -195,7 +195,6 @@ class _State extends State<LoggedWidget> {
                           ? TurntableMusicPlayer(
                             requests: musicRequests,
                             playback: _turntablePlayback!,
-                            onShowQueue: _showTurntableQueue,
                           )
                           : MusicQueueOverlay(
                             requests: musicRequests,
@@ -211,35 +210,6 @@ class _State extends State<LoggedWidget> {
           ],
         );
       },
-    );
-  }
-
-  void _showTurntableQueue() {
-    final requests = _musicRequests;
-    if (requests == null) return;
-    unawaited(
-      showDialog<void>(
-        context: context,
-        barrierColor: Colors.black38,
-        builder:
-            (context) => Dialog(
-              backgroundColor: Colors.transparent,
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(
-                  maxWidth: 440,
-                  maxHeight: 640,
-                ),
-                child: SingleChildScrollView(
-                  child: MusicQueueOverlay(
-                    requests: requests,
-                    alwaysExpanded: true,
-                    showWhenEmpty: true,
-                    maxVisibleQueueItems: null,
-                  ),
-                ),
-              ),
-            ),
-      ),
     );
   }
 

@@ -133,7 +133,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('info panel keeps 12 padding and grows with text scale', (
+  testWidgets('info panel keeps 16 padding and grows with text scale', (
     tester,
   ) async {
     final requests = _Requests()..start();
@@ -150,10 +150,10 @@ void main() {
       final row = find.descendant(of: panel, matching: find.byType(Row));
       final panelRect = tester.getRect(panel);
       final rowRect = tester.getRect(row);
-      expect(rowRect.left - panelRect.left, closeTo(12, 0.001));
-      expect(rowRect.top - panelRect.top, closeTo(12, 0.001));
-      expect(panelRect.right - rowRect.right, closeTo(12, 0.001));
-      expect(panelRect.bottom - rowRect.bottom, closeTo(12, 0.001));
+      expect(rowRect.left - panelRect.left, closeTo(16, 0.001));
+      expect(rowRect.top - panelRect.top, closeTo(16, 0.001));
+      expect(panelRect.right - rowRect.right, closeTo(16, 0.001));
+      expect(panelRect.bottom - rowRect.bottom, closeTo(16, 0.001));
       for (final key in [
         'turntable_pause',
         'turntable_skip',
@@ -209,7 +209,262 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'queue toggles inside the chassis and updates its count, statuses and removals',
+    (tester) async {
+      final requests = _Requests()..start();
+      requests.setQueue([
+        _queuedItem(
+          'two',
+          phase: MusicQueueItemPhase.downloading,
+          progress: 0.5,
+        ),
+        _queuedItem('three'),
+      ]);
+      final playback = TurntablePlaybackController();
+      final capture = GlobalKey();
+      await _loadFonts(tester);
+      await tester.pumpWidget(_surface(requests, playback, capture));
+      await _animate(tester, 5);
+      final queueButton = find.byKey(const ValueKey('turntable_queue'));
+      final queue = find.byKey(const ValueKey('turntable_inline_queue'));
+      final player = find.byKey(const ValueKey('music_turntable'));
+      final collapsedHeight = tester.getSize(player).height;
+      final count = find.byKey(const ValueKey('turntable_queue_count'));
+      final divider = find.byKey(const ValueKey('turntable_queue_divider'));
+      expect(queue, findsNothing);
+      expect(divider, findsNothing);
+      expect(tester.widget<Text>(count).data, '2');
+
+      await tester.tap(queueButton);
+      await tester.pump();
+      expect(queue, findsOneWidget);
+      expect(divider, findsOneWidget);
+      expect(find.byType(Dialog), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const ValueKey('turntable_info_panel')),
+          matching: queue,
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Song two'), findsOneWidget);
+      expect(find.text('Song three'), findsOneWidget);
+      expect(find.text('Artist · Listener'), findsNWidgets(2));
+      expect(find.text('50%'), findsOneWidget);
+      expect(find.text('UP NEXT'), findsNothing);
+      expect(tester.widget<Text>(count).data, '2');
+      expect(
+        tester.getRect(find.text('Song two')).left,
+        tester.getRect(find.text('Midnight City')).left,
+      );
+      for (final id in ['two', 'three']) {
+        final remove = find.byKey(ValueKey('remove_music_$id'));
+        expect(
+          tester.getRect(queue).right - tester.getRect(remove).right,
+          inInclusiveRange(0, 8),
+        );
+      }
+      expect(
+        tester.getRect(queue).top,
+        greaterThan(tester.getRect(queueButton).bottom),
+      );
+      expect(tester.getSize(player).height, greaterThan(collapsedHeight));
+      expect(
+        tester.getRect(player).contains(tester.getRect(queue).bottomRight),
+        isTrue,
+      );
+      await _capture(tester, capture, 'turntable-queue-open');
+
+      requests.setQueue([
+        _queuedItem(
+          'two',
+          phase: MusicQueueItemPhase.downloading,
+          progress: 0.75,
+        ),
+        _queuedItem('three'),
+      ]);
+      await tester.pump();
+      expect(find.text('75%'), findsOneWidget);
+      await tester.tap(find.byKey(const ValueKey('remove_music_two')));
+      await tester.pump();
+      expect(find.text('Song two'), findsNothing);
+      expect(find.text('Song three'), findsOneWidget);
+      expect(queue, findsOneWidget);
+      expect(tester.widget<Text>(count).data, '1');
+
+      await tester.tap(queueButton);
+      await tester.pump();
+      expect(queue, findsNothing);
+      expect(tester.getSize(player).height, collapsedHeight);
+      expect(divider, findsNothing);
+      expect(tester.widget<Text>(count).data, '1');
+      await tester.tap(queueButton);
+      await tester.pump();
+      expect(queue, findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      playback.dispose();
+      await requests.close();
+    },
+  );
+
+  testWidgets(
+    'the whole info panel shares one scroll and caps its height at 480',
+    (tester) async {
+      await tester.binding.setSurfaceSize(const Size(800, 1000));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+      final requests = _Requests()..start();
+      requests.setQueue([_queuedItem('short')]);
+      final playback = TurntablePlaybackController();
+      final capture = GlobalKey();
+      await _loadFonts(tester);
+      await tester.pumpWidget(_surface(requests, playback, capture));
+      await _animate(tester, 5);
+      final player = find.byKey(const ValueKey('music_turntable'));
+      final panel = find.byKey(const ValueKey('turntable_info_panel'));
+      final scrollView = find.byKey(const ValueKey('turntable_info_scroll'));
+      final queue = find.byKey(const ValueKey('turntable_inline_queue'));
+      final scrollable = find.descendant(
+        of: player,
+        matching: find.byType(Scrollable),
+      );
+      expect(scrollable, findsOneWidget);
+      final position = tester.state<ScrollableState>(scrollable).position;
+      expect(tester.getSize(panel).height, lessThan(480));
+      expect(position.maxScrollExtent, 0);
+
+      await tester.tap(find.byKey(const ValueKey('turntable_queue')));
+      await tester.pump();
+      expect(tester.getSize(panel).height, lessThan(480));
+      expect(position.maxScrollExtent, 0);
+      expect(
+        find.descendant(of: queue, matching: find.byType(Scrollable)),
+        findsNothing,
+      );
+
+      requests.setQueue(
+        List.generate(20, (index) => _queuedItem('long-$index')),
+      );
+      await tester.pump();
+      expect(tester.getSize(panel).height, 480);
+      expect(scrollable, findsOneWidget);
+      expect(position.maxScrollExtent, greaterThan(0));
+      final playerTop = tester.getTopLeft(player).dy;
+      final currentTrackTop = tester.getTopLeft(find.text('Midnight City')).dy;
+      await _capture(tester, capture, 'turntable-queue-scroll-top');
+
+      await tester.drag(scrollView, const Offset(0, -240));
+      await _animate(tester, 0.6);
+      expect(position.pixels, greaterThan(0));
+      expect(
+        tester.getTopLeft(find.text('Midnight City')).dy,
+        lessThan(currentTrackTop),
+      );
+      expect(tester.getTopLeft(player).dy, playerTop);
+      position.jumpTo(position.maxScrollExtent);
+      await tester.pump();
+      final lastRemove = find.byKey(const ValueKey('remove_music_long-19'));
+      expect(lastRemove.hitTestable(), findsOneWidget);
+      await _capture(tester, capture, 'turntable-queue-scroll-bottom');
+      await tester.tap(lastRemove);
+      await tester.pump();
+      expect(requests.current.queue.length, 19);
+      expect(find.text('Song long-19'), findsNothing);
+
+      requests.setQueue([_queuedItem('short')]);
+      await tester.pump();
+      expect(tester.getSize(panel).height, lessThan(480));
+      expect(position.maxScrollExtent, 0);
+      expect(position.pixels, 0);
+      expect(find.text('Midnight City').hitTestable(), findsOneWidget);
+      expect(tester.takeException(), isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      playback.dispose();
+      await requests.close();
+    },
+  );
+
+  testWidgets('empty queue disables the button and closes the inline panel', (
+    tester,
+  ) async {
+    final requests = _Requests()..start();
+    final playback = TurntablePlaybackController();
+    final capture = GlobalKey();
+    await _loadFonts(tester);
+    await tester.pumpWidget(_surface(requests, playback, capture));
+    await _animate(tester, 5);
+    final queueButton = find.byKey(const ValueKey('turntable_queue'));
+    final queue = find.byKey(const ValueKey('turntable_inline_queue'));
+    final count = find.byKey(const ValueKey('turntable_queue_count'));
+    bool buttonEnabled() =>
+        tester
+            .widget<IconButton>(
+              find.descendant(
+                of: queueButton,
+                matching: find.byType(IconButton),
+              ),
+            )
+            .onPressed !=
+        null;
+    expect(buttonEnabled(), isFalse);
+    expect(queue, findsNothing);
+    expect(count, findsNothing);
+    await _capture(tester, capture, 'turntable-queue-empty');
+
+    requests.setQueue([
+      _queuedItem('held', phase: MusicQueueItemPhase.resolving),
+    ], hold: MusicQueueErrorType.youtubeAccessRequired);
+    await tester.pump();
+    expect(buttonEnabled(), isTrue);
+    expect(tester.widget<Text>(count).data, '1');
+    await tester.tap(queueButton);
+    await tester.pump();
+    expect(queue, findsOneWidget);
+    expect(find.text('WAITING'), findsOneWidget);
+
+    requests.setQueue([]);
+    await tester.pump();
+    expect(queue, findsNothing);
+    expect(buttonEnabled(), isFalse);
+    expect(count, findsNothing);
+    requests.setQueue([_queuedItem('new')]);
+    await tester.pump();
+    expect(buttonEnabled(), isTrue);
+    expect(queue, findsNothing);
+    await tester.tap(queueButton);
+    await tester.pump();
+    expect(queue, findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('remove_music_new')));
+    await tester.pump();
+    expect(requests.current.queue, isEmpty);
+    expect(queue, findsNothing);
+    expect(buttonEnabled(), isFalse);
+    expect(count, findsNothing);
+    expect(find.byType(Dialog), findsNothing);
+    expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    playback.dispose();
+    await requests.close();
+  });
 }
+
+MusicQueueItem _queuedItem(
+  String id, {
+  MusicQueueItemPhase phase = MusicQueueItemPhase.ready,
+  double? progress,
+}) => MusicQueueItem(
+  id: id,
+  requestedBy: 'Listener',
+  sourceUrl: Uri.parse('https://youtu.be/$id'),
+  phase: phase,
+  title: 'Song $id',
+  author: 'Artist',
+  duration: const Duration(minutes: 3),
+  thumbnail: null,
+  downloadProgress: progress,
+);
 
 Future<Uint8List> _sampleCover() async {
   final recorder = ui.PictureRecorder();
@@ -364,6 +619,18 @@ class _Requests implements MusicRequests {
     _states.add(snapshot);
   }
 
+  void setQueue(List<MusicQueueItem> queue, {MusicQueueErrorType? hold}) {
+    emit(
+      MusicQueueSnapshot(
+        revision: current.revision + 1,
+        nowPlaying: current.nowPlaying,
+        queue: queue,
+        lastError: current.lastError,
+        hold: hold,
+      ),
+    );
+  }
+
   void start() {
     final item = current.queue.single;
     final now = DateTime.now();
@@ -434,7 +701,13 @@ class _Requests implements MusicRequests {
   }
 
   @override
-  Future<bool> remove(String itemId) async => true;
+  Future<bool> remove(String itemId) async {
+    final remaining = current.queue.where((item) => item.id != itemId).toList();
+    if (remaining.length == current.queue.length) return false;
+    setQueue(remaining, hold: current.hold);
+    return true;
+  }
+
   @override
   Future<void> close() => _states.close();
 }
