@@ -3,5 +3,5 @@ enum Broadcaster { daria, dealnotedev }
 class Constants {
   Constants._();
 
-  static const broadcaster = Broadcaster.dealnotedev;
+  static const broadcaster = Broadcaster.daria;
 }
