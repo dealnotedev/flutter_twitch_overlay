@@ -97,5 +97,215 @@
       }
     }
   },
-  "subscription_anonymous": "Анонім"
+  "subscription_anonymous": "Анонім",
+  "music_settings_player_style": "Вигляд плеєра",
+  "music_settings_style_cosmic": "Космічний",
+  "music_settings_style_turntable": "Вініловий програвач",
+  "music_settings_style_hint": "Програвач чекає на готовність аудіо й опускає голку перед відтворенням. Налаштування згортання діють для космічного плеєра.",
+  "music_turntable_preparing": "Готуємо платівку",
+  "music_turntable_cueing": "Опускаємо голку",
+  "music_queue_next": "ДАЛІ",
+  "music_queue_more": "+{count} у черзі",
+  "@music_queue_more": {
+    "placeholders": {
+      "count": {
+        "type": "int",
+        "example": "2"
+      }
+    }
+  },
+  "music_playback_paused": "Пауза",
+  "music_playback_now_playing": "Зараз грає",
+  "music_action_resume": "Продовжити",
+  "music_action_pause": "Пауза",
+  "music_action_next": "Наступний трек",
+  "music_source_youtube": "YouTube",
+  "music_preparing": "ГОТУЄМО МУЗИКУ",
+  "music_waiting_for_requests": "ОЧІКУЄМО МУЗИЧНІ ЗАПИТИ",
+  "music_requests_paused": "ЗАМОВЛЕННЯ МУЗИКИ ПРИЗУПИНЕНО",
+  "music_queue_status_waiting": "очікує",
+  "music_queue_status_resolving": "пошук",
+  "music_queue_status_downloading": "завантаження",
+  "music_queue_status_ready": "готово",
+  "music_error_missing_youtube_url": "{requester}: додайте URL YouTube",
+  "@music_error_missing_youtube_url": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_error_invalid_youtube_url": "{requester}: некоректний URL YouTube",
+  "@music_error_invalid_youtube_url": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_error_queue_full": "{requester}: черга музики заповнена",
+  "@music_error_queue_full": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_error_track_too_long_or_live": "{requester}: трек задовгий або це пряма трансляція",
+  "@music_error_track_too_long_or_live": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_error_operation_failed": "{requester}: не вдалося підготувати трек. Спробуйте пізніше.",
+  "@music_error_operation_failed": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_control_title": "Керування музикою",
+  "music_error_youtube_access": "Замовлення призупинено: YouTube просить перевірку. Треки в черзі продовжаться або бали повернуться.",
+  "music_error_youtube_download_blocked": "Замовлення призупинено: YouTube блокує завантаження аудіо. Треки в черзі продовжаться або бали повернуться.",
+  "music_error_youtube_rate_limited": "Замовлення призупинено: YouTube тимчасово обмежив запити. Треки в черзі продовжаться або бали повернуться.",
+  "music_error_youtube_unavailable": "{requester}: це відео недоступне. Оберіть інше.",
+  "@music_error_youtube_unavailable": {
+    "placeholders": {
+      "requester": {
+        "type": "String"
+      }
+    }
+  },
+  "music_youtube_title": "Підключення YouTube",
+  "music_youtube_description": "Якщо YouTube просить перевірку, підключіть його тут. Сесія YouTube зберігається лише на цьому комп’ютері.",
+  "music_youtube_disconnected": "Загальнодоступні треки працюють без входу, доки YouTube не попросить перевірку.",
+  "music_youtube_opening": "Підготовка підключення YouTube…",
+  "music_youtube_instructions": "1. Відкрийте й запустіть потрібне відео у вікні браузера, що відкрилося. Якщо відкрилася головна сторінка YouTube, оберіть коротке загальнодоступне відео.\n2. Пройдіть перевірку, якщо вона з’явиться. Спочатку можна перевірити підключення без входу в обліковий запис.\n3. Залиште вкладку з відео відкритою, поверніться сюди й натисніть «Перевірити підключення». Вікно закриється, коли почнеться перевірка.",
+  "music_youtube_account_warning": "Якщо входите в обліковий запис, використовуйте додатковий акаунт Google: YouTube може обмежувати акаунти, які використовують для завантаження.",
+  "music_youtube_checking": "Перевірка доступу до YouTube та завантаження аудіо…",
+  "music_youtube_connected": "YouTube підключено. Замовлення в черзі продовжаться автоматично.",
+  "music_youtube_saved": "Сесію YouTube збережено на цьому комп’ютері, вона використовується для замовлень музики.",
+  "music_youtube_saved_attention": "Сесію YouTube збережено, але остання перевірка або запит не вдалися. Причина нижче.",
+  "music_youtube_connect": "Підключити YouTube",
+  "music_youtube_reconnect": "Перепідключити YouTube",
+  "music_youtube_reopen": "Відкрити YouTube знову",
+  "music_youtube_verify": "Перевірити підключення",
+  "music_youtube_cancel": "Скасувати",
+  "music_youtube_disconnect": "Відключити",
+  "music_youtube_disconnect_confirm": "Видалити збережену сесію YouTube і окремий профіль браузера разом із входом у Google, якщо він там є?",
+  "music_youtube_disconnect_remove": "Видалити",
+  "music_youtube_disconnect_keep": "Залишити",
+  "music_youtube_hold_title": "Замовлення музики призупинено",
+  "music_youtube_hold_body": "Замовлень у черзі: {count}. Винагороду Twitch тим часом призупинено. Якщо замовлення чекає довше ніж {minutes} хв, бали повертаються.",
+  "@music_youtube_hold_body": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "music_youtube_resume": "Відновити замовлення",
+  "music_youtube_no_browser": "Встановіть Microsoft Edge або Google Chrome, потім знову натисніть «Підключити YouTube».",
+  "music_youtube_browser_closed": "Вікно YouTube закрито. Відкрийте YouTube знову й не закривайте вікно, доки не натиснете «Перевірити підключення».",
+  "music_youtube_verification_required": "YouTube просить підтвердити, що ви не бот. Відкрийте YouTube кнопкою нижче, пройдіть перевірку в цьому вікні, потім перевірте підключення.",
+  "music_youtube_download_blocked": "YouTube заблокував завантаження аудіо (403). Часто допомагає новіша версія застосунку з оновленим yt-dlp. Також можна відкрити YouTube нижче, увійти в додатковий акаунт Google у цьому вікні й перевірити знову; це може допомогти, але не гарантує доступу.",
+  "music_youtube_rate_limited": "YouTube тимчасово обмежив запити з цього комп’ютера, зазвичай до години. Зачекайте, потім натисніть «Відновити замовлення». Нове підключення навряд чи допоможе одразу.",
+  "music_youtube_network_error": "Не вдалося з’єднатися з YouTube. Перевірте інтернет і спробуйте ще раз.",
+  "music_youtube_tools_error": "Компоненти музики відсутні або недоступні. Перевстановіть найновішу повну версію застосунку.",
+  "music_youtube_storage_error": "Не вдалося зберегти підключення YouTube. Перевірте доступ до запису у вашу папку користувача й спробуйте ще раз.",
+  "music_youtube_choose_video": "Залиште у вікні YouTube лише вкладку з потрібним відео, закрийте інші вкладки з відео й перевірте підключення знову.",
+  "music_youtube_video_unavailable": "YouTube не надає плеєру доступ до цього відео. Відкрийте YouTube, оберіть інше загальнодоступне відео й перевірте підключення знову.",
+  "music_youtube_video_too_long": "Відео перевищує ліміт тривалості треку або є прямим ефіром. Відкрийте YouTube і оберіть коротше відео або збільште ліміт тривалості нижче, потім перевірте підключення знову.",
+  "music_youtube_checked_video": "Перевірене відео: {url}",
+  "@music_youtube_checked_video": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "music_youtube_error_details": "Деталі помилки",
+  "music_youtube_check_error": "Не вдалося підготувати аудіо. Відкрийте «Деталі помилки», щоб з’ясувати причину перед повторною спробою.",
+  "music_control_connected": "Підключено до оверлею OBS",
+  "music_control_connecting": "Підключення до оверлею OBS…",
+  "music_control_reconnecting": "Спроба перепідключення {attempt} через {seconds} с",
+  "@music_control_reconnecting": {
+    "placeholders": {
+      "attempt": {
+        "type": "int"
+      },
+      "seconds": {
+        "type": "int"
+      }
+    }
+  },
+  "music_control_disconnected": "Оверлей OBS недоступний",
+  "music_control_incompatible": "Версії контролера та оверлею несумісні",
+  "music_control_closed": "Підключення закрито",
+  "overlay_settings_title": "Налаштування оверлею",
+  "overlay_settings_sections": "Розділи",
+  "overlay_settings_player": "Плеєр",
+  "overlay_settings_player_description": "Замовлення музики, відтворення, вигляд і локальне керування.",
+  "overlay_settings_avatar": "Аватар",
+  "music_settings_enabled": "Приймати замовлення музики",
+  "music_settings_enabled_hint": "Вимкнення призупиняє нагороду Twitch. Прийняті треки продовжують грати; запізнілі замовлення повертають бали.",
+  "music_settings_volume": "Гучність музики",
+  "music_settings_limits": "Черга та кеш",
+  "music_settings_queue": "Максимальна кількість треків",
+  "music_settings_queue_hint": "Включає поточний трек. Зміна ліміту зберігає прийняті замовлення.",
+  "music_settings_duration": "Максимальна тривалість треку (секунди)",
+  "music_settings_duration_hint": "60–1200 секунд (1–20 хвилин). Застосовується до нових замовлень.",
+  "music_settings_cache": "Розмір кешу",
+  "music_settings_cache_mb": "{size} МБ",
+  "music_settings_cache_gb": "{size} ГБ",
+  "music_settings_cache_hint": "128 МБ–2 ГБ. Спочатку видаляються старі невикористані файли; треки поточного сеансу зберігаються.",
+  "music_settings_server": "Локальний сервер керування музикою",
+  "music_settings_server_hint": "Дозволяє окремому контролеру підключитися на цьому комп’ютері. Відтворення триває, коли сервер вимкнений.",
+  "music_settings_port": "Порт сервера",
+  "music_settings_port_hint": "Укажіть цей самий порт у контролері. Новий порт застосовується одразу з перезапуском сервера.",
+  "music_settings_apply": "Застосувати",
+  "music_settings_retry": "Спробувати ще раз",
+  "music_settings_invalid_port": "Введіть порт від 1 до 65535.",
+  "music_settings_server_stopped": "Сервер вимкнений",
+  "music_settings_server_starting": "Запуск сервера…",
+  "music_settings_server_running": "Сервер працює: {address}",
+  "@music_settings_server_running": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      }
+    }
+  },
+  "music_settings_server_failed": "Не вдалося запустити сервер. Перевірте, чи порт не зайнятий іншою програмою або джерелом OBS, або виберіть інший порт.",
+  "music_settings_reward_error": "Не вдалося оновити нагороду Twitch. Перевірте з’єднання та спробуйте ще раз.",
+  "overlay_settings_collapse_title": "Автозгортання",
+  "overlay_settings_never_collapse": "Не згортати",
+  "overlay_settings_stays_expanded": "Плеєр залишається розгорнутим, поки має вміст.",
+  "overlay_settings_collapse_description": "Час до компактного режиму. Під курсором плеєр залишається розгорнутим.",
+  "overlay_settings_collapse_delay": "Затримка згортання",
+  "overlay_settings_seconds": "{seconds} с",
+  "overlay_settings_save_error": "Не вдалося зберегти налаштування. Спробуйте ще раз.",
+  "overlay_settings_reward_title": "Кнопка винагороди",
+  "overlay_settings_reward_description": "Оберіть керовану винагороду, яка вимагає текст від глядача та залишає погашення в черзі. Оновіть список після змін у Twitch.",
+  "overlay_settings_create_reward": "Створити",
+  "overlay_settings_refresh_rewards": "Оновити",
+  "overlay_settings_loading_rewards": "Завантажуємо винагороди Twitch…",
+  "overlay_settings_no_rewards_title": "Керованих винагород ще немає",
+  "overlay_settings_no_rewards_body": "Створіть стандартну винагороду для музики, налаштуйте її у Twitch та оновіть список.",
+  "overlay_settings_load_error": "Не вдалося завантажити винагороди Twitch",
+  "music_source_title": "Джерело плеєра",
+  "music_source_local": "Локальний плеєр",
+  "music_source_external": "Зовнішній плеєр",
+  "music_source_external_hint": "Підключення до плеєра на цьому комп’ютері. Twitch Listener використовує порт 47822. Звук відтворюється у зовнішній програмі; захоплюйте його в OBS окремо.",
+  "music_source_login_hint": "Увійдіть у Twitch, щоб налаштувати локальну музичну нагороду.",
+  "music_queue_status_analyzing": "АНАЛІЗ",
+  "music_queue_status_normalizing": "НОРМАЛІЗАЦІЯ",
+  "settings_on": "Увімкнено",
+  "settings_off": "Вимкнено"
 }

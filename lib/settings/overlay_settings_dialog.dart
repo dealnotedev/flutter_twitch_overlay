@@ -1,0 +1,454 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:gap/gap.dart';
+import 'package:obssource/config/settings.dart';
+import 'package:obssource/extensions.dart';
+import 'package:obssource/music/control/music_control_server_controller.dart';
+import 'package:obssource/music/music_player_visuals.dart';
+import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/music_reward_controller.dart';
+import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/music_source_controller.dart';
+import 'package:obssource/music/youtube_connection_controller.dart';
+import 'package:obssource/settings/music_settings_controls.dart';
+import 'package:obssource/settings/neon_settings_controls.dart';
+import 'package:obssource/settings/twitch_reward_picker.dart';
+import 'package:obssource/twitch/twitch_api.dart';
+
+class OverlaySettingsDialog extends StatefulWidget {
+  final MusicSourceController? musicSource;
+  final bool configureRewards;
+  final Settings settings;
+  final TwitchRewardCatalog rewardCatalog;
+  final MusicControlServerController? musicServer;
+  final MusicRewardController? musicRewardController;
+  final YoutubeConnectionController? youtubeConnection;
+  final MusicRequestManager? musicRequests;
+
+  const OverlaySettingsDialog({
+    super.key,
+    required this.settings,
+    required this.rewardCatalog,
+    this.musicSource,
+    this.configureRewards = true,
+    this.musicServer,
+    this.musicRewardController,
+    this.youtubeConnection,
+    this.musicRequests,
+  });
+
+  @override
+  State<OverlaySettingsDialog> createState() => _OverlaySettingsDialogState();
+}
+
+enum _SettingsSection { player }
+
+class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
+  _SettingsSection _section = _SettingsSection.player;
+  List<TwitchCustomReward> _rewards = const [];
+  String? _selectedRewardId;
+  Object? _error;
+  bool _loading = true;
+  bool _creating = false;
+  bool _savingReward = false;
+  late int _collapseSeconds;
+  late bool _alwaysExpanded;
+  bool _savingPresentation = false;
+  bool _presentationSaveError = false;
+  StreamSubscription<MusicSettings>? _sourceSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _selectedRewardId = widget.settings.musicRewardId;
+    _collapseSeconds = widget.settings.playerCollapseSeconds;
+    _alwaysExpanded = widget.settings.playerAlwaysExpanded;
+    var previousSource = widget.settings.music.source;
+    _sourceSubscription = widget.settings.musicChanges.listen((value) {
+      final changed = previousSource != value.source;
+      previousSource = value.source;
+      if (changed &&
+          value.source == MusicSourceKind.local &&
+          widget.configureRewards) {
+        unawaited(_loadRewards());
+      }
+    });
+    if (widget.configureRewards &&
+        widget.settings.music.source == MusicSourceKind.local) {
+      unawaited(_loadRewards());
+    } else {
+      _loading = false;
+    }
+  }
+
+  Future<void> _loadRewards() async {
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      final rewards = await widget.rewardCatalog.load();
+      final selectedId = _selectedRewardId;
+      final selectionStillExists =
+          selectedId == null ||
+          rewards.any(
+            (reward) =>
+                reward.id == selectedId && reward.isMusicRequestCompatible,
+          );
+      if (!selectionStillExists) {
+        await widget.settings.saveMusicRewardId(null);
+      }
+      if (!mounted) return;
+      setState(() {
+        _rewards = rewards;
+        _selectedRewardId = selectionStillExists ? selectedId : null;
+        _loading = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sourceSubscription?.cancel());
+    super.dispose();
+  }
+
+  Future<void> _createReward() async {
+    setState(() {
+      _creating = true;
+      _error = null;
+    });
+
+    try {
+      final reward = await widget.rewardCatalog.createDefault();
+      await widget.settings.saveMusicRewardId(reward.id);
+      if (!mounted) return;
+      setState(() {
+        _rewards = [
+          reward,
+          ..._rewards.where((candidate) => candidate.id != reward.id),
+        ];
+        _selectedRewardId = reward.id;
+        _creating = false;
+      });
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error;
+        _creating = false;
+      });
+    }
+  }
+
+  Future<void> _selectReward(TwitchCustomReward? reward) async {
+    final previousId = _selectedRewardId;
+    setState(() {
+      _selectedRewardId = reward?.id;
+      _savingReward = true;
+      _error = null;
+    });
+
+    try {
+      await widget.settings.saveMusicRewardId(reward?.id);
+    } catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _selectedRewardId = previousId;
+        _error = error;
+      });
+    } finally {
+      if (mounted) setState(() => _savingReward = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.all(24),
+      child: SizedBox(
+        width: 1040,
+        height: 680,
+        child: CosmicMusicSurface(
+          width: 1040,
+          height: 680,
+          borderRadius: 22,
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              _buildHeader(context),
+              Container(
+                height: 1,
+                color: MusicPlayerPalette.neonPink.withValues(alpha: 0.22),
+              ),
+              Expanded(child: _buildBody(context)),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildHeader(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 18, 18, 16),
+      child: Row(
+        children: [
+          const Icon(
+            Icons.tune_rounded,
+            color: MusicPlayerPalette.neonPinkBright,
+            size: 25,
+            shadows: MusicPlayerPalette.pinkTextGlow,
+          ),
+          const Gap(12),
+          Expanded(
+            child: Text(
+              context.localizations.overlay_settings_title,
+              style: const TextStyle(
+                color: MusicPlayerPalette.textPrimary,
+                fontSize: 21,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 0.2,
+              ),
+            ),
+          ),
+          NeonMusicIconButton(
+            key: const ValueKey('overlay_settings_close_button'),
+            icon: Icons.close_rounded,
+            onPressed: () => Navigator.of(context).pop(),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(width: 198, child: _buildNavigation(context)),
+        Container(
+          width: 1,
+          color: MusicPlayerPalette.neonBlue.withValues(alpha: 0.13),
+        ),
+        Expanded(
+          child: IndexedStack(
+            index: _section.index,
+            sizing: StackFit.expand,
+            children: [_buildPlayerSettings(context)],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildNavigation(BuildContext context) {
+    return Container(
+      color: MusicPlayerPalette.voidBlack.withValues(alpha: 0.38),
+      padding: const EdgeInsets.fromLTRB(14, 20, 14, 20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 10),
+            child: Text(
+              context.localizations.overlay_settings_sections.toUpperCase(),
+              style: TextStyle(
+                color: MusicPlayerPalette.textSecondary.withValues(alpha: 0.65),
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.5,
+              ),
+            ),
+          ),
+          const Gap(12),
+          NeonSettingsButton.section(
+            key: const ValueKey('overlay_settings_player_section'),
+            label: context.localizations.overlay_settings_player,
+            icon: Icons.graphic_eq_rounded,
+            selected: _section == _SettingsSection.player,
+            onPressed: () => setState(() => _section = _SettingsSection.player),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlayerSettings(BuildContext context) {
+    Widget content() => SingleChildScrollView(
+      key: const ValueKey('music_settings_scroll'),
+      padding: const EdgeInsets.fromLTRB(28, 22, 28, 26),
+      child: MusicSettingsControls(
+        key: ObjectKey(widget.musicSource?.local),
+        settings: widget.settings,
+        source: widget.musicSource,
+        server:
+            widget.musicSource == null
+                ? widget.musicServer
+                : widget.musicSource!.local?.server,
+        rewardController:
+            widget.musicSource == null
+                ? widget.musicRewardController
+                : widget.musicSource!.local?.reward,
+        youtubeConnection:
+            widget.musicSource == null
+                ? widget.youtubeConnection
+                : widget.musicSource!.local?.youtubeConnection,
+        musicRequests:
+            widget.musicSource == null
+                ? widget.musicRequests
+                : widget.musicSource!.local?.requests,
+        presentationSettings: _buildPresentationSettings(context),
+        rewardSettings:
+            !widget.configureRewards
+                ? Text(context.localizations.music_source_login_hint)
+                : _buildRewardSubsection(context),
+      ),
+    );
+    final source = widget.musicSource;
+    return source == null
+        ? content()
+        : ListenableBuilder(
+          listenable: source,
+          builder: (context, _) => content(),
+        );
+  }
+
+  Future<void> _savePresentation() async {
+    setState(() {
+      _savingPresentation = true;
+      _presentationSaveError = false;
+    });
+    try {
+      await widget.settings.savePlayerPresentation(
+        collapseSeconds: _collapseSeconds,
+        alwaysExpanded: _alwaysExpanded,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      setState(() {
+        _collapseSeconds = widget.settings.playerCollapseSeconds;
+        _alwaysExpanded = widget.settings.playerAlwaysExpanded;
+        _presentationSaveError = true;
+      });
+    } finally {
+      if (mounted) setState(() => _savingPresentation = false);
+    }
+  }
+
+  Widget _buildPresentationSettings(BuildContext context) {
+    final l10n = context.localizations;
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 10),
+      decoration: BoxDecoration(
+        color: MusicPlayerPalette.midnight.withValues(alpha: 0.76),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: MusicPlayerPalette.neonPink.withValues(alpha: 0.25),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.timer_outlined,
+                color: MusicPlayerPalette.neonPinkBright,
+                size: 22,
+              ),
+              const Gap(10),
+              Expanded(
+                child: Text(
+                  l10n.overlay_settings_collapse_title,
+                  style: const TextStyle(
+                    color: MusicPlayerPalette.textPrimary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+              Text(
+                l10n.overlay_settings_never_collapse,
+                style: const TextStyle(
+                  color: MusicPlayerPalette.textSecondary,
+                  fontSize: 12,
+                ),
+              ),
+              const Gap(8),
+              Switch(
+                key: const ValueKey('player_always_expanded_switch'),
+                value: _alwaysExpanded,
+                activeThumbColor: MusicPlayerPalette.neonPinkBright,
+                onChanged:
+                    _savingPresentation
+                        ? null
+                        : (value) {
+                          setState(() => _alwaysExpanded = value);
+                          unawaited(_savePresentation());
+                        },
+              ),
+            ],
+          ),
+          Text(
+            _alwaysExpanded
+                ? l10n.overlay_settings_stays_expanded
+                : l10n.overlay_settings_collapse_description,
+            style: const TextStyle(
+              color: MusicPlayerPalette.textSecondary,
+              fontSize: 12,
+            ),
+          ),
+          NeonSettingsSlider(
+            sliderKey: const ValueKey('player_collapse_slider'),
+            label: l10n.overlay_settings_collapse_delay,
+            value: _collapseSeconds,
+            min: 1,
+            max: 60,
+            formatValue: l10n.overlay_settings_seconds,
+            valueLabel: _alwaysExpanded ? '∞' : null,
+            onChanged:
+                _alwaysExpanded || _savingPresentation
+                    ? null
+                    : (value) => setState(() => _collapseSeconds = value),
+            onChangeEnd:
+                _alwaysExpanded || _savingPresentation
+                    ? null
+                    : (_) => unawaited(_savePresentation()),
+          ),
+          if (_presentationSaveError)
+            Text(
+              l10n.overlay_settings_save_error,
+              style: const TextStyle(
+                color: MusicPlayerPalette.error,
+                fontSize: 12,
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildRewardSubsection(BuildContext context) => TwitchRewardPicker(
+    rewards: _rewards,
+    selectedId: _selectedRewardId,
+    description: context.localizations.overlay_settings_reward_description,
+    emptyDescription: context.localizations.overlay_settings_no_rewards_body,
+    keyPrefix: 'overlay_settings',
+    loading: _loading,
+    creating: _creating,
+    enabled: !_savingReward,
+    error: _error?.toString(),
+    onSelected: _selectReward,
+    onCreate: _createReward,
+    onRefresh: _loadRewards,
+  );
+}

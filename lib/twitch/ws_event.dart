@@ -27,13 +27,18 @@ class WsMessagePayload {
 }
 
 class WsReward {
+  final String? id;
   final String title;
   final int cost;
 
-  WsReward({required this.title, required this.cost});
+  WsReward({this.id, required this.title, required this.cost});
 
   static WsReward fromJson(dynamic json) {
-    return WsReward(title: json['title'] as String, cost: json['cost'] as int);
+    return WsReward(
+      id: json['id'] as String?,
+      title: json['title'] as String,
+      cost: json['cost'] as int,
+    );
   }
 }
 

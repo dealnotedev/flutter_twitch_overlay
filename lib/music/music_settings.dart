@@ -1,0 +1,122 @@
+enum MusicSourceKind { local, external }
+
+enum MusicPlayerStyle { cosmic, turntable }
+
+/// Persisted music options managed through the overlay settings.
+class MusicSettings {
+  static const minQueueLength = 1;
+  static const maxQueueLength = 50;
+  static const minTrackDurationSeconds = 60;
+  static const maxTrackDurationSeconds = 1200;
+  static const minCacheMb = 128;
+  static const maxCacheMb = 2048;
+
+  final MusicSourceKind source;
+  final int externalPort;
+  final bool enabled;
+  final int volumePercent;
+  final int maxQueue;
+  final int maxDurationSeconds;
+  final int cacheMaxMb;
+  final bool controlServerEnabled;
+  final int controlServerPort;
+  final MusicPlayerStyle playerStyle;
+
+  const MusicSettings({
+    this.source = MusicSourceKind.local,
+    this.externalPort = 47822,
+    this.enabled = true,
+    this.volumePercent = 70,
+    this.maxQueue = 10,
+    this.maxDurationSeconds = 600,
+    this.cacheMaxMb = maxCacheMb,
+    this.controlServerEnabled = true,
+    this.controlServerPort = 47821,
+    this.playerStyle = MusicPlayerStyle.cosmic,
+  });
+
+  factory MusicSettings.fromJson(Map<String, dynamic> json) {
+    int integer(String key, int fallback) =>
+        json[key] is int ? json[key] as int : fallback;
+    bool boolean(String key, bool fallback) =>
+        json[key] is bool ? json[key] as bool : fallback;
+    return MusicSettings(
+      source:
+          MusicSourceKind.values
+              .where((source) => source.name == json['source'])
+              .firstOrNull ??
+          MusicSourceKind.local,
+      externalPort: integer('external_port', 47822),
+      enabled: boolean('enabled', true),
+      volumePercent: integer('volume_percent', 70),
+      maxQueue: integer('max_queue', 10),
+      maxDurationSeconds: integer('max_duration_seconds', 600),
+      cacheMaxMb: integer('cache_max_mb', maxCacheMb),
+      controlServerEnabled: boolean('control_server_enabled', true),
+      controlServerPort: integer('control_server_port', 47821),
+      playerStyle:
+          MusicPlayerStyle.values
+              .where((style) => style.name == json['player_style'])
+              .firstOrNull ??
+          MusicPlayerStyle.cosmic,
+    ).normalized();
+  }
+
+  MusicSettings normalized() => copyWith(
+    externalPort:
+        externalPort > 0 && externalPort <= 65535 ? externalPort : 47822,
+    volumePercent: volumePercent.clamp(0, 100),
+    maxQueue:
+        maxQueue > 0 ? maxQueue.clamp(minQueueLength, maxQueueLength) : 10,
+    maxDurationSeconds:
+        maxDurationSeconds > 0
+            ? maxDurationSeconds.clamp(
+              minTrackDurationSeconds,
+              maxTrackDurationSeconds,
+            )
+            : 600,
+    cacheMaxMb:
+        cacheMaxMb <= 0 ? maxCacheMb : cacheMaxMb.clamp(minCacheMb, maxCacheMb),
+    controlServerPort:
+        controlServerPort > 0 && controlServerPort <= 65535
+            ? controlServerPort
+            : 47821,
+  );
+
+  MusicSettings copyWith({
+    MusicSourceKind? source,
+    int? externalPort,
+    bool? enabled,
+    int? volumePercent,
+    int? maxQueue,
+    int? maxDurationSeconds,
+    int? cacheMaxMb,
+    bool? controlServerEnabled,
+    int? controlServerPort,
+    MusicPlayerStyle? playerStyle,
+  }) => MusicSettings(
+    source: source ?? this.source,
+    externalPort: externalPort ?? this.externalPort,
+    enabled: enabled ?? this.enabled,
+    volumePercent: volumePercent ?? this.volumePercent,
+    maxQueue: maxQueue ?? this.maxQueue,
+    maxDurationSeconds: maxDurationSeconds ?? this.maxDurationSeconds,
+    cacheMaxMb: cacheMaxMb ?? this.cacheMaxMb,
+    controlServerEnabled: controlServerEnabled ?? this.controlServerEnabled,
+    controlServerPort: controlServerPort ?? this.controlServerPort,
+    playerStyle: playerStyle ?? this.playerStyle,
+  );
+
+  Map<String, Object> toJson() => {
+    'source': source.name,
+    'external_port': externalPort,
+    'enabled': enabled,
+    'volume_percent': volumePercent,
+    'max_queue': maxQueue,
+    'max_duration_seconds': maxDurationSeconds,
+    'cache_max_mb': cacheMaxMb,
+    'control_server_enabled': controlServerEnabled,
+    'control_server_port': controlServerPort,
+    'player_style': playerStyle.name,
+  };
+}

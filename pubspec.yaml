@@ -28,6 +28,11 @@ environment:
 # the latest version available on pub.dev. To see which dependencies have newer
 # versions available, run `flutter pub outdated`.
 dependencies:
+  dart_music_player_protocol:
+    git:
+      url: https://github.com/dealnotedev/dart_music_player_protocol.git
+      ref: 707e5e907b50d6b4035ea73f1861f43ce1856113
+
   flutter:
     sdk: flutter
 
@@ -67,6 +72,7 @@ dependencies:
   win32: ^5.15.0
 
 dev_dependencies:
+  fake_async: ^1.3.3
   flutter_test:
     sdk: flutter
 

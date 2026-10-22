@@ -6,6 +6,7 @@ import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/local_server.dart';
 import 'package:obssource/logged_widget.dart';
+import 'package:obssource/music/music_overlay.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
 
 void main() async {
@@ -34,6 +35,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       color: Colors.transparent,
+      debugShowCheckedModeBanner: false,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
       supportedLocales: const [Locale('en'), Locale('uk')],
       locale: Locale('uk'),
@@ -86,7 +88,7 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: _createRoot(context),
+      body: MusicOverlay(locator: widget.locator, child: _createRoot(context)),
     );
   }
 }
