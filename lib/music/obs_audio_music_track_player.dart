@@ -6,6 +6,7 @@ import 'package:obssource/obs_audio.dart';
 class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
   final Duration completionGrace;
   final Duration nativeEventTimeout;
+  final Future<void> Function(DownloadedMusicTrack, Future<void>)? beforeStart;
 
   double _volume;
 
@@ -18,12 +19,16 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
     required double volume,
     this.completionGrace = const Duration(seconds: 2),
     this.nativeEventTimeout = const Duration(seconds: 10),
+    this.beforeStart,
   }) : _volume = _normalizeVolume(volume);
 
   double get volume => _volume;
 
   @override
-  Future<void> play(DownloadedMusicTrack track) async {
+  Future<void> play(
+    DownloadedMusicTrack track, {
+    void Function()? onStarted,
+  }) async {
     _pauseRequested = false;
     _seekRequested = null;
     final generation = ++_generation;
@@ -47,6 +52,7 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
       totalDuration: track.metadata.duration + completionGrace,
     );
     _active = active;
+    Object? nativeError;
 
     final eventsSubscription = ObsAudio.events
         .where(
@@ -69,16 +75,18 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
               final error = StateError(
                 event.message ?? 'Native audio playback failed',
               );
-              if (!startedCompleter.isCompleted) {
-                startedCompleter.completeError(error);
-              } else if (!completer.isCompleted) {
-                completer.completeError(error);
-              }
+              nativeError = error;
+              // Either cueing or waiting for start must unblock on failure.
+              if (!startedCompleter.isCompleted) startedCompleter.complete();
+              if (!completer.isCompleted) completer.complete();
               break;
           }
         });
 
     try {
+      await beforeStart?.call(track, completer.future);
+      if (generation != _generation) return;
+      if (nativeError != null) throw nativeError!;
       final startedVolume = _volume;
       final eventsSupported = await ObsAudio.play(
         audioId,
@@ -94,7 +102,9 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
         );
       }
       if (generation != _generation) return;
+      if (nativeError != null) throw nativeError!;
       active.started = true;
+      onStarted?.call();
 
       var appliedVolume = startedVolume;
       while (_volume != appliedVolume) {
@@ -118,6 +128,7 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
       }
 
       await completer.future;
+      if (nativeError != null) throw nativeError!;
     } finally {
       active.cancelCountdown();
       await eventsSubscription.cancel();

@@ -99,6 +99,7 @@ void main() {
       cacheMaxMb: 512,
       controlServerEnabled: false,
       controlServerPort: 50123,
+      playerStyle: MusicPlayerStyle.turntable,
     );
     await settings.saveMusic(value);
     expect((await changed).toJson(), value.toJson());

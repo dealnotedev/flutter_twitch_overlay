@@ -120,6 +120,7 @@ class MusicNowPlaying {
   final Duration position;
   final DateTime positionUpdatedAt;
   final bool paused;
+  final bool starting;
 
   const MusicNowPlaying({
     required this.item,
@@ -127,6 +128,7 @@ class MusicNowPlaying {
     required this.position,
     required this.positionUpdatedAt,
     required this.paused,
+    this.starting = false,
   });
 }
 
@@ -186,7 +188,8 @@ abstract interface class MusicTrackFetcher {
 }
 
 abstract interface class MusicTrackPlayer {
-  Future<void> play(DownloadedMusicTrack track);
+  /// Calls [onStarted] once audio has actually started, excluding preparation.
+  Future<void> play(DownloadedMusicTrack track, {void Function()? onStarted});
 
   Future<void> setPaused(bool paused);
 
@@ -561,7 +564,7 @@ class MusicRequestManager implements MusicRequests {
 
     _queue.removeAt(0);
     _nowPlaying = request;
-    request.startPlayback(DateTime.now());
+    request.preparePlayback(DateTime.now());
     _playbackRunning = true;
     _lastError = null;
     _emit();
@@ -584,7 +587,14 @@ class MusicRequestManager implements MusicRequests {
     DownloadedMusicTrack track,
   ) async {
     try {
-      await _player.play(track);
+      await _player.play(
+        track,
+        onStarted: () {
+          if (_closed || _nowPlaying != request) return;
+          request.startPlayback(DateTime.now());
+          _emit();
+        },
+      );
       if (!_closed) {
         _requestSettlement(
           redemptionId: request.id,
@@ -794,6 +804,7 @@ class _PendingMusicRequest {
   DateTime? _resumedAt;
   Duration _position = Duration.zero;
   bool paused = false;
+  bool starting = true;
   Timer? _holdTimer;
 
   _PendingMusicRequest({
@@ -819,11 +830,18 @@ class _PendingMusicRequest {
     _holdTimer = null;
   }
 
-  void startPlayback(DateTime now) {
+  void preparePlayback(DateTime now) {
     startedAt = now;
-    _resumedAt = now;
+    _resumedAt = null;
     _position = Duration.zero;
     paused = false;
+    starting = true;
+  }
+
+  void startPlayback(DateTime now) {
+    startedAt = now;
+    starting = false;
+    _resumedAt = paused ? null : now;
   }
 
   void pausePlayback(DateTime now) {
@@ -833,13 +851,13 @@ class _PendingMusicRequest {
   }
 
   void resumePlayback(DateTime now) {
-    _resumedAt = now;
+    _resumedAt = starting ? null : now;
     paused = false;
   }
 
   void seekPlayback(Duration position, DateTime now) {
     _position = position;
-    _resumedAt = paused ? null : now;
+    _resumedAt = paused || starting ? null : now;
   }
 
   Duration positionAt(DateTime now) {
@@ -858,6 +876,7 @@ class _PendingMusicRequest {
     position: positionAt(now),
     positionUpdatedAt: now,
     paused: paused,
+    starting: starting,
   );
 
   MusicQueueItem toView({bool playing = false}) => MusicQueueItem(

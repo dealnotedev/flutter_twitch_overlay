@@ -86,6 +86,7 @@ abstract final class MusicControlProtocol {
     'positionUpdatedAtMs':
         playing.positionUpdatedAt.toUtc().millisecondsSinceEpoch,
     'paused': playing.paused,
+    'starting': playing.starting,
   };
 
   static MusicNowPlaying _nowPlayingFromJson(Object? value) {
@@ -106,6 +107,7 @@ abstract final class MusicControlProtocol {
             isUtc: true,
           ).toLocal(),
       paused: _boolean(json['paused'], 'paused'),
+      starting: json['starting'] == true,
     );
   }
 

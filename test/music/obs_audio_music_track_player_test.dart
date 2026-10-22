@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
+import 'package:obssource/music/turntable_playback_controller.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -100,6 +101,32 @@ void main() {
     await player.stop();
     await playback;
   });
+
+  test(
+    'skip while the needle is waiting releases audio without playing it',
+    () async {
+      final turntable = TurntablePlaybackController()..attach();
+      final player = ObsAudioMusicTrackPlayer(
+        volume: 0.7,
+        beforeStart: turntable.beforeStart,
+      );
+      var started = false;
+      final playback = player.play(
+        _track(const Duration(seconds: 30)),
+        onStarted: () => started = true,
+      );
+      await _waitUntil(() => turntable.readyItemId != null);
+      expect(commands.map((item) => item['cmd']), ['load']);
+      await player.stop();
+      await playback.timeout(const Duration(seconds: 1));
+      expect(commands.where((item) => item['cmd'] == 'play'), isEmpty);
+      expect(started, isFalse);
+      expect(turntable.readyItemId, isNull);
+      expect(commands.last['cmd'], 'release');
+      turntable.detach();
+      turntable.dispose();
+    },
+  );
 }
 
 DownloadedMusicTrack _track(Duration duration) => DownloadedMusicTrack(

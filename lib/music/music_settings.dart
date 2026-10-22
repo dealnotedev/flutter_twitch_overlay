@@ -1,3 +1,5 @@
+enum MusicPlayerStyle { cosmic, turntable }
+
 /// Persisted music options managed through the overlay settings.
 class MusicSettings {
   static const minQueueLength = 1;
@@ -14,6 +16,7 @@ class MusicSettings {
   final int cacheMaxMb;
   final bool controlServerEnabled;
   final int controlServerPort;
+  final MusicPlayerStyle playerStyle;
 
   const MusicSettings({
     this.enabled = true,
@@ -23,6 +26,7 @@ class MusicSettings {
     this.cacheMaxMb = maxCacheMb,
     this.controlServerEnabled = true,
     this.controlServerPort = 47821,
+    this.playerStyle = MusicPlayerStyle.cosmic,
   });
 
   factory MusicSettings.fromJson(Map<String, dynamic> json) {
@@ -38,6 +42,11 @@ class MusicSettings {
       cacheMaxMb: integer('cache_max_mb', maxCacheMb),
       controlServerEnabled: boolean('control_server_enabled', true),
       controlServerPort: integer('control_server_port', 47821),
+      playerStyle:
+          MusicPlayerStyle.values
+              .where((style) => style.name == json['player_style'])
+              .firstOrNull ??
+          MusicPlayerStyle.cosmic,
     ).normalized();
   }
 
@@ -68,6 +77,7 @@ class MusicSettings {
     int? cacheMaxMb,
     bool? controlServerEnabled,
     int? controlServerPort,
+    MusicPlayerStyle? playerStyle,
   }) => MusicSettings(
     enabled: enabled ?? this.enabled,
     volumePercent: volumePercent ?? this.volumePercent,
@@ -76,6 +86,7 @@ class MusicSettings {
     cacheMaxMb: cacheMaxMb ?? this.cacheMaxMb,
     controlServerEnabled: controlServerEnabled ?? this.controlServerEnabled,
     controlServerPort: controlServerPort ?? this.controlServerPort,
+    playerStyle: playerStyle ?? this.playerStyle,
   );
 
   Map<String, Object> toJson() => {
@@ -86,5 +97,6 @@ class MusicSettings {
     'cache_max_mb': cacheMaxMb,
     'control_server_enabled': controlServerEnabled,
     'control_server_port': controlServerPort,
+    'player_style': playerStyle.name,
   };
 }

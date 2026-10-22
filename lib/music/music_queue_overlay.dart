@@ -468,8 +468,11 @@ class _RoundedRectTrackProgress extends StatelessWidget {
       key: ValueKey(
         '${playing.item.id}-${playing.paused}-${position.inMilliseconds}',
       ),
-      tween: Tween(begin: progress, end: playing.paused ? progress : 1),
-      duration: playing.paused ? Duration.zero : remaining,
+      tween: Tween(
+        begin: progress,
+        end: playing.paused || playing.starting ? progress : 1,
+      ),
+      duration: playing.paused || playing.starting ? Duration.zero : remaining,
       builder:
           (context, value, _) => CustomPaint(
             key: const ValueKey('music_compact_border_progress'),
@@ -690,7 +693,7 @@ String _formatDuration(Duration duration) {
 
 Duration _currentPosition(MusicNowPlaying playing, Duration duration) {
   var position = playing.position;
-  if (!playing.paused) {
+  if (!playing.paused && !playing.starting) {
     position += DateTime.now().difference(playing.positionUpdatedAt);
   }
   if (position.isNegative) return Duration.zero;
@@ -731,7 +734,9 @@ class _NowPlayingCard extends StatelessWidget {
                 children: [
                   Expanded(
                     child: Text(
-                      playing.paused
+                      playing.starting
+                          ? context.localizations.music_turntable_preparing
+                          : playing.paused
                           ? context.localizations.music_playback_paused
                           : context.localizations.music_playback_now_playing,
                       style: const TextStyle(
@@ -788,8 +793,11 @@ class _NowPlayingCard extends StatelessWidget {
                   '${item.id}-${playing.paused}-${position.inMilliseconds}',
                 ),
                 progress: progress,
-                endProgress: playing.paused ? progress : 1,
-                animationDuration: playing.paused ? Duration.zero : remaining,
+                endProgress: playing.paused || playing.starting ? progress : 1,
+                animationDuration:
+                    playing.paused || playing.starting
+                        ? Duration.zero
+                        : remaining,
                 duration: duration,
                 enabled: duration > Duration.zero,
                 onSeekFraction: (fraction) {

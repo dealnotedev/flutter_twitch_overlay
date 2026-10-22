@@ -192,6 +192,36 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
           ),
         ]),
         const Gap(16),
+        _panel([
+          Text(l.music_settings_player_style, style: _title),
+          const Gap(12),
+          Wrap(
+            spacing: 20,
+            runSpacing: 12,
+            children: [
+              for (final style in MusicPlayerStyle.values)
+                NeonSettingsButton(
+                  key: ValueKey('music_player_style_${style.name}'),
+                  label:
+                      style == MusicPlayerStyle.cosmic
+                          ? l.music_settings_style_cosmic
+                          : l.music_settings_style_turntable,
+                  icon:
+                      style == MusicPlayerStyle.cosmic
+                          ? Icons.auto_awesome_rounded
+                          : Icons.album_rounded,
+                  selected: value.playerStyle == style,
+                  onPressed:
+                      _saving
+                          ? null
+                          : () => _save(value.copyWith(playerStyle: style)),
+                ),
+            ],
+          ),
+          const Gap(8),
+          Text(l.music_settings_style_hint, style: _secondary),
+        ]),
+        const Gap(16),
         widget.presentationSettings,
         const Gap(16),
         widget.rewardSettings,

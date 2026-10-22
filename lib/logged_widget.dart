@@ -20,6 +20,9 @@ import 'package:obssource/generated/assets.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/turntable_music_player.dart';
+import 'package:obssource/music/turntable_playback_controller.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
@@ -62,6 +65,7 @@ class _State extends State<LoggedWidget> {
   StreamSubscription<WsStateEvent>? _stateSubscription;
   StreamSubscription<AvatarSettings>? _avatarSettingsSubscription;
   StreamSubscription<void>? _playerSettingsSubscription;
+  StreamSubscription<MusicSettings>? _musicSettingsSubscription;
   late Timer _rewardCleanupTimer;
   late Settings _settings;
   late ObsConfig _obsConfig;
@@ -69,6 +73,7 @@ class _State extends State<LoggedWidget> {
   late AvatarPixelRenderer _alertRenderer;
   late int _alertAvatarResolution;
   MusicRequests? _musicRequests;
+  TurntablePlaybackController? _turntablePlayback;
   final _musicOverlayController = MusicQueueOverlayController();
   bool _overlayControlsHovered = false;
 
@@ -92,10 +97,15 @@ class _State extends State<LoggedWidget> {
       if (mounted) setState(() {});
     });
     _obsConfig = widget.locator.provide();
+    _musicSettingsSubscription = _settings.musicChanges.listen((_) {
+      if (mounted) setState(() {});
+    });
     _alertRenderer = _settings.avatar.renderer;
     _alertAvatarResolution = _settings.avatar.resolution;
     try {
       _musicRequests = widget.locator.provide<MusicRequests>();
+      _turntablePlayback =
+          widget.locator.provide<TurntablePlaybackController>();
     } catch (_) {
       // Older test and debug locators may not provide music requests yet.
     }
@@ -121,6 +131,7 @@ class _State extends State<LoggedWidget> {
     _stateSubscription?.cancel();
     _avatarSettingsSubscription?.cancel();
     _playerSettingsSubscription?.cancel();
+    _musicSettingsSubscription?.cancel();
     _musicOverlayController.dispose();
     super.dispose();
   }
@@ -177,20 +188,58 @@ class _State extends State<LoggedWidget> {
                             .clamp(82.0, 520.0)
                             .toDouble(),
                   ),
-                  child: MusicQueueOverlay(
-                    requests: musicRequests,
-                    controller: _musicOverlayController,
-                    collapseDelay: Duration(
-                      seconds: _settings.playerCollapseSeconds,
-                    ),
-                    alwaysExpanded: _settings.playerAlwaysExpanded,
-                  ),
+                  child:
+                      _settings.music.playerStyle ==
+                                  MusicPlayerStyle.turntable &&
+                              _turntablePlayback != null
+                          ? TurntableMusicPlayer(
+                            requests: musicRequests,
+                            playback: _turntablePlayback!,
+                            onShowQueue: _showTurntableQueue,
+                          )
+                          : MusicQueueOverlay(
+                            requests: musicRequests,
+                            controller: _musicOverlayController,
+                            collapseDelay: Duration(
+                              seconds: _settings.playerCollapseSeconds,
+                            ),
+                            alwaysExpanded: _settings.playerAlwaysExpanded,
+                          ),
                 ),
               ),
             _createOverlayControls(context),
           ],
         );
       },
+    );
+  }
+
+  void _showTurntableQueue() {
+    final requests = _musicRequests;
+    if (requests == null) return;
+    unawaited(
+      showDialog<void>(
+        context: context,
+        barrierColor: Colors.black38,
+        builder:
+            (context) => Dialog(
+              backgroundColor: Colors.transparent,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(
+                  maxWidth: 440,
+                  maxHeight: 640,
+                ),
+                child: SingleChildScrollView(
+                  child: MusicQueueOverlay(
+                    requests: requests,
+                    alwaysExpanded: true,
+                    showWhenEmpty: true,
+                    maxVisibleQueueItems: null,
+                  ),
+                ),
+              ),
+            ),
+      ),
     );
   }
 

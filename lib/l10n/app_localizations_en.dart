@@ -9,6 +9,25 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get music_settings_player_style => 'Player appearance';
+
+  @override
+  String get music_settings_style_cosmic => 'Cosmic';
+
+  @override
+  String get music_settings_style_turntable => 'Vinyl turntable';
+
+  @override
+  String get music_settings_style_hint =>
+      'Vinyl waits for the audio to load, then places the needle before starting playback. Collapse settings apply to the cosmic player.';
+
+  @override
+  String get music_turntable_preparing => 'Preparing the record';
+
+  @override
+  String get music_turntable_cueing => 'Placing the needle';
+
+  @override
   String user_redeemed_reward_title(
     String user,
     String reward,

@@ -9,6 +9,25 @@ class AppLocalizationsUk extends AppLocalizations {
   AppLocalizationsUk([String locale = 'uk']) : super(locale);
 
   @override
+  String get music_settings_player_style => 'Вигляд плеєра';
+
+  @override
+  String get music_settings_style_cosmic => 'Космічний';
+
+  @override
+  String get music_settings_style_turntable => 'Вініловий програвач';
+
+  @override
+  String get music_settings_style_hint =>
+      'Програвач чекає на готовність аудіо й опускає голку перед відтворенням. Налаштування згортання діють для космічного плеєра.';
+
+  @override
+  String get music_turntable_preparing => 'Готуємо платівку';
+
+  @override
+  String get music_turntable_cueing => 'Опускаємо голку';
+
+  @override
   String user_redeemed_reward_title(
     String user,
     String reward,

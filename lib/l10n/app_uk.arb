@@ -1,4 +1,10 @@
 {
+  "music_settings_player_style": "Вигляд плеєра",
+  "music_settings_style_cosmic": "Космічний",
+  "music_settings_style_turntable": "Вініловий програвач",
+  "music_settings_style_hint": "Програвач чекає на готовність аудіо й опускає голку перед відтворенням. Налаштування згортання діють для космічного плеєра.",
+  "music_turntable_preparing": "Готуємо платівку",
+  "music_turntable_cueing": "Опускаємо голку",
   "user_redeemed_reward_title": "{user} бере {reward} за {currency_icon}\u00A0{cost}",
   "@user_redeemed_reward_title": {
     "placeholders": {

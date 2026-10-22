@@ -98,6 +98,42 @@ abstract class AppLocalizations {
     Locale('uk'),
   ];
 
+  /// No description provided for @music_settings_player_style.
+  ///
+  /// In en, this message translates to:
+  /// **'Player appearance'**
+  String get music_settings_player_style;
+
+  /// No description provided for @music_settings_style_cosmic.
+  ///
+  /// In en, this message translates to:
+  /// **'Cosmic'**
+  String get music_settings_style_cosmic;
+
+  /// No description provided for @music_settings_style_turntable.
+  ///
+  /// In en, this message translates to:
+  /// **'Vinyl turntable'**
+  String get music_settings_style_turntable;
+
+  /// No description provided for @music_settings_style_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Vinyl waits for the audio to load, then places the needle before starting playback. Collapse settings apply to the cosmic player.'**
+  String get music_settings_style_hint;
+
+  /// No description provided for @music_turntable_preparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing the record'**
+  String get music_turntable_preparing;
+
+  /// No description provided for @music_turntable_cueing.
+  ///
+  /// In en, this message translates to:
+  /// **'Placing the needle'**
+  String get music_turntable_cueing;
+
   /// No description provided for @user_redeemed_reward_title.
   ///
   /// In en, this message translates to:

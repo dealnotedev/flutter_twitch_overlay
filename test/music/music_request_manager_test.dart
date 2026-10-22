@@ -78,6 +78,29 @@ void main() {
   );
 
   test(
+    'cueing time is excluded from playback position, including pause and seek',
+    () async {
+      player.deferStart = true;
+      final subject = createManager();
+      events.add(_redemption(id: 'cueing'));
+      await _waitUntil(() => subject.current.nowPlaying != null);
+      expect(subject.current.nowPlaying!.starting, isTrue);
+      await Future<void>.delayed(const Duration(milliseconds: 35));
+      await subject.setPaused(true);
+      expect(subject.current.nowPlaying!.position, Duration.zero);
+      await subject.seek(const Duration(seconds: 20));
+      await subject.setPaused(false);
+      expect(subject.current.nowPlaying!.position, const Duration(seconds: 20));
+      player.startCurrent!();
+      expect(subject.current.nowPlaying!.starting, isFalse);
+      expect(
+        subject.current.nowPlaying!.position.inMilliseconds,
+        inInclusiveRange(20000, 20010),
+      );
+    },
+  );
+
+  test(
     'new queue limit counts playing track without removing accepted tracks',
     () async {
       final subject = createManager();
@@ -736,14 +759,24 @@ class _FakePlayer implements MusicTrackPlayer {
   final List<Duration> seekPositions = [];
   Completer<void>? _current;
   Object? playError;
+  bool deferStart = false;
+  void Function()? startCurrent;
 
   @override
-  Future<void> play(DownloadedMusicTrack track) async {
+  Future<void> play(
+    DownloadedMusicTrack track, {
+    void Function()? onStarted,
+  }) async {
     played.add(track);
     final playError = this.playError;
     if (playError != null) throw playError;
     final completer = Completer<void>();
     _current = completer;
+    if (deferStart) {
+      startCurrent = onStarted;
+    } else {
+      onStarted?.call();
+    }
     await completer.future;
   }
 

@@ -3,6 +3,32 @@ import 'package:obssource/music/control/music_control_protocol.dart';
 import 'package:obssource/music/music_requests.dart';
 
 void main() {
+  test('starting state round-trips and remains optional for older servers', () {
+    final now = DateTime(2026);
+    final state = MusicQueueSnapshot(
+      revision: 1,
+      nowPlaying: MusicNowPlaying(
+        item: _item('cueing', phase: MusicQueueItemPhase.ready),
+        startedAt: now,
+        position: Duration.zero,
+        positionUpdatedAt: now,
+        paused: false,
+        starting: true,
+      ),
+      queue: [],
+      lastError: null,
+    );
+    final wire = MusicControlProtocol.snapshotToJson(state);
+    expect(
+      MusicControlProtocol.snapshotFromJson(wire).nowPlaying!.starting,
+      isTrue,
+    );
+    (wire['nowPlaying']! as Map).remove('starting');
+    expect(
+      MusicControlProtocol.snapshotFromJson(wire).nowPlaying!.starting,
+      isFalse,
+    );
+  });
   test(
     'media 403 keeps v1 compatibility without claiming login is required',
     () {

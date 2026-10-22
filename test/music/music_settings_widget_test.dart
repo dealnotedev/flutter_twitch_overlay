@@ -339,6 +339,16 @@ void main() {
       await _pump(tester);
       await _capture(tester, capture, 'music-general-$language');
 
+      final vinyl = find.byKey(const ValueKey('music_player_style_turntable'));
+      await tester.ensureVisible(vinyl);
+      await tester.tap(vinyl);
+      await _pump(tester);
+      expect(settings.music.playerStyle, MusicPlayerStyle.turntable);
+      final cosmic = find.byKey(const ValueKey('music_player_style_cosmic'));
+      await tester.tap(cosmic);
+      await _pump(tester);
+      expect(settings.music.playerStyle, MusicPlayerStyle.cosmic);
+
       Future<void> number(String key, String text) async {
         final field = find.descendant(
           of: find.byKey(ValueKey(key)),
@@ -592,7 +602,12 @@ class _BlockedFetcher implements MusicTrackFetcher {
 
 class _SilentPlayer implements MusicTrackPlayer {
   @override
-  Future<void> play(DownloadedMusicTrack track) async {}
+  Future<void> play(
+    DownloadedMusicTrack track, {
+    void Function()? onStarted,
+  }) async {
+    onStarted?.call();
+  }
 
   @override
   Future<void> setPaused(bool paused) async {}

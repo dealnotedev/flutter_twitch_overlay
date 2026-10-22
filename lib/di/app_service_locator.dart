@@ -11,6 +11,7 @@ import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/music/music_tool_paths.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
+import 'package:obssource/music/turntable_playback_controller.dart';
 import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
 import 'package:obssource/music/youtube_browser_session.dart';
 import 'package:obssource/music/youtube_connection_controller.dart';
@@ -123,8 +124,10 @@ class AppServiceLocator extends ServiceLocator {
       },
     );
 
+    final turntablePlayback = TurntablePlaybackController();
     final musicPlayer = ObsAudioMusicTrackPlayer(
       volume: music.volumePercent / 100,
+      beforeStart: turntablePlayback.beforeStart,
     );
 
     final musicApi = TwitchApi(
@@ -159,6 +162,7 @@ class AppServiceLocator extends ServiceLocator {
     map[ServiceLocator] = this;
     map[WebSocketManager] = wsManager;
     map[ObsAudioMusicTrackPlayer] = musicPlayer;
+    map[TurntablePlaybackController] = turntablePlayback;
     map[TwitchRedemptionService] = redemptionService;
     map[MusicRequests] = musicRequests;
 
@@ -223,6 +227,8 @@ class AppServiceLocator extends ServiceLocator {
     await (map[WebSocketManager]! as WebSocketManager).close();
     await musicControlServer?.close();
     await (map[MusicRequests]! as MusicRequests).close();
+    (map[TurntablePlaybackController]! as TurntablePlaybackController)
+        .dispose();
     await youtubeConnection.close();
   }
 }

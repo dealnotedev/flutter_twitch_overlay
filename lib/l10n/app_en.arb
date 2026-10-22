@@ -1,4 +1,10 @@
 {
+  "music_settings_player_style": "Player appearance",
+  "music_settings_style_cosmic": "Cosmic",
+  "music_settings_style_turntable": "Vinyl turntable",
+  "music_settings_style_hint": "Vinyl waits for the audio to load, then places the needle before starting playback. Collapse settings apply to the cosmic player.",
+  "music_turntable_preparing": "Preparing the record",
+  "music_turntable_cueing": "Placing the needle",
   "user_redeemed_reward_title": "{user} redeemed {reward} for {currency_icon}\u00A0{cost}",
   "@user_redeemed_reward_title": {
     "placeholders": {
