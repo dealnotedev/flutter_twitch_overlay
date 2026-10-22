@@ -9,6 +9,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_music_player.dart';
 import 'package:obssource/music/turntable_playback_controller.dart';
 
@@ -132,6 +133,104 @@ void main() {
     await requests.close();
     expect(tester.takeException(), isNull);
   });
+
+  for (final screenWidth in [800.0, 320.0]) {
+    testWidgets(
+      'paused player reveals on hover and leaves 64 at the edge at width $screenWidth',
+      (tester) async {
+        await tester.binding.setSurfaceSize(Size(screenWidth, 900));
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final requests = _Requests()..start();
+        final playback = TurntablePlaybackController();
+        final capture = GlobalKey();
+        await _loadFonts(tester);
+        await tester.pumpWidget(_surface(requests, playback, capture));
+        await _animate(tester, 5);
+        final player = find.byKey(const ValueKey('music_turntable'));
+        final expanded = tester.getRect(player);
+        final scale = expanded.width / TurntableGeometry.deckSize.width;
+        final mouse = await tester.createGesture(
+          kind: ui.PointerDeviceKind.mouse,
+        );
+        await mouse.addPointer(location: Offset.zero);
+
+        await requests.setPaused(true);
+        await tester.pump();
+        await _animate(tester, 4);
+        requests.setQueue([_queuedItem('next')]);
+        await tester.pump();
+        await _animate(tester, 0.98);
+        expect(tester.getRect(player).left, expanded.left);
+        await _animate(tester, 0.6);
+        void expectHiddenStrip() {
+          final bodyLeft =
+              tester.getRect(player).left +
+              TurntableGeometry.chassisOrigin.dx * scale;
+          expect(screenWidth - bodyLeft, closeTo(64, 0.01));
+        }
+
+        expectHiddenStrip();
+        await _capture(tester, capture, 'turntable-paused-hidden-$screenWidth');
+
+        final hoverPoint = Offset(screenWidth - 32, expanded.center.dy);
+        await mouse.moveTo(hoverPoint);
+        await tester.pump();
+        await _animate(tester, 0.5);
+        expect(tester.getRect(player).left, closeTo(expanded.left, 0.01));
+        await _animate(tester, 6);
+        expect(tester.getRect(player).left, closeTo(expanded.left, 0.01));
+        await _capture(tester, capture, 'turntable-paused-hover-$screenWidth');
+
+        await mouse.moveTo(Offset.zero);
+        await tester.pump();
+        await _animate(tester, 0.5);
+        expectHiddenStrip();
+        await requests.setPaused(false);
+        await tester.pump();
+        await _animate(tester, 0.5);
+        expect(tester.getRect(player).left, closeTo(expanded.left, 0.01));
+        await mouse.removePointer();
+        await tester.pumpWidget(const SizedBox.shrink());
+        playback.dispose();
+        await requests.close();
+      },
+    );
+  }
+
+  testWidgets(
+    'resuming cancels the pause delay and unmounting cancels its timer',
+    (tester) async {
+      final requests = _Requests()..start();
+      await requests.setPaused(true);
+      final playback = TurntablePlaybackController();
+      final capture = GlobalKey();
+      await tester.pumpWidget(_surface(requests, playback, capture));
+      await _animate(tester, 4);
+      final player = find.byKey(const ValueKey('music_turntable'));
+      final expandedLeft = tester.getRect(player).left;
+      await requests.setPaused(false);
+      await tester.pump();
+      await _animate(tester, 2);
+      expect(tester.getRect(player).left, expandedLeft);
+      await requests.setPaused(true);
+      await tester.pump();
+      await _animate(tester, 4.9);
+      expect(tester.getRect(player).left, expandedLeft);
+      await _animate(tester, 0.6);
+      expect(tester.getRect(player).left, greaterThan(expandedLeft));
+      await requests.setPaused(false);
+      await tester.pump();
+      await _animate(tester, 0.5);
+      expect(tester.getRect(player).left, expandedLeft);
+      await requests.setPaused(true);
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 6));
+      expect(tester.takeException(), isNull);
+      playback.dispose();
+      await requests.close();
+    },
+  );
 
   testWidgets('info panel keeps 16 padding and grows with text scale', (
     tester,
@@ -523,17 +622,28 @@ Widget _surface(
   theme: ThemeData(fontFamily: 'TurntableTestFont'),
   home: Scaffold(
     backgroundColor: const Color(0xFF101322),
-    body: Stack(
-      children: [
-        Positioned(
-          right: 24,
-          bottom: 24,
-          child: RepaintBoundary(
-            key: capture,
-            child: TurntableMusicPlayer(requests: requests, playback: playback),
+    body: LayoutBuilder(
+      builder:
+          (context, constraints) => Stack(
+            children: [
+              Positioned(
+                right: 0,
+                bottom: 24,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: constraints.maxWidth - 24,
+                  ),
+                  child: RepaintBoundary(
+                    key: capture,
+                    child: TurntableMusicPlayer(
+                      requests: requests,
+                      playback: playback,
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
-        ),
-      ],
     ),
   ),
 );

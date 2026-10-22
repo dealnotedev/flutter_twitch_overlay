@@ -140,6 +140,15 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
 
   @override
   Widget build(BuildContext context) {
+    final playing = _snapshot.nowPlaying;
+    return _PausedTurntableSlide(
+      key: ObjectKey(widget.requests),
+      pausedItemId: playing?.paused == true ? playing!.item.id : null,
+      child: _buildTurntable(context),
+    );
+  }
+
+  Widget _buildTurntable(BuildContext context) {
     return SizedBox(
       width: TurntableGeometry.deckSize.width,
       child: FittedBox(
@@ -411,6 +420,98 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
       ),
     );
   }
+}
+
+/// Keep the screen inset inside the slide so the exposed edge reaches the screen.
+class _PausedTurntableSlide extends StatefulWidget {
+  final String? pausedItemId;
+  final Widget child;
+
+  const _PausedTurntableSlide({
+    super.key,
+    required this.pausedItemId,
+    required this.child,
+  });
+
+  @override
+  State<_PausedTurntableSlide> createState() => _PausedTurntableSlideState();
+}
+
+class _PausedTurntableSlideState extends State<_PausedTurntableSlide> {
+  static const _rightInset = 24.0;
+  static const _peekWidth = 64.0;
+  Timer? _hideTimer;
+  bool _delayElapsed = false;
+  bool _hovered = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scheduleHide();
+  }
+
+  @override
+  void didUpdateWidget(covariant _PausedTurntableSlide oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.pausedItemId != widget.pausedItemId) _scheduleHide();
+  }
+
+  void _scheduleHide() {
+    _hideTimer?.cancel();
+    _delayElapsed = false;
+    if (widget.pausedItemId == null) return;
+    _hideTimer = Timer(const Duration(seconds: 5), () {
+      if (mounted) setState(() => _delayElapsed = true);
+    });
+  }
+
+  void _setHovered(bool hovered) {
+    if (_hovered == hovered) return;
+    setState(() => _hovered = hovered);
+  }
+
+  @override
+  void dispose() {
+    _hideTimer?.cancel();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => SizedBox(
+    width: TurntableGeometry.deckSize.width + _rightInset,
+    child: LayoutBuilder(
+      builder: (context, constraints) {
+        final scale =
+            math.max(0.0, constraints.maxWidth - _rightInset) /
+            TurntableGeometry.deckSize.width;
+        final slideDistance = math.max(
+          0.0,
+          constraints.maxWidth -
+              _peekWidth -
+              TurntableGeometry.chassisOrigin.dx * scale,
+        );
+        return TweenAnimationBuilder<double>(
+          tween: Tween<double>(end: _delayElapsed && !_hovered ? 1 : 0),
+          duration: const Duration(milliseconds: 400),
+          curve: Curves.easeInOutCubic,
+          child: MouseRegion(
+            key: const ValueKey('turntable_hover_region'),
+            onEnter: (_) => _setHovered(true),
+            onExit: (_) => _setHovered(false),
+            child: Padding(
+              padding: const EdgeInsets.only(right: _rightInset),
+              child: widget.child,
+            ),
+          ),
+          builder:
+              (context, amount, child) => Transform.translate(
+                offset: Offset(slideDistance * amount, 0),
+                child: child,
+              ),
+        );
+      },
+    ),
+  );
 }
 
 /// The oversized circular label occupies 58% of the record's diameter.

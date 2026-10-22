@@ -140,6 +140,9 @@ class _State extends State<LoggedWidget> {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
+        final showTurntable =
+            _settings.music.playerStyle == MusicPlayerStyle.turntable &&
+            _turntablePlayback != null;
         return Stack(
           children: [
             _createConfigInfo(context),
@@ -179,19 +182,17 @@ class _State extends State<LoggedWidget> {
               ),
             if (_musicRequests case final musicRequests?)
               Positioned(
-                right: 24,
+                right: showTurntable ? 0 : 24,
                 bottom: 24,
                 child: ConstrainedBox(
                   constraints: BoxConstraints(
                     maxWidth:
-                        (constraints.maxWidth - 48)
+                        (constraints.maxWidth - (showTurntable ? 24 : 48))
                             .clamp(82.0, 520.0)
                             .toDouble(),
                   ),
                   child:
-                      _settings.music.playerStyle ==
-                                  MusicPlayerStyle.turntable &&
-                              _turntablePlayback != null
+                      showTurntable
                           ? TurntableMusicPlayer(
                             requests: musicRequests,
                             playback: _turntablePlayback!,
