@@ -190,31 +190,24 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
                         ),
                         if (_motion.recordVisible && item != null)
                           Positioned(
-                            left: 48 + (1 - _motion.recordPlacement) * 440,
+                            left:
+                                TurntableGeometry.platterCenter.dx -
+                                TurntableGeometry.recordRadius +
+                                (1 - _motion.recordPlacement) * 440,
                             top:
-                                37 -
-                                math.sin(
-                                      (1 - _motion.recordPlacement) *
-                                          math.pi /
-                                          2,
-                                    ) *
-                                    40,
-                            child: Transform.scale(
-                              scale: 1 + (1 - _motion.recordPlacement) * 0.13,
-                              child: Transform.rotate(
-                                angle:
-                                    _motion.rotation -
-                                    (1 - _motion.recordPlacement) * 0.35,
-                                child: VinylRecord(
-                                  artwork:
-                                      item.thumbnail == null
-                                          ? null
-                                          : CachedNetworkImageProvider(
-                                            item.thumbnail.toString(),
-                                            maxWidth: 256,
-                                            maxHeight: 256,
-                                          ),
-                                ),
+                                TurntableGeometry.platterCenter.dy -
+                                TurntableGeometry.recordRadius,
+                            child: Transform.rotate(
+                              angle: _motion.rotation,
+                              child: VinylRecord(
+                                artwork:
+                                    item.thumbnail == null
+                                        ? null
+                                        : CachedNetworkImageProvider(
+                                          item.thumbnail.toString(),
+                                          maxWidth: 256,
+                                          maxHeight: 256,
+                                        ),
                               ),
                             ),
                           ),
@@ -356,11 +349,6 @@ class VinylRecord extends StatelessWidget {
                           Color(0xFF11182F),
                         ],
                       ),
-                    ),
-                    child: Icon(
-                      Icons.music_note_rounded,
-                      color: Color(0xFFD9B3D5),
-                      size: 42,
                     ),
                   ),
                   if (artwork != null)
