@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/music/turntable_motion.dart';
+import 'package:obssource/music/turntable_geometry.dart';
 
 void main() {
   late List<String> cued;
@@ -10,6 +11,57 @@ void main() {
     motion = TurntableMotion(onNeedlePlaced: cued.add);
   });
   tearDown(() => motion.dispose());
+
+  test(
+    'needle tracks from the outer groove to the inner groove, clear of the cover',
+    () {
+      motion.update(itemId: 'one', ready: true, paused: false);
+      motion.advance(const Duration(seconds: 5));
+      double radius() =>
+          (TurntableGeometry.needlePosition(motion.armAngle) -
+                  TurntableGeometry.platterCenter)
+              .distance;
+      expect(radius(), closeTo(105, 0.001));
+      var previousRadius = radius();
+      for (final progress in [0.25, 0.5, 0.75, 1.0]) {
+        motion.setTrackProgress(progress);
+        motion.advance(const Duration(seconds: 1));
+        final currentRadius = radius();
+        expect(currentRadius, lessThan(previousRadius));
+        expect(currentRadius, greaterThan(TurntableGeometry.labelRadius));
+        previousRadius = currentRadius;
+      }
+      expect(radius(), closeTo(72, 0.01));
+      expect(cued, ['one']);
+    },
+  );
+
+  test(
+    'seeking glides both ways and changing tracks lifts from the current groove',
+    () {
+      motion.update(itemId: 'one', ready: true, paused: false);
+      motion.advance(const Duration(seconds: 5));
+      final outerAngle = motion.armAngle;
+      motion.setTrackProgress(1);
+      expect(motion.armAngle, outerAngle);
+      motion.advance(const Duration(milliseconds: 50));
+      expect(motion.trackProgress, inExclusiveRange(0, 1));
+      motion.advance(const Duration(seconds: 1));
+      final innerAngle = motion.armAngle;
+      expect(innerAngle, greaterThan(outerAngle));
+      motion.setTrackProgress(0.5);
+      motion.advance(const Duration(seconds: 1));
+      expect(motion.armAngle, inExclusiveRange(outerAngle, innerAngle));
+      final beforeChange = motion.armAngle;
+      motion.update(itemId: 'two', ready: false, paused: false);
+      expect(motion.armAngle, beforeChange);
+      motion.advance(const Duration(milliseconds: 100));
+      expect(motion.armAngle, beforeChange);
+      motion.advance(const Duration(milliseconds: 600));
+      expect(motion.armAngle, 0);
+      expect(cued, ['one']);
+    },
+  );
 
   test('spins indefinitely at standard speed while audio is not ready', () {
     motion.update(itemId: 'one', ready: false, paused: false);

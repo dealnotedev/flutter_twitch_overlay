@@ -92,6 +92,16 @@ void main() {
       await tester.pump();
       await _capture(tester, capture, 'turntable-playing');
 
+      await requests.seek(const Duration(seconds: 239));
+      await tester.pump();
+      await _animate(tester, 1);
+      expect(find.byType(VinylRecord), findsOneWidget);
+      await _capture(tester, capture, 'turntable-ending');
+
+      await requests.seek(const Duration(seconds: 120));
+      await tester.pump();
+      await _animate(tester, 1);
+
       await tester.tap(find.byKey(const ValueKey('turntable_pause')));
       await tester.pump();
       expect(requests.current.nowPlaying!.paused, isTrue);
@@ -343,7 +353,25 @@ class _Requests implements MusicRequests {
   }
 
   @override
-  Future<bool> seek(Duration position) async => true;
+  Future<bool> seek(Duration position) async {
+    final playing = current.nowPlaying!;
+    emit(
+      MusicQueueSnapshot(
+        revision: current.revision + 1,
+        nowPlaying: MusicNowPlaying(
+          item: playing.item,
+          startedAt: playing.startedAt,
+          position: position,
+          positionUpdatedAt: DateTime.now(),
+          paused: playing.paused,
+        ),
+        queue: [],
+        lastError: null,
+      ),
+    );
+    return true;
+  }
+
   @override
   Future<bool> skip() async {
     emit(MusicQueueSnapshot.empty);

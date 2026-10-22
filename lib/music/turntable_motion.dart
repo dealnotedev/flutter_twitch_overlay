@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/animation.dart';
 import 'package:flutter/foundation.dart';
+import 'package:obssource/music/turntable_geometry.dart';
 
 enum TurntablePhase {
   hidden,
@@ -38,7 +39,9 @@ class TurntableMotion extends ChangeNotifier {
   double rotation = 0;
   double rpm = 0;
   double needleLift = 1;
-  double trackProgress = 0;
+  double _trackProgress = 0;
+  double _targetProgress = 0;
+  double _incomingProgress = 0;
 
   String? _targetId;
   bool _ready = false;
@@ -51,6 +54,18 @@ class TurntableMotion extends ChangeNotifier {
   TurntableMotion({required this.onNeedlePlaced});
 
   bool get recordVisible => itemId != null && phase != TurntablePhase.entering;
+  double get trackProgress => _trackProgress;
+  double get armAngle => arm * TurntableGeometry.trackingAngle(_trackProgress);
+
+  void setTrackProgress(double progress) {
+    // The departing record keeps its needle position until the arm lifts.
+    if (phase == TurntablePhase.lifting ||
+        phase == TurntablePhase.removing ||
+        phase == TurntablePhase.exiting) {
+      return;
+    }
+    _targetProgress = progress.clamp(0.0, 1.0);
+  }
 
   void update({
     required String? itemId,
@@ -61,9 +76,11 @@ class TurntableMotion extends ChangeNotifier {
     _targetId = itemId;
     _ready = ready;
     _paused = paused;
-    trackProgress = progress.clamp(0.0, 1.0);
+    _incomingProgress = progress.clamp(0.0, 1.0);
+    if (this.itemId == itemId) setTrackProgress(_incomingProgress);
     if (phase == TurntablePhase.hidden && itemId != null) {
       this.itemId = itemId;
+      _trackProgress = _targetProgress = _incomingProgress;
       _enter(TurntablePhase.entering);
     } else if (this.itemId != itemId &&
         phase != TurntablePhase.hidden &&
@@ -91,6 +108,11 @@ class TurntableMotion extends ChangeNotifier {
   void _advanceStep(double seconds) {
     _phaseTime += seconds;
     final previousRpm = rpm;
+    if (phase == TurntablePhase.cueing || phase == TurntablePhase.playing) {
+      // Follow ordinary playback continuously and glide to a seek position.
+      _trackProgress +=
+          (_targetProgress - _trackProgress) * (1 - math.exp(-seconds * 10));
+    }
     switch (phase) {
       case TurntablePhase.hidden:
         break;
@@ -159,7 +181,7 @@ class TurntableMotion extends ChangeNotifier {
           rotation = 0;
           rpm = 0;
           recordPlacement = 0;
-          trackProgress = 0;
+          _trackProgress = _targetProgress = _incomingProgress;
           _enter(
             target == null ? TurntablePhase.exiting : TurntablePhase.placing,
           );

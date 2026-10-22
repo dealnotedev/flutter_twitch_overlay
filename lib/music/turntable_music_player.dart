@@ -10,6 +10,7 @@ import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_motion.dart';
 import 'package:obssource/music/turntable_playback_controller.dart';
 
@@ -103,9 +104,12 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
           playing.paused || playing.starting
               ? Duration.zero
               : DateTime.now().difference(playing.positionUpdatedAt);
-      _motion.trackProgress = ((playing.position + elapsed).inMilliseconds /
-              duration)
-          .clamp(0.0, 1.0);
+      _motion.setTrackProgress(
+        ((playing.position + elapsed).inMilliseconds / duration).clamp(
+          0.0,
+          1.0,
+        ),
+      );
     }
     // Resume a suspended OBS source without jumping through the choreography.
     _motion.advance(
@@ -218,9 +222,8 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
                           child: IgnorePointer(
                             child: CustomPaint(
                               painter: _TonearmPainter(
-                                arm: _motion.arm,
+                                angle: _motion.armAngle,
                                 lift: _motion.needleLift,
-                                progress: _motion.trackProgress,
                                 spindle:
                                     _motion.recordVisible &&
                                     _motion.recordPlacement > 0.999,
@@ -332,12 +335,12 @@ class VinylRecord extends StatelessWidget {
   @override
   Widget build(BuildContext context) => RepaintBoundary(
     child: SizedBox.square(
-      dimension: 220,
+      dimension: TurntableGeometry.recordRadius * 2,
       child: CustomPaint(
         painter: const _VinylPainter(),
         child: Center(
           child: SizedBox.square(
-            dimension: 128,
+            dimension: TurntableGeometry.labelRadius * 2,
             child: ClipOval(
               child: Stack(
                 fit: StackFit.expand,
@@ -436,7 +439,7 @@ class _VinylPainter extends CustomPainter {
           [0, 0.62, 0.84, 1],
         ),
     );
-    for (var r = 67.0; r < radius - 2; r += 2.2) {
+    for (var r = TurntableGeometry.labelRadius + 3; r < radius - 2; r += 2.2) {
       canvas.drawCircle(
         center,
         r,
@@ -549,7 +552,7 @@ class _TurntableDeckPainter extends CustomPainter {
       );
     }
     canvas.restore();
-    const center = Offset(158, 147);
+    const center = TurntableGeometry.platterCenter;
     canvas.drawCircle(center, 117, Paint()..color = const Color(0xFF090A13));
     canvas.drawCircle(
       center,
@@ -708,15 +711,13 @@ class _TurntableDeckPainter extends CustomPainter {
 }
 
 class _TonearmPainter extends CustomPainter {
-  final double arm;
+  final double angle;
   final double lift;
-  final double progress;
   final bool spindle;
 
   const _TonearmPainter({
-    required this.arm,
+    required this.angle,
     required this.lift,
-    required this.progress,
     required this.spindle,
   });
 
@@ -724,7 +725,7 @@ class _TonearmPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     if (spindle) {
       canvas.drawCircle(
-        const Offset(158, 147),
+        TurntableGeometry.platterCenter,
         3.5,
         Paint()
           ..shader = ui.Gradient.linear(
@@ -735,8 +736,11 @@ class _TonearmPainter extends CustomPainter {
       );
     }
     canvas.save();
-    canvas.translate(340, 62);
-    canvas.rotate(arm * (0.60 + progress * 0.20));
+    canvas.translate(
+      TurntableGeometry.armPivot.dx,
+      TurntableGeometry.armPivot.dy,
+    );
+    canvas.rotate(angle);
     final tube =
         Path()
           ..moveTo(0, 5)
@@ -817,12 +821,12 @@ class _TonearmPainter extends CustomPainter {
         ..strokeWidth = 2
         ..strokeCap = StrokeCap.round,
     );
+    canvas.restore();
     canvas.drawCircle(
-      Offset(-15, 162 - lift * 2),
+      TurntableGeometry.needlePosition(angle, lift: lift),
       2,
       Paint()..color = MusicPlayerPalette.neonPinkBright,
     );
-    canvas.restore();
     canvas.drawCircle(
       const Offset(340, 62),
       10,
@@ -843,8 +847,7 @@ class _TonearmPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TonearmPainter oldDelegate) =>
-      arm != oldDelegate.arm ||
+      angle != oldDelegate.angle ||
       lift != oldDelegate.lift ||
-      progress != oldDelegate.progress ||
       spindle != oldDelegate.spindle;
 }
