@@ -133,6 +133,53 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('info panel keeps 12 padding and grows with text scale', (
+    tester,
+  ) async {
+    final requests = _Requests()..start();
+    final playback = TurntablePlaybackController();
+    final capture = GlobalKey();
+    await _loadFonts(tester);
+    await tester.pumpWidget(_surface(requests, playback, capture));
+    await _animate(tester, 5);
+    final player = find.byKey(const ValueKey('music_turntable'));
+    final normalHeight = tester.getSize(player).height;
+
+    void expectPanelPadding() {
+      final panel = find.byKey(const ValueKey('turntable_info_panel'));
+      final row = find.descendant(of: panel, matching: find.byType(Row));
+      final panelRect = tester.getRect(panel);
+      final rowRect = tester.getRect(row);
+      expect(rowRect.left - panelRect.left, closeTo(12, 0.001));
+      expect(rowRect.top - panelRect.top, closeTo(12, 0.001));
+      expect(panelRect.right - rowRect.right, closeTo(12, 0.001));
+      expect(panelRect.bottom - rowRect.bottom, closeTo(12, 0.001));
+      for (final key in [
+        'turntable_pause',
+        'turntable_skip',
+        'turntable_queue',
+      ]) {
+        expect(
+          panelRect.contains(tester.getCenter(find.byKey(ValueKey(key)))),
+          isTrue,
+        );
+      }
+    }
+
+    expectPanelPadding();
+    await tester.pumpWidget(
+      _surface(requests, playback, capture, textScale: 1.75),
+    );
+    await tester.pump();
+    expect(tester.getSize(player).height, greaterThan(normalHeight));
+    expectPanelPadding();
+    expect(tester.takeException(), isNull);
+    await _capture(tester, capture, 'turntable-panel-large-text');
+    await tester.pumpWidget(const SizedBox.shrink());
+    playback.dispose();
+    await requests.close();
+  });
+
   testWidgets(
     'artwork fills a circular oversized label while leaving vinyl grooves visible',
     (tester) async {
@@ -205,8 +252,16 @@ Future<Uint8List> _sampleCover() async {
 Widget _surface(
   _Requests requests,
   TurntablePlaybackController playback,
-  GlobalKey capture,
-) => MaterialApp(
+  GlobalKey capture, {
+  double textScale = 1,
+}) => MaterialApp(
+  builder:
+      (context, child) => MediaQuery(
+        data: MediaQuery.of(
+          context,
+        ).copyWith(textScaler: TextScaler.linear(textScale)),
+        child: child!,
+      ),
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   locale: const Locale('en'),
