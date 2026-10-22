@@ -22,3 +22,7 @@ the controller to another port, pass the same value:
 ```powershell
 flutter run -d windows -- --port=47900
 ```
+
+To control Twitch Listener directly, run it and use `--port=47822`. Both hosts
+use the shared `dart_music_player_protocol` contract and native transport. Audio remains in
+the selected host application; the controller does not play audio.

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:ui' show AppExitResponse;
+
 import 'package:flutter/material.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
@@ -7,6 +8,13 @@ import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/logged_widget.dart';
+import 'package:obssource/music/music_queue_overlay.dart';
+import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/turntable_music_player.dart';
+import 'package:obssource/secrets.dart';
+import 'package:obssource/settings/overlay_settings_dialog.dart';
+import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
 
 void main() async {
@@ -92,7 +100,47 @@ class _MyHomePageState extends State<MyHomePage> {
         if (data != null) {
           return LoggedWidget(locator: widget.locator);
         } else {
-          return Center(child: TwitchLoginWidget(settings: _settings));
+          return Stack(
+            children: [
+              if (_settings.music.source == MusicSourceKind.local)
+                Center(child: TwitchLoginWidget(settings: _settings))
+              else
+                _ExternalPlayerView(
+                  settings: _settings,
+                  requests: widget.locator.provide<MusicRequests>(),
+                ),
+              Positioned(
+                top: 8,
+                right: 16,
+                child: IconButton(
+                  key: const ValueKey('unauthenticated_settings'),
+                  icon: const Icon(Icons.settings_rounded, color: Colors.white),
+                  onPressed: () {
+                    final locator = widget.locator;
+                    showDialog<void>(
+                      context: context,
+                      builder:
+                          (_) => OverlaySettingsDialog(
+                            settings: _settings,
+                            configureRewards: false,
+                            musicSource:
+                                locator is AppServiceLocator
+                                    ? locator.musicSource
+                                    : null,
+                            rewardCatalog: TwitchApiRewardCatalog(
+                              api: TwitchApi(
+                                settings: _settings,
+                                clientSecret: twitchClientSecret,
+                              ),
+                              settings: _settings,
+                            ),
+                          ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          );
         }
       },
     );
@@ -102,7 +150,51 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.transparent,
-      body: _createRoot(context),
+      body: StreamBuilder(
+        stream: _settings.musicChanges,
+        builder: (context, _) => _createRoot(context),
+      ),
     );
   }
+}
+
+/// Music remains available without a Twitch session in the OBS process.
+class _ExternalPlayerView extends StatelessWidget {
+  final Settings settings;
+  final MusicRequests requests;
+  const _ExternalPlayerView({required this.settings, required this.requests});
+
+  @override
+  Widget build(BuildContext context) => LayoutBuilder(
+    builder: (context, constraints) {
+      final turntable =
+          settings.music.playerStyle == MusicPlayerStyle.turntable;
+      return Stack(
+        children: [
+          Positioned(
+            right: turntable ? 0 : 24,
+            bottom: 24,
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: (constraints.maxWidth - (turntable ? 24 : 48)).clamp(
+                  82.0,
+                  520.0,
+                ),
+              ),
+              child:
+                  turntable
+                      ? TurntableMusicPlayer(requests: requests)
+                      : MusicQueueOverlay(
+                        requests: requests,
+                        collapseDelay: Duration(
+                          seconds: settings.playerCollapseSeconds,
+                        ),
+                        alwaysExpanded: settings.playerAlwaysExpanded,
+                      ),
+            ),
+          ),
+        ],
+      );
+    },
+  );
 }

@@ -518,4 +518,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settings_off => 'Off';
+
+  @override
+  String get music_source_title => 'Player source';
+
+  @override
+  String get music_source_local => 'Local player';
+
+  @override
+  String get music_source_external => 'External player';
+
+  @override
+  String get music_source_external_hint =>
+      'Connect to a player on this computer. Twitch Listener uses port 47822. Audio plays in the external application; capture it separately in OBS.';
+
+  @override
+  String get music_source_login_hint =>
+      'Sign in to Twitch to configure a local music reward.';
+
+  @override
+  String get music_queue_status_analyzing => 'ANALYZING';
+
+  @override
+  String get music_queue_status_normalizing => 'NORMALIZING';
 }

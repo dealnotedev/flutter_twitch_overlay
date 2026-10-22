@@ -17,7 +17,7 @@ enum TurntablePhase {
   exiting,
 }
 
-/// A time-based choreography shared by the painter and the playback gate.
+/// A time-based choreography used only by the presentation.
 /// Download readiness never advances the needle before the record is seated
 /// and the platter has reached 33 1/3 RPM.
 class TurntableMotion extends ChangeNotifier {
@@ -29,7 +29,7 @@ class TurntableMotion extends ChangeNotifier {
   static const liftSeconds = 0.65;
   static const removalSeconds = 0.85;
 
-  final void Function(String itemId) onNeedlePlaced;
+  final void Function(String itemId)? onNeedlePlaced;
 
   TurntablePhase phase = TurntablePhase.hidden;
   String? itemId;
@@ -51,7 +51,7 @@ class TurntableMotion extends ChangeNotifier {
   double _removalFrom = 0;
   double _entranceFrom = 0;
 
-  TurntableMotion({required this.onNeedlePlaced});
+  TurntableMotion({this.onNeedlePlaced});
 
   bool get recordVisible => itemId != null && phase != TurntablePhase.entering;
   double get trackProgress => _trackProgress;
@@ -151,7 +151,7 @@ class TurntableMotion extends ChangeNotifier {
           arm = 1;
           needleLift = 0;
           _enter(TurntablePhase.playing);
-          onNeedlePlaced(itemId!);
+          onNeedlePlaced?.call(itemId!);
         }
         break;
       case TurntablePhase.playing:

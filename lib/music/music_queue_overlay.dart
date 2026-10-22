@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
-import 'package:obssource/music/music_requests.dart';
+import 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 
 enum MusicQueuePresentation { floatingOverlay, controllerCanvas }
 
@@ -1102,6 +1102,10 @@ class _QueueRow extends StatelessWidget {
         item.downloadProgress == null
             ? context.localizations.music_queue_status_downloading
             : '${(item.downloadProgress! * 100).round()}%',
+      MusicQueueItemPhase.analyzing =>
+        context.localizations.music_queue_status_analyzing,
+      MusicQueueItemPhase.normalizing =>
+        context.localizations.music_queue_status_normalizing,
       MusicQueueItemPhase.ready =>
         context.localizations.music_queue_status_ready,
     };

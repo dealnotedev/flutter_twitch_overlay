@@ -228,5 +228,12 @@
   "overlay_settings_no_rewards_body": "Створіть стандартну винагороду для музики, налаштуйте її у Twitch та оновіть список.",
   "overlay_settings_load_error": "Не вдалося завантажити винагороди Twitch",
   "settings_on": "Увімкнено",
-  "settings_off": "Вимкнено"
+  "settings_off": "Вимкнено",
+  "music_source_title": "Джерело плеєра",
+  "music_source_local": "Локальний плеєр",
+  "music_source_external": "Зовнішній плеєр",
+  "music_source_external_hint": "Підключення до плеєра на цьому комп’ютері. Twitch Listener використовує порт 47822. Звук відтворюється у зовнішній програмі; захоплюйте його в OBS окремо.",
+  "music_source_login_hint": "Увійдіть у Twitch, щоб налаштувати локальну музичну нагороду.",
+  "music_queue_status_analyzing": "АНАЛІЗ",
+  "music_queue_status_normalizing": "НОРМАЛІЗАЦІЯ"
 }

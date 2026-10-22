@@ -1,23 +1,25 @@
 import 'dart:async';
 
-import 'package:obssource/settings/twitch_reward_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
-
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/extensions.dart';
-import 'package:obssource/settings/avatar_settings_controls.dart';
-
-import 'package:obssource/music/music_player_visuals.dart';
-import 'package:obssource/twitch/twitch_api.dart';
-import 'package:obssource/settings/neon_settings_controls.dart';
-import 'package:obssource/settings/music_settings_controls.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
+import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_reward_controller.dart';
+import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/music_source_controller.dart';
 import 'package:obssource/music/youtube_connection_controller.dart';
+import 'package:obssource/settings/avatar_settings_controls.dart';
+import 'package:obssource/settings/music_settings_controls.dart';
+import 'package:obssource/settings/neon_settings_controls.dart';
+import 'package:obssource/settings/twitch_reward_picker.dart';
+import 'package:obssource/twitch/twitch_api.dart';
 
 class OverlaySettingsDialog extends StatefulWidget {
+  final MusicSourceController? musicSource;
+  final bool configureRewards;
   final Settings settings;
   final TwitchRewardCatalog rewardCatalog;
   final MusicControlServerController? musicServer;
@@ -29,6 +31,8 @@ class OverlaySettingsDialog extends StatefulWidget {
     super.key,
     required this.settings,
     required this.rewardCatalog,
+    this.musicSource,
+    this.configureRewards = true,
     this.musicServer,
     this.musicRewardController,
     this.youtubeConnection,
@@ -53,6 +57,7 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   late bool _alwaysExpanded;
   bool _savingPresentation = false;
   bool _presentationSaveError = false;
+  StreamSubscription<MusicSettings>? _sourceSubscription;
 
   @override
   void initState() {
@@ -60,7 +65,22 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
     _selectedRewardId = widget.settings.musicRewardId;
     _collapseSeconds = widget.settings.playerCollapseSeconds;
     _alwaysExpanded = widget.settings.playerAlwaysExpanded;
-    unawaited(_loadRewards());
+    var previousSource = widget.settings.music.source;
+    _sourceSubscription = widget.settings.musicChanges.listen((value) {
+      final changed = previousSource != value.source;
+      previousSource = value.source;
+      if (changed &&
+          value.source == MusicSourceKind.local &&
+          widget.configureRewards) {
+        unawaited(_loadRewards());
+      }
+    });
+    if (widget.configureRewards &&
+        widget.settings.music.source == MusicSourceKind.local) {
+      unawaited(_loadRewards());
+    } else {
+      _loading = false;
+    }
   }
 
   Future<void> _loadRewards() async {
@@ -94,6 +114,12 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
         _loading = false;
       });
     }
+  }
+
+  @override
+  void dispose() {
+    unawaited(_sourceSubscription?.cancel());
+    super.dispose();
   }
 
   Future<void> _createReward() async {
@@ -273,19 +299,43 @@ class _OverlaySettingsDialogState extends State<OverlaySettingsDialog> {
   }
 
   Widget _buildPlayerSettings(BuildContext context) {
-    return SingleChildScrollView(
+    Widget content() => SingleChildScrollView(
       key: const ValueKey('music_settings_scroll'),
       padding: const EdgeInsets.fromLTRB(28, 22, 28, 26),
       child: MusicSettingsControls(
+        key: ObjectKey(widget.musicSource?.local),
         settings: widget.settings,
-        server: widget.musicServer,
-        rewardController: widget.musicRewardController,
-        youtubeConnection: widget.youtubeConnection,
-        musicRequests: widget.musicRequests,
+        source: widget.musicSource,
+        server:
+            widget.musicSource == null
+                ? widget.musicServer
+                : widget.musicSource!.local?.server,
+        rewardController:
+            widget.musicSource == null
+                ? widget.musicRewardController
+                : widget.musicSource!.local?.reward,
+        youtubeConnection:
+            widget.musicSource == null
+                ? widget.youtubeConnection
+                : widget.musicSource!.local?.youtubeConnection,
+        musicRequests:
+            widget.musicSource == null
+                ? widget.musicRequests
+                : widget.musicSource!.local?.requests,
         presentationSettings: _buildPresentationSettings(context),
-        rewardSettings: _buildRewardSubsection(context),
+        rewardSettings:
+            !widget.configureRewards
+                ? Text(context.localizations.music_source_login_hint)
+                : _buildRewardSubsection(context),
       ),
     );
+    final source = widget.musicSource;
+    return source == null
+        ? content()
+        : ListenableBuilder(
+          listenable: source,
+          builder: (context, _) => content(),
+        );
   }
 
   Future<void> _savePresentation() async {

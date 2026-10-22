@@ -51,3 +51,6 @@ app.*.map.json
 /tools/*.download
 /tools/*.zip
 /tools/ffmpeg-build.txt
+
+# Local development overrides must not affect portable builds.
+pubspec_overrides.yaml

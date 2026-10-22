@@ -912,6 +912,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Off'**
   String get settings_off;
+
+  /// No description provided for @music_source_title.
+  ///
+  /// In en, this message translates to:
+  /// **'Player source'**
+  String get music_source_title;
+
+  /// No description provided for @music_source_local.
+  ///
+  /// In en, this message translates to:
+  /// **'Local player'**
+  String get music_source_local;
+
+  /// No description provided for @music_source_external.
+  ///
+  /// In en, this message translates to:
+  /// **'External player'**
+  String get music_source_external;
+
+  /// No description provided for @music_source_external_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Connect to a player on this computer. Twitch Listener uses port 47822. Audio plays in the external application; capture it separately in OBS.'**
+  String get music_source_external_hint;
+
+  /// No description provided for @music_source_login_hint.
+  ///
+  /// In en, this message translates to:
+  /// **'Sign in to Twitch to configure a local music reward.'**
+  String get music_source_login_hint;
+
+  /// No description provided for @music_queue_status_analyzing.
+  ///
+  /// In en, this message translates to:
+  /// **'ANALYZING'**
+  String get music_queue_status_analyzing;
+
+  /// No description provided for @music_queue_status_normalizing.
+  ///
+  /// In en, this message translates to:
+  /// **'NORMALIZING'**
+  String get music_queue_status_normalizing;
 }
 
 class _AppLocalizationsDelegate

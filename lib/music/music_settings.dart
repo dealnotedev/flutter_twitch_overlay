@@ -1,3 +1,5 @@
+enum MusicSourceKind { local, external }
+
 enum MusicPlayerStyle { cosmic, turntable }
 
 /// Persisted music options managed through the overlay settings.
@@ -9,6 +11,8 @@ class MusicSettings {
   static const minCacheMb = 128;
   static const maxCacheMb = 2048;
 
+  final MusicSourceKind source;
+  final int externalPort;
   final bool enabled;
   final int volumePercent;
   final int maxQueue;
@@ -19,6 +23,8 @@ class MusicSettings {
   final MusicPlayerStyle playerStyle;
 
   const MusicSettings({
+    this.source = MusicSourceKind.local,
+    this.externalPort = 47822,
     this.enabled = true,
     this.volumePercent = 70,
     this.maxQueue = 10,
@@ -35,6 +41,12 @@ class MusicSettings {
     bool boolean(String key, bool fallback) =>
         json[key] is bool ? json[key] as bool : fallback;
     return MusicSettings(
+      source:
+          MusicSourceKind.values
+              .where((source) => source.name == json['source'])
+              .firstOrNull ??
+          MusicSourceKind.local,
+      externalPort: integer('external_port', 47822),
       enabled: boolean('enabled', true),
       volumePercent: integer('volume_percent', 70),
       maxQueue: integer('max_queue', 10),
@@ -51,6 +63,8 @@ class MusicSettings {
   }
 
   MusicSettings normalized() => copyWith(
+    externalPort:
+        externalPort > 0 && externalPort <= 65535 ? externalPort : 47822,
     volumePercent: volumePercent.clamp(0, 100),
     maxQueue:
         maxQueue > 0 ? maxQueue.clamp(minQueueLength, maxQueueLength) : 10,
@@ -70,6 +84,8 @@ class MusicSettings {
   );
 
   MusicSettings copyWith({
+    MusicSourceKind? source,
+    int? externalPort,
     bool? enabled,
     int? volumePercent,
     int? maxQueue,
@@ -79,6 +95,8 @@ class MusicSettings {
     int? controlServerPort,
     MusicPlayerStyle? playerStyle,
   }) => MusicSettings(
+    source: source ?? this.source,
+    externalPort: externalPort ?? this.externalPort,
     enabled: enabled ?? this.enabled,
     volumePercent: volumePercent ?? this.volumePercent,
     maxQueue: maxQueue ?? this.maxQueue,
@@ -90,6 +108,8 @@ class MusicSettings {
   );
 
   Map<String, Object> toJson() => {
+    'source': source.name,
+    'external_port': externalPort,
     'enabled': enabled,
     'volume_percent': volumePercent,
     'max_queue': maxQueue,

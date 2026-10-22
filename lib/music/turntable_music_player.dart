@@ -9,20 +9,14 @@ import 'package:gap/gap.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_queue_overlay.dart';
-import 'package:obssource/music/music_requests.dart';
+import 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_motion.dart';
-import 'package:obssource/music/turntable_playback_controller.dart';
 
 class TurntableMusicPlayer extends StatefulWidget {
   final MusicRequests requests;
-  final TurntablePlaybackController playback;
 
-  const TurntableMusicPlayer({
-    super.key,
-    required this.requests,
-    required this.playback,
-  });
+  const TurntableMusicPlayer({super.key, required this.requests});
 
   @override
   State<TurntableMusicPlayer> createState() => _TurntableMusicPlayerState();
@@ -41,16 +35,12 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
   @override
   void initState() {
     super.initState();
-    _motion = TurntableMotion(
-      onNeedlePlaced: (id) => widget.playback.needlePlaced(id),
-    );
+    _motion = TurntableMotion();
     _ticker = createTicker(_tick);
     _connect();
   }
 
   void _connect() {
-    widget.playback.attach();
-    widget.playback.addListener(_syncMotion);
     _snapshot = widget.requests.current;
     _queueExpanded = false;
     _subscription = widget.requests.states.listen((snapshot) {
@@ -67,10 +57,7 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
   @override
   void didUpdateWidget(covariant TurntableMusicPlayer oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.requests != widget.requests ||
-        oldWidget.playback != widget.playback) {
-      oldWidget.playback.removeListener(_syncMotion);
-      oldWidget.playback.detach();
+    if (oldWidget.requests != widget.requests) {
       unawaited(_subscription?.cancel());
       _connect();
     }
@@ -84,10 +71,7 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
     final duration = playing?.item.duration?.inMilliseconds ?? 0;
     _motion.update(
       itemId: item?.id,
-      ready:
-          item != null &&
-          (widget.playback.readyItemId == item.id ||
-              (playing != null && !playing.starting)),
+      ready: item != null && (playing != null && !playing.starting),
       paused: playing?.paused ?? false,
       progress: duration > 0 ? playing!.position.inMilliseconds / duration : 0,
     );
@@ -130,8 +114,6 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
 
   @override
   void dispose() {
-    widget.playback.removeListener(_syncMotion);
-    widget.playback.detach();
     unawaited(_subscription?.cancel());
     _ticker.dispose();
     _motion.dispose();

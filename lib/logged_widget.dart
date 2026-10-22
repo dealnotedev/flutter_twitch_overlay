@@ -22,7 +22,6 @@ import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/music/turntable_music_player.dart';
-import 'package:obssource/music/turntable_playback_controller.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
@@ -73,7 +72,6 @@ class _State extends State<LoggedWidget> {
   late AvatarPixelRenderer _alertRenderer;
   late int _alertAvatarResolution;
   MusicRequests? _musicRequests;
-  TurntablePlaybackController? _turntablePlayback;
   final _musicOverlayController = MusicQueueOverlayController();
   bool _overlayControlsHovered = false;
 
@@ -104,8 +102,6 @@ class _State extends State<LoggedWidget> {
     _alertAvatarResolution = _settings.avatar.resolution;
     try {
       _musicRequests = widget.locator.provide<MusicRequests>();
-      _turntablePlayback =
-          widget.locator.provide<TurntablePlaybackController>();
     } catch (_) {
       // Older test and debug locators may not provide music requests yet.
     }
@@ -141,8 +137,7 @@ class _State extends State<LoggedWidget> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final showTurntable =
-            _settings.music.playerStyle == MusicPlayerStyle.turntable &&
-            _turntablePlayback != null;
+            _settings.music.playerStyle == MusicPlayerStyle.turntable;
         return Stack(
           children: [
             _createConfigInfo(context),
@@ -195,7 +190,6 @@ class _State extends State<LoggedWidget> {
                       showTurntable
                           ? TurntableMusicPlayer(
                             requests: musicRequests,
-                            playback: _turntablePlayback!,
                           )
                           : MusicQueueOverlay(
                             requests: musicRequests,
@@ -286,6 +280,7 @@ class _State extends State<LoggedWidget> {
       builder:
           (_) => OverlaySettingsDialog(
             settings: _settings,
+            musicSource: appLocator is AppServiceLocator ? appLocator.musicSource : null,
             rewardCatalog: rewardCatalog,
             musicServer:
                 appLocator is AppServiceLocator

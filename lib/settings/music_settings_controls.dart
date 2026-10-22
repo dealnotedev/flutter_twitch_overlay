@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
+import 'package:dart_music_player_protocol/dart_music_player_protocol_io.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
@@ -9,11 +10,13 @@ import 'package:obssource/music/music_player_visuals.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/music_source_controller.dart';
 import 'package:obssource/music/youtube_browser_session.dart';
 import 'package:obssource/music/youtube_connection_controller.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 
 class MusicSettingsControls extends StatefulWidget {
+  final MusicSourceController? source;
   final Settings settings;
   final MusicControlServerController? server;
   final MusicRewardController? rewardController;
@@ -27,6 +30,7 @@ class MusicSettingsControls extends StatefulWidget {
     required this.settings,
     required this.presentationSettings,
     required this.rewardSettings,
+    this.source,
     this.server,
     this.rewardController,
     this.youtubeConnection,
@@ -41,6 +45,8 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
   bool _showYoutubeDetails = false;
   bool _confirmYoutubeDisconnect = false;
   late final TextEditingController _port;
+  late final TextEditingController _externalPort;
+  bool _invalidExternalPort = false;
   late final StreamSubscription<MusicSettings> _subscription;
   StreamSubscription<MusicQueueSnapshot>? _requestsSubscription;
   String? _holdSignature;
@@ -57,6 +63,8 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
     super.initState();
     final value = widget.settings.music;
     _port = TextEditingController(text: '${value.controlServerPort}');
+    _externalPort = TextEditingController(text: '${value.externalPort}');
+    widget.source?.addListener(_changed);
     _subscription = widget.settings.musicChanges.listen((_) => _changed());
     widget.server?.addListener(_changed);
     widget.rewardController?.addListener(_changed);
@@ -91,6 +99,8 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
     widget.server?.removeListener(_changed);
     widget.rewardController?.removeListener(_changed);
     widget.youtubeConnection?.removeListener(_changed);
+    widget.source?.removeListener(_changed);
+    _externalPort.dispose();
     _port.dispose();
     super.dispose();
   }
@@ -141,22 +151,26 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
                 ),
               ),
             ),
-            Text(l.music_settings_enabled, style: _secondary),
-            const Gap(12),
-            Tooltip(
-              message: l.music_settings_enabled_hint,
-              child: _toggleButton(
-                'music_enabled',
-                value.enabled,
-                () => _save(value.copyWith(enabled: !value.enabled)),
+            if (value.source == MusicSourceKind.local) ...[
+              Text(l.music_settings_enabled, style: _secondary),
+              const Gap(12),
+              Tooltip(
+                message: l.music_settings_enabled_hint,
+                child: _toggleButton(
+                  'music_enabled',
+                  value.enabled,
+                  () => _save(value.copyWith(enabled: !value.enabled)),
+                ),
               ),
-            ),
+            ],
           ],
         ),
         const Gap(6),
         Text(l.overlay_settings_player_description, style: _secondary),
         if (_saveError) Text(l.overlay_settings_save_error, style: _errorStyle),
-        if (reward?.error != null) ...[
+        const Gap(16),
+        _sourcePanel(),
+        if (value.source == MusicSourceKind.local && reward?.error != null) ...[
           const Gap(8),
           Text(l.music_settings_reward_error, style: _errorStyle),
           NeonSettingsButton(
@@ -166,32 +180,35 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
           ),
         ],
         const Gap(18),
-        if (widget.youtubeConnection != null) ...[
+        if (value.source == MusicSourceKind.local &&
+            widget.youtubeConnection != null) ...[
           _youtubePanel(),
           const Gap(16),
         ],
-        _panel([
-          NeonSettingsSlider(
-            sliderKey: const ValueKey('music_volume'),
-            label: l.music_settings_volume,
-            value: _volumeDraft ?? value.volumePercent,
-            min: 0,
-            max: 100,
-            step: 5,
-            formatValue: (value) => '$value%',
-            onChanged:
-                _saving
-                    ? null
-                    : (percent) => setState(() => _volumeDraft = percent),
-            onChangeEnd:
-                _saving
-                    ? null
-                    : (percent) => _save(
-                      widget.settings.music.copyWith(volumePercent: percent),
-                    ),
-          ),
-        ]),
-        const Gap(16),
+        if (value.source == MusicSourceKind.local) ...[
+          _panel([
+            NeonSettingsSlider(
+              sliderKey: const ValueKey('music_volume'),
+              label: l.music_settings_volume,
+              value: _volumeDraft ?? value.volumePercent,
+              min: 0,
+              max: 100,
+              step: 5,
+              formatValue: (value) => '$value%',
+              onChanged:
+                  _saving
+                      ? null
+                      : (percent) => setState(() => _volumeDraft = percent),
+              onChangeEnd:
+                  _saving
+                      ? null
+                      : (percent) => _save(
+                        widget.settings.music.copyWith(volumePercent: percent),
+                      ),
+            ),
+          ]),
+          const Gap(16),
+        ],
         _panel([
           Text(l.music_settings_player_style, style: _title),
           const Gap(12),
@@ -224,128 +241,226 @@ class _MusicSettingsControlsState extends State<MusicSettingsControls> {
         const Gap(16),
         widget.presentationSettings,
         const Gap(16),
-        widget.rewardSettings,
-        const Gap(16),
-        _panel([
-          Text(l.music_settings_limits, style: _title),
-          const Gap(12),
-          NeonSettingsSlider(
-            sliderKey: const ValueKey('music_max_queue'),
-            label: l.music_settings_queue,
-            value: _queueDraft ?? value.maxQueue,
-            min: MusicSettings.minQueueLength,
-            max: MusicSettings.maxQueueLength,
-            formatValue: (value) => '$value',
-            onChanged:
-                _saving
-                    ? null
-                    : (number) => setState(() => _queueDraft = number),
-            onChangeEnd:
-                _saving
-                    ? null
-                    : (number) =>
-                        _save(widget.settings.music.copyWith(maxQueue: number)),
-          ),
-          Text(l.music_settings_queue_hint, style: _secondary),
+        if (value.source == MusicSourceKind.local) ...[
+          widget.rewardSettings,
           const Gap(16),
-          NeonSettingsSlider(
-            sliderKey: const ValueKey('music_max_duration'),
-            label: l.music_settings_duration,
-            value: _durationDraft ?? value.maxDurationSeconds,
-            min: MusicSettings.minTrackDurationSeconds,
-            max: MusicSettings.maxTrackDurationSeconds,
-            step: 5,
-            formatValue: l.overlay_settings_seconds,
-            onChanged:
-                _saving
-                    ? null
-                    : (number) => setState(() => _durationDraft = number),
-            onChangeEnd:
-                _saving
-                    ? null
-                    : (number) => _save(
-                      widget.settings.music.copyWith(
-                        maxDurationSeconds: number,
+          _panel([
+            Text(l.music_settings_limits, style: _title),
+            const Gap(12),
+            NeonSettingsSlider(
+              sliderKey: const ValueKey('music_max_queue'),
+              label: l.music_settings_queue,
+              value: _queueDraft ?? value.maxQueue,
+              min: MusicSettings.minQueueLength,
+              max: MusicSettings.maxQueueLength,
+              formatValue: (value) => '$value',
+              onChanged:
+                  _saving
+                      ? null
+                      : (number) => setState(() => _queueDraft = number),
+              onChangeEnd:
+                  _saving
+                      ? null
+                      : (number) => _save(
+                        widget.settings.music.copyWith(maxQueue: number),
                       ),
-                    ),
-          ),
-          Text(l.music_settings_duration_hint, style: _secondary),
+            ),
+            Text(l.music_settings_queue_hint, style: _secondary),
+            const Gap(16),
+            NeonSettingsSlider(
+              sliderKey: const ValueKey('music_max_duration'),
+              label: l.music_settings_duration,
+              value: _durationDraft ?? value.maxDurationSeconds,
+              min: MusicSettings.minTrackDurationSeconds,
+              max: MusicSettings.maxTrackDurationSeconds,
+              step: 5,
+              formatValue: l.overlay_settings_seconds,
+              onChanged:
+                  _saving
+                      ? null
+                      : (number) => setState(() => _durationDraft = number),
+              onChangeEnd:
+                  _saving
+                      ? null
+                      : (number) => _save(
+                        widget.settings.music.copyWith(
+                          maxDurationSeconds: number,
+                        ),
+                      ),
+            ),
+            Text(l.music_settings_duration_hint, style: _secondary),
+            const Gap(16),
+            NeonSettingsSlider(
+              sliderKey: const ValueKey('music_cache_max_mb'),
+              label: l.music_settings_cache,
+              value: _cacheDraft ?? value.cacheMaxMb,
+              min: MusicSettings.minCacheMb,
+              max: MusicSettings.maxCacheMb,
+              step: 128,
+              formatValue:
+                  (number) =>
+                      number % 1024 == 0
+                          ? l.music_settings_cache_gb(number ~/ 1024)
+                          : l.music_settings_cache_mb(number),
+              onChanged:
+                  _saving
+                      ? null
+                      : (number) => setState(() => _cacheDraft = number),
+              onChangeEnd:
+                  _saving
+                      ? null
+                      : (number) => _save(
+                        widget.settings.music.copyWith(cacheMaxMb: number),
+                      ),
+            ),
+            Text(l.music_settings_cache_hint, style: _secondary),
+          ]),
           const Gap(16),
-          NeonSettingsSlider(
-            sliderKey: const ValueKey('music_cache_max_mb'),
-            label: l.music_settings_cache,
-            value: _cacheDraft ?? value.cacheMaxMb,
-            min: MusicSettings.minCacheMb,
-            max: MusicSettings.maxCacheMb,
-            step: 128,
-            formatValue:
-                (number) =>
-                    number % 1024 == 0
-                        ? l.music_settings_cache_gb(number ~/ 1024)
-                        : l.music_settings_cache_mb(number),
-            onChanged:
-                _saving
-                    ? null
-                    : (number) => setState(() => _cacheDraft = number),
-            onChangeEnd:
-                _saving
-                    ? null
-                    : (number) => _save(
-                      widget.settings.music.copyWith(cacheMaxMb: number),
+          _panel([
+            Row(
+              children: [
+                Expanded(child: Text(l.music_settings_server, style: _title)),
+                const Gap(12),
+                _toggleButton(
+                  'music_server_enabled',
+                  value.controlServerEnabled,
+                  () => _save(
+                    value.copyWith(
+                      controlServerEnabled: !value.controlServerEnabled,
                     ),
-          ),
-          Text(l.music_settings_cache_hint, style: _secondary),
-        ]),
-        const Gap(16),
-        _panel([
-          Row(
-            children: [
-              Expanded(child: Text(l.music_settings_server, style: _title)),
-              const Gap(12),
-              _toggleButton(
-                'music_server_enabled',
-                value.controlServerEnabled,
-                () => _save(
-                  value.copyWith(
-                    controlServerEnabled: !value.controlServerEnabled,
                   ),
                 ),
-              ),
-            ],
-          ),
-          const Gap(6),
-          Text(l.music_settings_server_hint, style: _secondary),
-          const Gap(12),
-          _portInput(),
-          if (server != null) ...[
-            SelectableText(switch (server.status) {
-              MusicControlServerStatus.stopped =>
-                l.music_settings_server_stopped,
-              MusicControlServerStatus.starting =>
-                l.music_settings_server_starting,
-              MusicControlServerStatus.running => l
-                  .music_settings_server_running(
-                    'http://127.0.0.1:${server.port}',
-                  ),
-              MusicControlServerStatus.failed => l.music_settings_server_failed,
-            }, style: server.error == null ? _secondary : _errorStyle),
-            if (server.error != null)
-              NeonSettingsButton(
-                key: const ValueKey('music_server_retry'),
-                label: l.music_settings_retry,
-                icon: Icons.refresh_rounded,
-                onPressed:
-                    () => unawaited(
-                      server.configure(
-                        enabled: widget.settings.music.controlServerEnabled,
-                        port: widget.settings.music.controlServerPort,
-                      ),
+              ],
+            ),
+            const Gap(6),
+            Text(l.music_settings_server_hint, style: _secondary),
+            const Gap(12),
+            _portInput(),
+            if (server != null) ...[
+              SelectableText(switch (server.status) {
+                MusicControlServerStatus.stopped =>
+                  l.music_settings_server_stopped,
+                MusicControlServerStatus.starting =>
+                  l.music_settings_server_starting,
+                MusicControlServerStatus.running => l
+                    .music_settings_server_running(
+                      'http://127.0.0.1:${server.port}',
                     ),
-              ),
-          ],
-        ]),
+                MusicControlServerStatus.failed =>
+                  l.music_settings_server_failed,
+              }, style: server.error == null ? _secondary : _errorStyle),
+              if (server.error != null)
+                NeonSettingsButton(
+                  key: const ValueKey('music_server_retry'),
+                  label: l.music_settings_retry,
+                  icon: Icons.refresh_rounded,
+                  onPressed:
+                      () => unawaited(
+                        server.configure(
+                          enabled: widget.settings.music.controlServerEnabled,
+                          port: widget.settings.music.controlServerPort,
+                        ),
+                      ),
+                ),
+            ],
+          ]),
+        ],
       ],
     );
+  }
+
+  Widget _sourcePanel() {
+    final l = context.localizations;
+    final value = widget.settings.music;
+    final external = value.source == MusicSourceKind.external;
+    final connection = widget.source?.connection;
+    Future<void> applyPort() async {
+      final port = int.tryParse(_externalPort.text.trim());
+      if (port == null || port < 1 || port > 65535) {
+        setState(() => _invalidExternalPort = true);
+        return;
+      }
+      setState(() => _invalidExternalPort = false);
+      await _save(widget.settings.music.copyWith(externalPort: port));
+    }
+
+    return _panel([
+      Text(l.music_source_title, style: _title),
+      const Gap(12),
+      Wrap(
+        spacing: 12,
+        runSpacing: 8,
+        children: [
+          for (final source in MusicSourceKind.values)
+            NeonSettingsButton(
+              key: ValueKey('music_source_${source.name}'),
+              label:
+                  source == MusicSourceKind.local
+                      ? l.music_source_local
+                      : l.music_source_external,
+              icon:
+                  source == MusicSourceKind.local
+                      ? Icons.computer_rounded
+                      : Icons.link_rounded,
+              selected: value.source == source,
+              onPressed:
+                  _saving || widget.source?.switching == true
+                      ? null
+                      : () => _save(value.copyWith(source: source)),
+            ),
+        ],
+      ),
+      if (external) ...[
+        const Gap(12),
+        Text(l.music_source_external_hint, style: _secondary),
+        const Gap(12),
+        Row(
+          children: [
+            const Text('127.0.0.1 :', style: _secondary),
+            const Gap(12),
+            Expanded(
+              child: NeonSettingsInput(
+                key: const ValueKey('music_external_port'),
+                label: l.music_settings_port,
+                controller: _externalPort,
+                enabled: !_saving,
+                onSubmitted: applyPort,
+              ),
+            ),
+            const Gap(12),
+            NeonSettingsButton(
+              key: const ValueKey('music_external_port_apply'),
+              label: l.music_settings_apply,
+              icon: Icons.check_rounded,
+              onPressed: _saving ? null : applyPort,
+            ),
+          ],
+        ),
+        if (_invalidExternalPort)
+          Text(l.music_settings_invalid_port, style: _errorStyle),
+        if (connection != null) ...[
+          const Gap(8),
+          Text(
+            switch (connection.phase) {
+              MusicControlConnectionPhase.connected =>
+                l.music_control_connected,
+              MusicControlConnectionPhase.incompatible =>
+                l.music_control_incompatible,
+              MusicControlConnectionPhase.connecting =>
+                l.music_control_connecting,
+              _ => l.music_control_reconnecting(
+                connection.attempt,
+                ((connection.retryIn?.inMilliseconds ?? 0) / 1000).ceil(),
+              ),
+            },
+            key: const ValueKey('music_external_status'),
+            style: _secondary,
+          ),
+        ],
+      ],
+      if (widget.source?.error case final error?)
+        Text(error, style: _errorStyle),
+    ]);
   }
 
   Widget _toggleButton(String key, bool value, VoidCallback save) =>

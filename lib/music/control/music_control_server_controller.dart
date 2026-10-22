@@ -2,7 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:obssource/music/control/music_control_server.dart';
-import 'package:obssource/music/music_requests.dart';
+import 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 
 enum MusicControlServerStatus { stopped, starting, running, failed }
 

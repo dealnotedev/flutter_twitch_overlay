@@ -11,127 +11,71 @@ import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_music_player.dart';
-import 'package:obssource/music/turntable_playback_controller.dart';
 
 void main() {
-  test(
-    'headless playback, interruption and detachment never block audio',
-    () async {
-      final playback = TurntablePlaybackController();
-      final interrupted = Completer<void>();
-      await playback.beforeStart(_track(), interrupted.future);
-      playback.attach();
-      var cued = false;
-      final cue = playback
-          .beforeStart(_track(), interrupted.future)
-          .then((_) => cued = true);
-      await Future<void>.delayed(Duration.zero);
-      playback.needlePlaced('stale-track');
-      await Future<void>.delayed(Duration.zero);
-      expect(cued, isFalse);
-      interrupted.complete();
-      await cue;
-      expect(playback.readyItemId, isNull);
-      final secondCue = playback.beforeStart(
-        _track(),
-        Completer<void>().future,
-      );
-      playback.detach();
-      await secondCue;
-      playback.dispose();
-    },
-  );
-
-  testWidgets(
-    'only releases playback after native readiness and needle placement',
-    (tester) async {
-      final coverUrl = Uri.parse(
-        'https://example.invalid/turntable-test-cover.png',
-      );
-      final provider = CachedNetworkImageProvider(
-        coverUrl.toString(),
-        maxWidth: 256,
-        maxHeight: 256,
-      );
-      final cover =
-          (await tester.runAsync(() async {
-            final codec = await ui.instantiateImageCodec(await _sampleCover());
-            final frame = await codec.getNextFrame();
-            codec.dispose();
-            return frame.image;
-          }))!;
-      PaintingBinding.instance.imageCache.putIfAbsent(
-        provider,
-        () =>
-            OneFrameImageStreamCompleter(Future.value(ImageInfo(image: cover))),
-      );
-      addTearDown(() => PaintingBinding.instance.imageCache.evict(provider));
-      final requests = _Requests(artwork: coverUrl);
-      final playback = TurntablePlaybackController();
-      final capture = GlobalKey();
-      await _loadFonts(tester);
-      await tester.pumpWidget(_surface(requests, playback, capture));
-      await _animate(tester, 4);
-      expect(find.text('PREPARING THE RECORD'), findsOneWidget);
-      expect(find.byType(VinylRecord), findsOneWidget);
-      await _capture(tester, capture, 'turntable-waiting');
-
-      final interrupted = Completer<void>();
-      var cued = false;
-      final cue = playback
-          .beforeStart(_track(), interrupted.future)
-          .then((_) => cued = true);
-      await tester.pump();
-      await _animate(tester, 0.65);
-      expect(cued, isFalse);
-      expect(find.text('PLACING THE NEEDLE'), findsOneWidget);
-      await _capture(tester, capture, 'turntable-cueing');
-      await _animate(tester, 0.7);
-      await cue;
-      expect(cued, isTrue);
-      requests.start();
-      await tester.pump();
-      await _capture(tester, capture, 'turntable-playing');
-
-      await requests.seek(const Duration(seconds: 239));
-      await tester.pump();
-      await _animate(tester, 1);
-      expect(find.byType(VinylRecord), findsOneWidget);
-      await _capture(tester, capture, 'turntable-ending');
-
-      await requests.seek(const Duration(seconds: 120));
-      await tester.pump();
-      await _animate(tester, 1);
-
-      await tester.tap(find.byKey(const ValueKey('turntable_pause')));
-      await tester.pump();
-      expect(requests.current.nowPlaying!.paused, isTrue);
-      await tester.tap(find.byKey(const ValueKey('turntable_pause')));
-      await tester.pump();
-      expect(requests.current.nowPlaying!.paused, isFalse);
-      await tester.tap(find.byKey(const ValueKey('turntable_skip')));
-      await tester.pump();
-      await _animate(tester, 3);
-      expect(tester.takeException(), isNull);
-      await tester.pumpWidget(const SizedBox.shrink());
-      playback.dispose();
-      await requests.close();
-    },
-  );
-
-  testWidgets('unmounting the turntable while cueing releases the audio gate', (
+  testWidgets('animates playback snapshots without delaying the player', (
     tester,
   ) async {
-    final requests = _Requests();
-    final playback = TurntablePlaybackController();
-    await tester.pumpWidget(_surface(requests, playback, GlobalKey()));
-    final cue = playback.beforeStart(_track(), Completer<void>().future);
+    final coverUrl = Uri.parse(
+      'https://example.invalid/turntable-test-cover.png',
+    );
+    final provider = CachedNetworkImageProvider(
+      coverUrl.toString(),
+      maxWidth: 256,
+      maxHeight: 256,
+    );
+    final cover =
+        (await tester.runAsync(() async {
+          final codec = await ui.instantiateImageCodec(await _sampleCover());
+          final frame = await codec.getNextFrame();
+          codec.dispose();
+          return frame.image;
+        }))!;
+    PaintingBinding.instance.imageCache.putIfAbsent(
+      provider,
+      () => OneFrameImageStreamCompleter(Future.value(ImageInfo(image: cover))),
+    );
+    addTearDown(() => PaintingBinding.instance.imageCache.evict(provider));
+    final requests = _Requests(artwork: coverUrl);
+    final capture = GlobalKey();
+    await _loadFonts(tester);
+    await tester.pumpWidget(_surface(requests, capture));
+    await _animate(tester, 4);
+    expect(find.text('PREPARING THE RECORD'), findsOneWidget);
+    expect(find.byType(VinylRecord), findsOneWidget);
+    await _capture(tester, capture, 'turntable-waiting');
+
+    requests.start();
     await tester.pump();
-    await tester.pumpWidget(const SizedBox.shrink());
-    await cue;
-    playback.dispose();
-    await requests.close();
+    expect(requests.current.nowPlaying!.starting, isFalse);
+    await _animate(tester, 0.65);
+    expect(find.text('PLACING THE NEEDLE'), findsOneWidget);
+    await _capture(tester, capture, 'turntable-cueing');
+    await _animate(tester, 0.7);
+    await _capture(tester, capture, 'turntable-playing');
+
+    await requests.seek(const Duration(seconds: 239));
+    await tester.pump();
+    await _animate(tester, 1);
+    expect(find.byType(VinylRecord), findsOneWidget);
+    await _capture(tester, capture, 'turntable-ending');
+
+    await requests.seek(const Duration(seconds: 120));
+    await tester.pump();
+    await _animate(tester, 1);
+
+    await tester.tap(find.byKey(const ValueKey('turntable_pause')));
+    await tester.pump();
+    expect(requests.current.nowPlaying!.paused, isTrue);
+    await tester.tap(find.byKey(const ValueKey('turntable_pause')));
+    await tester.pump();
+    expect(requests.current.nowPlaying!.paused, isFalse);
+    await tester.tap(find.byKey(const ValueKey('turntable_skip')));
+    await tester.pump();
+    await _animate(tester, 3);
     expect(tester.takeException(), isNull);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await requests.close();
   });
 
   for (final screenWidth in [800.0, 320.0]) {
@@ -141,10 +85,9 @@ void main() {
         await tester.binding.setSurfaceSize(Size(screenWidth, 900));
         addTearDown(() => tester.binding.setSurfaceSize(null));
         final requests = _Requests()..start();
-        final playback = TurntablePlaybackController();
         final capture = GlobalKey();
         await _loadFonts(tester);
-        await tester.pumpWidget(_surface(requests, playback, capture));
+        await tester.pumpWidget(_surface(requests, capture));
         await _animate(tester, 5);
         final player = find.byKey(const ValueKey('music_turntable'));
         final expanded = tester.getRect(player);
@@ -191,7 +134,6 @@ void main() {
         expect(tester.getRect(player).left, closeTo(expanded.left, 0.01));
         await mouse.removePointer();
         await tester.pumpWidget(const SizedBox.shrink());
-        playback.dispose();
         await requests.close();
       },
     );
@@ -202,9 +144,8 @@ void main() {
     (tester) async {
       final requests = _Requests()..start();
       await requests.setPaused(true);
-      final playback = TurntablePlaybackController();
       final capture = GlobalKey();
-      await tester.pumpWidget(_surface(requests, playback, capture));
+      await tester.pumpWidget(_surface(requests, capture));
       await _animate(tester, 4);
       final player = find.byKey(const ValueKey('music_turntable'));
       final expandedLeft = tester.getRect(player).left;
@@ -227,7 +168,6 @@ void main() {
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 6));
       expect(tester.takeException(), isNull);
-      playback.dispose();
       await requests.close();
     },
   );
@@ -236,10 +176,9 @@ void main() {
     tester,
   ) async {
     final requests = _Requests()..start();
-    final playback = TurntablePlaybackController();
     final capture = GlobalKey();
     await _loadFonts(tester);
-    await tester.pumpWidget(_surface(requests, playback, capture));
+    await tester.pumpWidget(_surface(requests, capture));
     await _animate(tester, 5);
     final player = find.byKey(const ValueKey('music_turntable'));
     final normalHeight = tester.getSize(player).height;
@@ -266,16 +205,13 @@ void main() {
     }
 
     expectPanelPadding();
-    await tester.pumpWidget(
-      _surface(requests, playback, capture, textScale: 1.75),
-    );
+    await tester.pumpWidget(_surface(requests, capture, textScale: 1.75));
     await tester.pump();
     expect(tester.getSize(player).height, greaterThan(normalHeight));
     expectPanelPadding();
     expect(tester.takeException(), isNull);
     await _capture(tester, capture, 'turntable-panel-large-text');
     await tester.pumpWidget(const SizedBox.shrink());
-    playback.dispose();
     await requests.close();
   });
 
@@ -321,10 +257,9 @@ void main() {
         ),
         _queuedItem('three'),
       ]);
-      final playback = TurntablePlaybackController();
       final capture = GlobalKey();
       await _loadFonts(tester);
-      await tester.pumpWidget(_surface(requests, playback, capture));
+      await tester.pumpWidget(_surface(requests, capture));
       await _animate(tester, 5);
       final queueButton = find.byKey(const ValueKey('turntable_queue'));
       final queue = find.byKey(const ValueKey('turntable_inline_queue'));
@@ -404,7 +339,6 @@ void main() {
       expect(queue, findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
-      playback.dispose();
       await requests.close();
     },
   );
@@ -416,10 +350,9 @@ void main() {
       addTearDown(() => tester.binding.setSurfaceSize(null));
       final requests = _Requests()..start();
       requests.setQueue([_queuedItem('short')]);
-      final playback = TurntablePlaybackController();
       final capture = GlobalKey();
       await _loadFonts(tester);
-      await tester.pumpWidget(_surface(requests, playback, capture));
+      await tester.pumpWidget(_surface(requests, capture));
       await _animate(tester, 5);
       final player = find.byKey(const ValueKey('music_turntable'));
       final panel = find.byKey(const ValueKey('turntable_info_panel'));
@@ -480,7 +413,6 @@ void main() {
       expect(find.text('Midnight City').hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
-      playback.dispose();
       await requests.close();
     },
   );
@@ -489,10 +421,9 @@ void main() {
     tester,
   ) async {
     final requests = _Requests()..start();
-    final playback = TurntablePlaybackController();
     final capture = GlobalKey();
     await _loadFonts(tester);
-    await tester.pumpWidget(_surface(requests, playback, capture));
+    await tester.pumpWidget(_surface(requests, capture));
     await _animate(tester, 5);
     final queueButton = find.byKey(const ValueKey('turntable_queue'));
     final queue = find.byKey(const ValueKey('turntable_inline_queue'));
@@ -544,7 +475,6 @@ void main() {
     expect(find.byType(Dialog), findsNothing);
     expect(tester.takeException(), isNull);
     await tester.pumpWidget(const SizedBox.shrink());
-    playback.dispose();
     await requests.close();
   });
 }
@@ -605,7 +535,6 @@ Future<Uint8List> _sampleCover() async {
 
 Widget _surface(
   _Requests requests,
-  TurntablePlaybackController playback,
   GlobalKey capture, {
   double textScale = 1,
 }) => MaterialApp(
@@ -635,10 +564,7 @@ Widget _surface(
                   ),
                   child: RepaintBoundary(
                     key: capture,
-                    child: TurntableMusicPlayer(
-                      requests: requests,
-                      playback: playback,
-                    ),
+                    child: TurntableMusicPlayer(requests: requests),
                   ),
                 ),
               ),
@@ -685,20 +611,6 @@ Future<void> _capture(WidgetTester tester, GlobalKey key, String name) async {
     image.dispose();
   });
 }
-
-DownloadedMusicTrack _track() => DownloadedMusicTrack(
-  itemId: 'one',
-  requestedBy: 'Viewer',
-  metadata: MusicTrackMetadata(
-    videoId: 'one',
-    title: 'Midnight City',
-    author: 'M83',
-    duration: const Duration(minutes: 4),
-    thumbnail: null,
-    sourceUrl: Uri.parse('https://youtu.be/one'),
-  ),
-  filePath: 'one.mp3',
-);
 
 class _Requests implements MusicRequests {
   final _states = StreamController<MusicQueueSnapshot>.broadcast();

@@ -44,6 +44,26 @@ Twitch authorization requires
 
 ## Twitch music requests MVP
 
+The overlay can display its own player or the player running in Twitch Listener.
+In **Overlay settings → Player → Player source**, select **Local player**
+(the default) or **External player**. Listener listens on **127.0.0.1:47822**;
+the port is editable in the overlay. Both Cosmic and Turntable views work with
+either source. External display does not require Twitch authorization in OBS.
+
+Switching away from Local closes that local queue and stops its audio. Selecting
+an external player or closing its OBS view never stops playback in Listener.
+Its audio continues in Listener and must be captured in OBS separately.
+Turntable animation follows playback and never delays the audio start.
+
+The shared state, controls, JSON contract, and native transport are provided by
+[`dart_music_player_protocol`](https://github.com/dealnotedev/dart_music_player_protocol),
+a standalone Dart package pinned to a tested Git commit. `flutter pub get`
+downloads it automatically; no adjacent package checkout is required. The
+existing v1 controller protocol is retained with additive fields for Listener
+preparation phases. Connections are limited to applications on this computer.
+See the package README for independent tests, wire documentation and optional
+local development overrides.
+
 Create or select an app-managed Twitch channel-points reward in
 **Overlay settings → Player**. A viewer must enter a full `youtube.com` or
 `youtu.be` URL. The Flutter overlay validates the request, resolves metadata,

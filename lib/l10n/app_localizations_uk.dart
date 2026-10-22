@@ -528,4 +528,27 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get settings_off => 'Вимкнено';
+
+  @override
+  String get music_source_title => 'Джерело плеєра';
+
+  @override
+  String get music_source_local => 'Локальний плеєр';
+
+  @override
+  String get music_source_external => 'Зовнішній плеєр';
+
+  @override
+  String get music_source_external_hint =>
+      'Підключення до плеєра на цьому комп’ютері. Twitch Listener використовує порт 47822. Звук відтворюється у зовнішній програмі; захоплюйте його в OBS окремо.';
+
+  @override
+  String get music_source_login_hint =>
+      'Увійдіть у Twitch, щоб налаштувати локальну музичну нагороду.';
+
+  @override
+  String get music_queue_status_analyzing => 'АНАЛІЗ';
+
+  @override
+  String get music_queue_status_normalizing => 'НОРМАЛІЗАЦІЯ';
 }

@@ -6,7 +6,6 @@ import 'package:obssource/obs_audio.dart';
 class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
   final Duration completionGrace;
   final Duration nativeEventTimeout;
-  final Future<void> Function(DownloadedMusicTrack, Future<void>)? beforeStart;
 
   double _volume;
 
@@ -19,7 +18,6 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
     required double volume,
     this.completionGrace = const Duration(seconds: 2),
     this.nativeEventTimeout = const Duration(seconds: 10),
-    this.beforeStart,
   }) : _volume = _normalizeVolume(volume);
 
   double get volume => _volume;
@@ -84,7 +82,6 @@ class ObsAudioMusicTrackPlayer implements MusicTrackPlayer {
         });
 
     try {
-      await beforeStart?.call(track, completer.future);
       if (generation != _generation) return;
       if (nativeError != null) throw nativeError!;
       final startedVolume = _volume;

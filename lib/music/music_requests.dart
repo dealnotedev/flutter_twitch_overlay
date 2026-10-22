@@ -1,161 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 import 'package:obssource/music/music_settings.dart';
-import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/twitch_redemption_service.dart';
+import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/ws_event.dart';
 
-enum MusicQueueItemPhase { resolving, downloading, ready }
-
-enum MusicQueueErrorType {
-  missingYoutubeUrl,
-  invalidYoutubeUrl,
-  queueFull,
-  trackTooLongOrLive,
-  youtubeAccessRequired,
-  youtubeDownloadBlocked,
-  youtubeRateLimited,
-  youtubeUnavailable,
-  networkUnavailable,
-  musicToolsUnavailable,
-  operationFailed,
-}
-
-/// YouTube-wide blocks. Every following request would fail the same way, so
-/// preparation pauses instead of refunding the queue one request at a time.
-const musicPreparationHoldReasons = {
-  MusicQueueErrorType.youtubeAccessRequired,
-  MusicQueueErrorType.youtubeDownloadBlocked,
-  MusicQueueErrorType.youtubeRateLimited,
-};
-
-/// A preparation failure with a stable, localizable reason for the UI.
-class MusicTrackException implements Exception {
-  final String message;
-  final MusicQueueErrorType errorType;
-
-  const MusicTrackException(
-    this.message, {
-    this.errorType = MusicQueueErrorType.operationFailed,
-  });
-
-  @override
-  String toString() => message;
-}
-
-class MusicQueueError {
-  final String requester;
-  final MusicQueueErrorType type;
-  final String? details;
-
-  const MusicQueueError({
-    required this.requester,
-    required this.type,
-    this.details,
-  });
-
-  String get signature => '$requester|$type|${details ?? ''}';
-}
-
-class MusicTrackMetadata {
-  final String videoId;
-  final String title;
-  final String author;
-  final Duration duration;
-  final Uri? thumbnail;
-  final Uri sourceUrl;
-
-  const MusicTrackMetadata({
-    required this.videoId,
-    required this.title,
-    required this.author,
-    required this.duration,
-    required this.thumbnail,
-    required this.sourceUrl,
-  });
-}
-
-class DownloadedMusicTrack {
-  final String itemId;
-  final String requestedBy;
-  final MusicTrackMetadata metadata;
-  final String filePath;
-
-  const DownloadedMusicTrack({
-    required this.itemId,
-    required this.requestedBy,
-    required this.metadata,
-    required this.filePath,
-  });
-}
-
-class MusicQueueItem {
-  final String id;
-  final String requestedBy;
-  final Uri sourceUrl;
-  final MusicQueueItemPhase phase;
-  final String? title;
-  final String? author;
-  final Duration? duration;
-  final Uri? thumbnail;
-  final double? downloadProgress;
-
-  const MusicQueueItem({
-    required this.id,
-    required this.requestedBy,
-    required this.sourceUrl,
-    required this.phase,
-    required this.title,
-    required this.author,
-    required this.duration,
-    required this.thumbnail,
-    required this.downloadProgress,
-  });
-}
-
-class MusicNowPlaying {
-  final MusicQueueItem item;
-  final DateTime startedAt;
-  final Duration position;
-  final DateTime positionUpdatedAt;
-  final bool paused;
-  final bool starting;
-
-  const MusicNowPlaying({
-    required this.item,
-    required this.startedAt,
-    required this.position,
-    required this.positionUpdatedAt,
-    required this.paused,
-    this.starting = false,
-  });
-}
-
-class MusicQueueSnapshot {
-  final int revision;
-  final MusicNowPlaying? nowPlaying;
-  final List<MusicQueueItem> queue;
-  final MusicQueueError? lastError;
-
-  /// Why track preparation is paused; queued requests wait instead of failing.
-  final MusicQueueErrorType? hold;
-
-  const MusicQueueSnapshot({
-    required this.revision,
-    required this.nowPlaying,
-    required this.queue,
-    required this.lastError,
-    this.hold,
-  });
-
-  static const empty = MusicQueueSnapshot(
-    revision: 0,
-    nowPlaying: null,
-    queue: [],
-    lastError: null,
-  );
-}
+export 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 
 class MusicDownloadProgress {
   final int downloadedBytes;
@@ -198,22 +50,6 @@ abstract interface class MusicTrackPlayer {
   Future<void> stop();
 }
 
-abstract interface class MusicRequests {
-  MusicQueueSnapshot get current;
-
-  Stream<MusicQueueSnapshot> get states;
-
-  Future<bool> setPaused(bool paused);
-
-  Future<bool> seek(Duration position);
-
-  Future<bool> skip();
-
-  Future<bool> remove(String itemId);
-
-  Future<void> close();
-}
-
 class MusicRequestManager implements MusicRequests {
   static const _redemptionType =
       'channel.channel_points_custom_reward_redemption.add';
@@ -231,6 +67,7 @@ class MusicRequestManager implements MusicRequests {
   int _maxQueueLength;
   Duration _maxDuration;
   bool _enabled;
+  double _volume;
 
   final _stateController = StreamController<MusicQueueSnapshot>.broadcast();
   final _processedRedemptionIds = <String>{};
@@ -260,6 +97,7 @@ class MusicRequestManager implements MusicRequests {
     required bool enabled,
     required int maxQueueLength,
     required Duration maxDuration,
+    double volume = 1,
     String? rewardId,
     Stream<String?>? rewardIdChanges,
     TwitchRedemptionService? redemptionService,
@@ -270,10 +108,18 @@ class MusicRequestManager implements MusicRequests {
        _redemptionService = redemptionService,
        _rewardId = _normalizeRewardId(rewardId),
        _enabled = enabled,
+       _volume = volume.isFinite ? volume.clamp(0, 1).toDouble() : 1,
        _maxQueueLength = maxQueueLength,
        _maxDuration = maxDuration {
     _eventSubscription = events.listen(_handleMessage);
     _rewardIdSubscription = rewardIdChanges?.listen(_handleRewardIdChanged);
+    _current = MusicQueueSnapshot(
+      revision: 0,
+      nowPlaying: null,
+      queue: const [],
+      lastError: null,
+      volume: _volume,
+    );
   }
 
   @override
@@ -284,6 +130,11 @@ class MusicRequestManager implements MusicRequests {
     _enabled = value.enabled;
     _maxQueueLength = value.maxQueue;
     _maxDuration = Duration(seconds: value.maxDurationSeconds);
+    final volume = value.volumePercent / 100;
+    if (_volume != volume) {
+      _volume = volume;
+      _emit();
+    }
   }
 
   /// Retries waiting requests after a hold, for example once YouTube is
@@ -761,6 +612,7 @@ class MusicRequestManager implements MusicRequests {
 
     _current = MusicQueueSnapshot(
       revision: _current.revision + 1,
+      volume: _volume,
       nowPlaying: _nowPlaying?.toNowPlaying(DateTime.now()),
       queue: List.unmodifiable(_queue.map((request) => request.toView())),
       // A hold stays visible until it ends, even while ready tracks play.
