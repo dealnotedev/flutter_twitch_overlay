@@ -25,7 +25,8 @@ import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/ws_event.dart';
 import 'package:obssource/twitch/ws_manager.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import 'support/test_preferences.dart';
 
 void main() {
   late Settings settings;
@@ -42,8 +43,8 @@ void main() {
           audioCommands.add(jsonDecode(message!) as Map<String, dynamic>);
           return SynchronousFuture('{"ok":true,"events":false}');
         });
-    SharedPreferences.setMockInitialValues({});
-    settings = Settings();
+    final preferences = testPreferences({});
+    settings = Settings(preferences);
     await settings.init();
     config = ObsConfig();
     config.config.set(Config(valid: true, json: {'followers': true}));

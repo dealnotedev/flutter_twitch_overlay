@@ -12,15 +12,16 @@ import 'package:obssource/pixels/pixel_rain_animator.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/settings/overlay_settings_dialog.dart';
 import 'package:obssource/twitch/twitch_api.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/test_preferences.dart';
 
 void main() {
   for (final language in ['uk', 'en']) {
     testWidgets('avatar controls save and restore settings in $language', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      final settings = Settings();
+      final preferences = testPreferences({});
+      final settings = Settings(preferences);
       await settings.init();
       await tester.binding.setSurfaceSize(const Size(1000, 700));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -72,7 +73,7 @@ void main() {
       await _pump(tester);
       expect(tester.widget<Slider>(slider).value, AvatarSettings.minResolution);
       expect(tester.widget<NeonSettingsButton>(classic).selected, isTrue);
-      final restored = Settings();
+      final restored = Settings(preferences);
       await restored.init();
       expect(restored.avatar.toJson(), settings.avatar.toJson());
       await tester.pumpWidget(const SizedBox.shrink());
@@ -92,7 +93,6 @@ void main() {
   testWidgets('failed avatar save restores controls and allows retry', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
     final settings = _FailingSettings();
     await settings.init();
     await _showDialog(tester, settings, 'en', GlobalKey());
@@ -196,6 +196,8 @@ class _Catalog implements TwitchRewardCatalog {
 }
 
 class _FailingSettings extends Settings {
+  _FailingSettings() : super(testPreferences());
+
   bool fail = true;
 
   @override

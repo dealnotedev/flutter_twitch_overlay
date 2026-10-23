@@ -6,12 +6,14 @@ import 'package:obssource/twitch/twitch_creds.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/twitch_redemption_service.dart';
 
+import '../support/test_preferences.dart';
+
 void main() {
   late Settings settings;
   late TwitchApi api;
 
   setUp(() {
-    settings = Settings();
+    settings = Settings(testPreferences());
     settings.twitchAuth = TwitchCreds(
       accessToken: 'token',
       refreshToken: 'refresh',

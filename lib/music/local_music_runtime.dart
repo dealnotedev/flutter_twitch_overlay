@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:obssource/config/settings.dart';
+import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/music_requests.dart';
@@ -28,7 +29,11 @@ class LocalMusicRuntime {
   late final YoutubeConnectionController youtubeConnection;
   Future<void> _updates = Future.value();
 
-  LocalMusicRuntime(this.settings, WebSocketManager wsManager) {
+  LocalMusicRuntime(
+    this.settings,
+    WebSocketManager wsManager, {
+    required SourceProfile profile,
+  }) {
     final music = settings.music;
     final tools = MusicToolPaths.resolve(
       executableDirectory: File(Platform.resolvedExecutable).parent,
@@ -39,8 +44,8 @@ class LocalMusicRuntime {
       maxBytes: music.cacheMaxMb * 1024 * 1024,
     );
 
-    final sessionDirectory = Directory(
-      '${cache.rootDirectory.parent.path}${Platform.pathSeparator}youtube-session',
+    final sessionDirectory = profile.youtubeSessionDirectory(
+      cache.rootDirectory.parent,
     );
 
     final trackFetcher = YtDlpMusicTrackFetcher(

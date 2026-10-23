@@ -1,5 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
+import '../support/test_preferences.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
@@ -8,7 +9,10 @@ import 'package:obssource/twitch/ws_subscription.dart';
 void main() {
   for (final type in SubscriptionEventType.values) {
     test('registers ${type.wireName} for the broadcaster session', () async {
-      final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+      final api = TwitchApi(
+        settings: Settings(testPreferences()),
+        clientSecret: 'unused',
+      );
       RequestOptions? request;
       api.dio.interceptors
         ..clear()
@@ -37,7 +41,10 @@ void main() {
     });
   }
   test('subscribes to incoming raids for the broadcaster websocket', () async {
-    final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+    final api = TwitchApi(
+      settings: Settings(testPreferences()),
+      clientSecret: 'unused',
+    );
     RequestOptions? capturedRequest;
     api.dio.interceptors
       ..clear()
@@ -68,7 +75,10 @@ void main() {
   });
 
   test('subscribes to chat messages for the broadcaster websocket', () async {
-    final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+    final api = TwitchApi(
+      settings: Settings(testPreferences()),
+      clientSecret: 'unused',
+    );
     RequestOptions? capturedRequest;
     api.dio.interceptors
       ..clear()
@@ -102,7 +112,10 @@ void main() {
   });
 
   test('loads only custom rewards manageable by this app', () async {
-    final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+    final api = TwitchApi(
+      settings: Settings(testPreferences()),
+      clientSecret: 'unused',
+    );
     RequestOptions? capturedRequest;
     api.dio.interceptors
       ..clear()
@@ -155,7 +168,10 @@ void main() {
   });
 
   test('creates a queue-backed reward that requires viewer input', () async {
-    final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+    final api = TwitchApi(
+      settings: Settings(testPreferences()),
+      clientSecret: 'unused',
+    );
     RequestOptions? capturedRequest;
     api.dio.interceptors
       ..clear()
@@ -209,7 +225,10 @@ void main() {
   });
 
   test('updates a redemption to a terminal status', () async {
-    final api = TwitchApi(settings: Settings(), clientSecret: 'unused');
+    final api = TwitchApi(
+      settings: Settings(testPreferences()),
+      clientSecret: 'unused',
+    );
     RequestOptions? capturedRequest;
     api.dio.interceptors
       ..clear()

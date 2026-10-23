@@ -5,11 +5,15 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
+import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/music_requests.dart';
+import 'package:obssource/music/music_file_cache.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import 'package:obssource/music/youtube_browser_session.dart';
+
+import '../support/test_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -34,8 +38,8 @@ void main() {
   test(
     'UI music settings ignore legacy OBS keys and update playback and server live',
     () async {
-      SharedPreferences.setMockInitialValues({});
-      final settings = Settings();
+      final preferences = testPreferences({});
+      final settings = Settings(preferences);
       await settings.init();
       Future<int> freePort() async {
         final socket = await HttpServer.bind(InternetAddress.loopbackIPv4, 0);
@@ -63,7 +67,26 @@ void main() {
           },
         ),
       );
-      final locator = AppServiceLocator.init(settings, config);
+      final profile = SourceProfile.fromArguments([
+        '0a123456-1234-4567-89ab-123456789abc',
+      ]);
+      final locator = AppServiceLocator.init(
+        settings,
+        config,
+        profile: profile,
+      );
+      final local = locator.musicSource.local!;
+      expect(local.cache.rootDirectory.path, defaultMusicCacheDirectory().path);
+      final sessionDirectory = profile.youtubeSessionDirectory(
+        local.cache.rootDirectory.parent,
+      );
+      expect(local.youtubeConnection.directory.path, sessionDirectory.path);
+      expect(
+        (local.youtubeConnection.browser as ManagedYoutubeBrowserSession)
+            .profileDirectory
+            .path,
+        '${sessionDirectory.path}${Platform.pathSeparator}browser',
+      );
       final player = locator.provide<ObsAudioMusicTrackPlayer>();
       final playback = player.play(
         DownloadedMusicTrack(

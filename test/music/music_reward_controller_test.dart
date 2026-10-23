@@ -4,7 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/twitch/twitch_creds.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/test_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -15,8 +16,8 @@ void main() {
   Object? failure;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-    settings = Settings();
+    final preferences = testPreferences({});
+    settings = Settings(preferences);
     await settings.init();
     settings.twitchAuth = TwitchCreds(
       accessToken: 'unused',

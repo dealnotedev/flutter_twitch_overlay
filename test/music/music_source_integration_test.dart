@@ -6,11 +6,13 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:dart_music_player_protocol/dart_music_player_protocol_io.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
+import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/main.dart';
 import 'package:obssource/music/music_settings.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/test_preferences.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -18,8 +20,8 @@ void main() {
   test(
     'switches local/external, reconnects unchanged state and owns only its connection',
     () => HttpOverrides.runWithHttpOverrides(() async {
-      SharedPreferences.setMockInitialValues({});
-      final settings = Settings();
+      final preferences = testPreferences({});
+      final settings = Settings(preferences);
       await settings.init();
       final reservation = await HttpServer.bind(
         InternetAddress.loopbackIPv4,
@@ -37,7 +39,11 @@ void main() {
           controlServerEnabled: false,
         ),
       );
-      final locator = AppServiceLocator.init(settings, ObsConfig());
+      final locator = AppServiceLocator.init(
+        settings,
+        ObsConfig(),
+        profile: const SourceProfile.standalone(),
+      );
       final source = locator.musicSource;
       addTearDown(() async {
         await locator.close();
@@ -133,8 +139,8 @@ void main() {
     testWidgets(
       'external ${style.name} view and settings work without Twitch login',
       (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        final settings = Settings();
+        final preferences = testPreferences({});
+        final settings = Settings(preferences);
         await settings.init();
         settings.playerAlwaysExpanded = true;
         await settings.saveMusic(
@@ -189,7 +195,7 @@ void main() {
         await tester.pump(const Duration(milliseconds: 400));
         expect(settings.music.source, MusicSourceKind.external);
         expect(find.byKey(const ValueKey('music_max_queue')), findsNothing);
-        final restored = Settings();
+        final restored = Settings(preferences);
         await restored.init();
         expect(restored.music.source, MusicSourceKind.external);
         expect(restored.music.externalPort, 49001);
