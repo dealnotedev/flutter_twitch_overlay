@@ -18,15 +18,16 @@ import 'package:obssource/settings/overlay_settings_dialog.dart';
 import 'package:obssource/settings/neon_settings_controls.dart';
 import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/ws_event.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
+import '../support/test_preferences.dart';
 
 void main() {
   for (final language in ['uk', 'en']) {
     testWidgets('YouTube connection guides verification and retry in $language', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      final settings = Settings();
+      final preferences = testPreferences({});
+      final settings = Settings(preferences);
       await settings.init();
       await tester.binding.setSurfaceSize(const Size(1280, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -197,8 +198,8 @@ void main() {
   testWidgets('paused music requests explain the hold and can resume', (
     tester,
   ) async {
-    SharedPreferences.setMockInitialValues({});
-    final settings = Settings();
+    final preferences = testPreferences({});
+    final settings = Settings(preferences);
     await settings.init();
     await tester.binding.setSurfaceSize(const Size(1280, 900));
     addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -289,8 +290,8 @@ void main() {
     testWidgets('music settings validate, persist and render in $language', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      final settings = Settings();
+      final preferences = testPreferences({});
+      final settings = Settings(preferences);
       await settings.init();
       await tester.binding.setSurfaceSize(const Size(1280, 900));
       addTearDown(() => tester.binding.setSurfaceSize(null));
@@ -460,7 +461,7 @@ void main() {
       expect(server.status, MusicControlServerStatus.stopped);
       expect(find.byKey(const ValueKey('music_server_retry')), findsNothing);
       expect(tester.takeException(), isNull);
-      final restored = Settings();
+      final restored = Settings(preferences);
       await restored.init();
       expect(restored.music.toJson(), settings.music.toJson());
       await tester.pumpWidget(const SizedBox.shrink());
@@ -625,6 +626,8 @@ class _Requests implements MusicRequests {
 }
 
 class _FailingSettings extends Settings {
+  _FailingSettings() : super(testPreferences());
+
   @override
   Future<void> saveMusic(MusicSettings value) async =>
       throw StateError('disk full');

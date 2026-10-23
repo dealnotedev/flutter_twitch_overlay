@@ -1,5 +1,6 @@
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
+import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/local_server.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
@@ -14,9 +15,13 @@ import 'package:obssource/twitch/ws_manager.dart';
 class AppServiceLocator extends ServiceLocator {
   static late final AppServiceLocator instance;
 
-  static AppServiceLocator init(Settings settings, ObsConfig config,
-      LocalServer localServer) {
-    instance = AppServiceLocator._(settings, config, localServer);
+  static AppServiceLocator init(
+    Settings settings,
+    ObsConfig config,
+    LocalServer localServer, {
+    required SourceProfile profile,
+  }) {
+    instance = AppServiceLocator._(settings, config, localServer, profile);
     return instance;
   }
 
@@ -34,7 +39,12 @@ class AppServiceLocator extends ServiceLocator {
       musicSource.local?.youtubeConnection;
   MusicRequestManager? get musicRequests => musicSource.local?.requests;
 
-  AppServiceLocator._(this.settings, this.config, this.localServer) {
+  AppServiceLocator._(
+    this.settings,
+    this.config,
+    this.localServer,
+    SourceProfile profile,
+  ) {
     final wsManager = WebSocketManager(
       'wss://eventsub.wss.twitch.tv/ws?keepalive_timeout_seconds=30',
       settings,
@@ -43,7 +53,8 @@ class AppServiceLocator extends ServiceLocator {
     );
     musicSource = MusicSourceController(
       settings: settings,
-      createLocal: (_) => LocalMusicRuntime(settings, wsManager),
+      createLocal:
+          (_) => LocalMusicRuntime(settings, wsManager, profile: profile),
     );
     map[Settings] = settings;
     map[ObsConfig] = config;

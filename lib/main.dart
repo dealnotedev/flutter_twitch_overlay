@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
+import 'package:obssource/config/source_preferences.dart';
+import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/l10n/app_localizations.dart';
@@ -11,10 +13,11 @@ import 'package:obssource/logged_widget.dart';
 import 'package:obssource/music/music_overlay.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
 
-void main() async {
+void main(List<String> args) async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  final settings = Settings();
+  final profile = SourceProfile.fromArguments(args);
+  final settings = Settings(createSourcePreferences(profile));
   await settings.init();
 
   final obsConfig = ObsConfig();
@@ -23,7 +26,12 @@ void main() async {
   final localServer = LocalServer();
   localServer.run();
 
-  final locator = AppServiceLocator.init(settings, obsConfig, localServer);
+  final locator = AppServiceLocator.init(
+    settings,
+    obsConfig,
+    localServer,
+    profile: profile,
+  );
 
   runApp(MyApp(locator: locator));
 

@@ -22,6 +22,20 @@ connection verification, and the Twitch music reward. The cosmic player also
 supports an auto-collapse delay and an always-expanded mode; `!music` in chat
 expands it. Preferences and the existing Twitch login persist locally.
 
+On Windows, each OBS source stores these preferences and its Twitch login in
+`source_<uuid>.json` in the application support directory. The host passes the
+source UUID as the first Dart entrypoint argument. A launch without arguments
+uses `source_standalone.json`. Source UUIDs are validated and normalized to
+lowercase before selecting the file. Existing shared preferences are not
+automatically imported; new profiles start with defaults.
+
+YouTube cookies, the dedicated browser profile, temporary cookie copies, and
+connection checks are also isolated under
+`%LOCALAPPDATA%\obssource\youtube-session\<uuid>\` on Windows. Launches without
+OBS use the `standalone` subdirectory. The previous shared YouTube session is
+left untouched and is not imported; reconnect YouTube in each new profile.
+The downloaded MP3 cache remains shared under `%LOCALAPPDATA%\obssource\music-cache\`.
+
 Local requests use a Twitch reward with required text input and an enabled
 redemption queue. The settings can create or select a compatible reward. Twitch
 authorization needs `channel:manage:redemptions`; reconnect an existing account
