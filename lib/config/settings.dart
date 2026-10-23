@@ -7,6 +7,8 @@ import 'package:rxdart/rxdart.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class Settings extends _TwitchSettings {
+  Settings(super.preferences);
+
   static const _kMusicRewardId = 'music_reward_id';
   static const _kMusicSettings = 'music_settings';
   static const _kPlayerCollapseSeconds = 'player_collapse_seconds';
@@ -19,11 +21,11 @@ class Settings extends _TwitchSettings {
   }
 
   Future<void> _initMusic() async {
-    final prefs = await SharedPreferences.getInstance();
-    musicRewardId = prefs.getString(_kMusicRewardId);
-    if (prefs.containsKey(_kMusicSettings)) {
+    final values = await _preferences.getAll();
+    musicRewardId = values[_kMusicRewardId] as String?;
+    if (values.containsKey(_kMusicSettings)) {
       try {
-        final raw = prefs.get(_kMusicSettings);
+        final raw = values[_kMusicSettings];
         final json = jsonDecode(raw is String ? raw : '{}');
         music =
             json is Map<String, dynamic>
@@ -33,11 +35,9 @@ class Settings extends _TwitchSettings {
         music = const MusicSettings();
       }
     }
-    playerCollapseSeconds = (prefs.getInt(_kPlayerCollapseSeconds) ?? 5).clamp(
-      1,
-      60,
-    );
-    playerAlwaysExpanded = prefs.getBool(_kPlayerAlwaysExpanded) ?? false;
+    playerCollapseSeconds = ((values[_kPlayerCollapseSeconds] as int?) ?? 5)
+        .clamp(1, 60);
+    playerAlwaysExpanded = values[_kPlayerAlwaysExpanded] as bool? ?? false;
   }
 
   int playerCollapseSeconds = 5;
@@ -52,13 +52,10 @@ class Settings extends _TwitchSettings {
 
   Future<void> saveMusic(MusicSettings value) async {
     final normalized = value.normalized();
-    final prefs = await SharedPreferences.getInstance();
-    if (!await prefs.setString(
+    await _preferences.setString(
       _kMusicSettings,
       jsonEncode(normalized.toJson()),
-    )) {
-      throw StateError('Could not save music settings');
-    }
+    );
     music = normalized;
     _musicSubject.add(music);
   }
@@ -67,24 +64,22 @@ class Settings extends _TwitchSettings {
     required int collapseSeconds,
     required bool alwaysExpanded,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
     final seconds = collapseSeconds.clamp(1, 60);
-    await prefs.setInt(_kPlayerCollapseSeconds, seconds);
-    await prefs.setBool(_kPlayerAlwaysExpanded, alwaysExpanded);
+    await _preferences.setInt(_kPlayerCollapseSeconds, seconds);
+    await _preferences.setBool(_kPlayerAlwaysExpanded, alwaysExpanded);
     playerCollapseSeconds = seconds;
     playerAlwaysExpanded = alwaysExpanded;
     _playerPresentationSubject.add(null);
   }
 
   Future<void> saveMusicRewardId(String? rewardId) async {
-    final prefs = await SharedPreferences.getInstance();
     final normalized = rewardId?.trim();
 
     if (normalized != null && normalized.isNotEmpty) {
-      await prefs.setString(_kMusicRewardId, normalized);
+      await _preferences.setString(_kMusicRewardId, normalized);
       musicRewardId = normalized;
     } else {
-      await prefs.remove(_kMusicRewardId);
+      await _preferences.remove(_kMusicRewardId);
       musicRewardId = null;
     }
 
@@ -98,21 +93,22 @@ class Settings extends _TwitchSettings {
 }
 
 class _TwitchSettings {
+  _TwitchSettings(SharedPreferencesAsync preferences)
+    : _preferences = preferences;
+
+  final SharedPreferencesAsync _preferences;
   static const _kTwitchAuth = 'twitch_credentials';
 
   Future<void> init() async {
-    final prefs = await SharedPreferences.getInstance();
-
-    _initTwitchCreds(prefs);
+    final json = await _preferences.getString(_kTwitchAuth);
+    twitchAuth = json != null ? TwitchCreds.fromJson(jsonDecode(json)) : null;
   }
 
   Future<void> saveTwitchAuth(TwitchCreds? creds) async {
-    final prefs = await SharedPreferences.getInstance();
-
     if (creds != null) {
-      prefs.setString(_kTwitchAuth, jsonEncode(creds.toJson()));
+      await _preferences.setString(_kTwitchAuth, jsonEncode(creds.toJson()));
     } else {
-      prefs.remove(_kTwitchAuth);
+      await _preferences.remove(_kTwitchAuth);
     }
 
     twitchAuth = creds;
@@ -127,9 +123,4 @@ class _TwitchSettings {
   TwitchCreds? twitchAuth;
 
   final _twitchAuthSubject = StreamController<TwitchCreds?>.broadcast();
-
-  void _initTwitchCreds(SharedPreferences prefs) {
-    final json = prefs.getString(_kTwitchAuth);
-    twitchAuth = json != null ? TwitchCreds.fromJson(jsonDecode(json)) : null;
-  }
 }

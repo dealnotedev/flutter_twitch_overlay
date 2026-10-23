@@ -5,11 +5,13 @@ import 'package:obssource/twitch/twitch_api.dart';
 import 'package:obssource/twitch/twitch_redemption.dart';
 import 'package:obssource/twitch/ws_subscription.dart';
 
+import '../support/test_preferences.dart';
+
 void main() {
   for (final type in SubscriptionEventType.values) {
     test('registers ${type.wireName} for the broadcaster session', () async {
       final api = TwitchApi(
-        settings: Settings()..twitchAuth = null,
+        settings: Settings(testPreferences())..twitchAuth = null,
         clientSecret: 'unused',
       );
       RequestOptions? request;
@@ -41,7 +43,7 @@ void main() {
   }
   test('subscribes to incoming raids for the broadcaster websocket', () async {
     final api = TwitchApi(
-      settings: Settings()..twitchAuth = null,
+      settings: Settings(testPreferences())..twitchAuth = null,
       clientSecret: 'unused',
     );
     RequestOptions? capturedRequest;
@@ -75,7 +77,7 @@ void main() {
 
   test('subscribes to chat messages for the broadcaster websocket', () async {
     final api = TwitchApi(
-      settings: Settings()..twitchAuth = null,
+      settings: Settings(testPreferences())..twitchAuth = null,
       clientSecret: 'unused',
     );
     RequestOptions? capturedRequest;
@@ -112,7 +114,7 @@ void main() {
 
   test('loads only custom rewards manageable by this app', () async {
     final api = TwitchApi(
-      settings: Settings()..twitchAuth = null,
+      settings: Settings(testPreferences())..twitchAuth = null,
       clientSecret: 'unused',
     );
     RequestOptions? capturedRequest;
@@ -168,7 +170,7 @@ void main() {
 
   test('creates a queue-backed reward that requires viewer input', () async {
     final api = TwitchApi(
-      settings: Settings()..twitchAuth = null,
+      settings: Settings(testPreferences())..twitchAuth = null,
       clientSecret: 'unused',
     );
     RequestOptions? capturedRequest;
@@ -225,7 +227,7 @@ void main() {
 
   test('updates a redemption to a terminal status', () async {
     final api = TwitchApi(
-      settings: Settings()..twitchAuth = null,
+      settings: Settings(testPreferences())..twitchAuth = null,
       clientSecret: 'unused',
     );
     RequestOptions? capturedRequest;
