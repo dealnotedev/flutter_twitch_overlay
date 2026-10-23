@@ -13,6 +13,7 @@ import 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_motion.dart';
 import 'package:obssource/music/turntable_track_line.dart';
+import 'package:obssource/music/vinyl_record.dart';
 
 class TurntableMusicPlayer extends StatefulWidget {
   final MusicRequests requests;
@@ -222,6 +223,7 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
                                     child: Transform.rotate(
                                       angle: _motion.rotation,
                                       child: VinylRecord(
+                                        edition: VinylEdition.forItem(item.id),
                                         artwork:
                                             item.thumbnail == null
                                                 ? null
@@ -641,157 +643,6 @@ class _PausedTurntableSlideState extends State<_PausedTurntableSlide> {
       },
     ),
   );
-}
-
-/// The oversized circular label occupies 58% of the record's diameter.
-class VinylRecord extends StatelessWidget {
-  final ImageProvider? artwork;
-
-  const VinylRecord({super.key, this.artwork});
-
-  @override
-  Widget build(BuildContext context) => RepaintBoundary(
-    child: SizedBox.square(
-      dimension: TurntableGeometry.recordRadius * 2,
-      child: CustomPaint(
-        painter: const _VinylPainter(),
-        child: Center(
-          child: SizedBox.square(
-            dimension: TurntableGeometry.labelRadius * 2,
-            child: ClipOval(
-              child: Stack(
-                fit: StackFit.expand,
-                children: [
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0xFF8D3977),
-                          Color(0xFF302C64),
-                          Color(0xFF11182F),
-                        ],
-                      ),
-                    ),
-                  ),
-                  if (artwork != null)
-                    Image(
-                      image: artwork!,
-                      fit: BoxFit.cover,
-                      errorBuilder: (_, __, ___) => const SizedBox.shrink(),
-                    ),
-                  const DecoratedBox(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      border: Border.fromBorderSide(
-                        BorderSide(color: Color(0x55FFFFFF), width: 1.5),
-                      ),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Color(0x28FFFFFF),
-                          Color(0x00000000),
-                          Color(0x38000000),
-                        ],
-                      ),
-                    ),
-                  ),
-                  Center(
-                    child: Container(
-                      width: 13,
-                      height: 13,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF111118),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: const Color(0xFF807C8B),
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    ),
-  );
-}
-
-class _VinylPainter extends CustomPainter {
-  const _VinylPainter();
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final center = size.center(Offset.zero);
-    final radius = size.width / 2;
-    canvas.drawShadow(
-      Path()..addOval(Rect.fromCircle(center: center, radius: radius)),
-      Colors.black,
-      9,
-      true,
-    );
-    canvas.drawCircle(
-      center,
-      radius,
-      Paint()
-        ..shader = ui.Gradient.radial(
-          center,
-          radius,
-          const [
-            Color(0xFF292932),
-            Color(0xFF101016),
-            Color(0xFF22222C),
-            Color(0xFF08090D),
-          ],
-          [0, 0.62, 0.84, 1],
-        ),
-    );
-    for (var r = TurntableGeometry.labelRadius + 3; r < radius - 2; r += 2.2) {
-      canvas.drawCircle(
-        center,
-        r,
-        Paint()
-          ..color = const Color(
-            0xFF393842,
-          ).withValues(alpha: r % 3 < 1 ? 0.6 : 0.3)
-          ..style = PaintingStyle.stroke
-          ..strokeWidth = 0.65,
-      );
-    }
-    canvas.drawCircle(
-      center,
-      radius - 1,
-      Paint()
-        ..shader = ui.Gradient.sweep(
-          center,
-          const [
-            Color(0x00FFFFFF),
-            Color(0x22FFFFFF),
-            Color(0x00FFFFFF),
-            Color(0x00FFFFFF),
-            Color(0x18C6D5FF),
-            Color(0x00FFFFFF),
-          ],
-          [0, 0.13, 0.27, 0.5, 0.67, 1],
-        ),
-    );
-    canvas.drawCircle(
-      center,
-      radius - 0.8,
-      Paint()
-        ..color = const Color(0xFF555360)
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _VinylPainter oldDelegate) => false;
 }
 
 class _TurntableChassisPainter extends CustomPainter {

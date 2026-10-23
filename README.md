@@ -5,6 +5,10 @@ queue with an MP3 cache, and local or external playback through the shared
 `dart_music_player_protocol` protocol. Both the cosmic player and vinyl turntable
 are available. Existing overlay effects run independently of the music layer.
 
+The turntable occasionally receives rare vinyl: clear (8%), marble (5%), or
+gold (2%); the remaining 85% are classic black. The edition follows the request
+ID and stays the same through metadata updates, pause, seek, and reconnection.
+
 ## Player settings
 
 Hover over the connection indicator in the upper right and press the settings
