@@ -1,3 +1,6 @@
+import 'dart:async';
+import 'dart:ui' show AppExitResponse;
+
 import 'package:flutter/material.dart';
 import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
@@ -6,7 +9,7 @@ import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
 import 'package:obssource/l10n/app_localizations.dart';
-import 'package:obssource/local_server.dart';
+import 'package:obssource/hunt_events_client.dart';
 import 'package:obssource/logged_widget.dart';
 import 'package:obssource/music/music_overlay.dart';
 import 'package:obssource/twitch/twitch_login_widget.dart';
@@ -21,13 +24,13 @@ void main(List<String> args) async {
   final obsConfig = ObsConfig();
   await obsConfig.init();
 
-  final localServer = LocalServer();
-  localServer.run();
+  final huntEvents = HuntEventsClient();
+  huntEvents.start();
 
   final locator = AppServiceLocator.init(
     settings,
     obsConfig,
-    localServer,
+    huntEvents,
     profile: profile,
   );
 
@@ -70,11 +73,30 @@ class MyHomePage extends StatefulWidget {
 
 class _MyHomePageState extends State<MyHomePage> {
   late final Settings _settings;
+  AppLifecycleListener? _lifecycle;
 
   @override
   void initState() {
     _settings = widget.locator.provide();
+    final locator = widget.locator;
+    if (locator is AppServiceLocator) {
+      _lifecycle = AppLifecycleListener(
+        onExitRequested: () async {
+          await locator.close();
+          return AppExitResponse.exit;
+        },
+        onDetach: () => unawaited(locator.close()),
+      );
+    }
     super.initState();
+  }
+
+  @override
+  void dispose() {
+    _lifecycle?.dispose();
+    final locator = widget.locator;
+    if (locator is AppServiceLocator) unawaited(locator.close());
+    super.dispose();
   }
 
   Widget _createRoot(BuildContext context) {

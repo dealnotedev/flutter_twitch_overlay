@@ -1,4 +1,5 @@
 {
+  "twitch_login_failed": "Не вдалося завершити вхід у Twitch. Спробуйте ще раз.",
   "user_redeemed_reward_title": "{user} бере {reward} за {currency_icon}\u00A0{cost}",
   "@user_redeemed_reward_title": {
     "placeholders": {
@@ -268,7 +269,7 @@
   "music_settings_server": "Локальний сервер керування музикою",
   "music_settings_server_hint": "Дозволяє окремому контролеру підключитися на цьому комп’ютері. Відтворення триває, коли сервер вимкнений.",
   "music_settings_port": "Порт сервера",
-  "music_settings_port_hint": "Укажіть цей самий порт у контролері. Новий порт застосовується одразу з перезапуском сервера.",
+  "music_settings_port_hint": "Бажаний порт. Якщо він зайнятий, вільний порт обирається автоматично. У контролері використовуйте адресу прослуховування, наведену нижче.",
   "music_settings_apply": "Застосувати",
   "music_settings_retry": "Спробувати ще раз",
   "music_settings_invalid_port": "Введіть порт від 1 до 65535.",

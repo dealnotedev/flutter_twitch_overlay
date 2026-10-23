@@ -44,6 +44,21 @@ settings are available without logging the overlay into Twitch.
 
 ## Windows setup
 
+Hunt: Showdown kills are received from Hunt Stats over
+`ws://127.0.0.1:4080/v1/events`. Hunt Stats owns the single listener; every OBS
+source connects as a client and reconnects if it restarts. Update both apps:
+the former HTTP `/kill` receiver in the overlay has been removed. New clients
+receive only live kills, so reconnecting does not replay old alerts.
+
+The music server prefers the configured port (47821 by default). If another
+source already uses it, a free port is selected automatically. Its actual address
+appears in Player settings; pass that port to the separate music controller.
+Changing other music settings keeps the chosen port and active connections.
+
+Twitch browser sign-ins share the registered callback on `localhost:3000`.
+Sources wait for that listener in turn, and each callback is matched to its
+own sign-in attempt. Closing a source cancels its active or queued sign-in.
+
 Keep the existing local `lib/secrets.dart` configuration. Restore the downloader
 tools as described in [tools/README.md](tools/README.md), then run:
 

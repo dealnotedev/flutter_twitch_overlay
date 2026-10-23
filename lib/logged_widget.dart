@@ -17,7 +17,7 @@ import 'package:obssource/follow/follow_ballons.dart';
 import 'package:obssource/generated/assets.dart';
 import 'package:obssource/highlighed/highlighted_message.dart';
 import 'package:obssource/kill_widget.dart';
-import 'package:obssource/local_server.dart';
+import 'package:obssource/hunt_events_client.dart';
 import 'package:obssource/obs_audio.dart';
 import 'package:obssource/pixels/pixel_rain_avatar.dart';
 import 'package:obssource/raid.dart';
@@ -50,13 +50,13 @@ class _State extends State<LoggedWidget> {
   late Timer _timer;
   late Settings _settings;
   late ObsConfig _obsConfig;
-  late LocalServer _localServer;
+  late HuntEventsClient _huntEvents;
 
   @override
   void initState() {
     _settings = widget.locator.provide();
     _obsConfig = widget.locator.provide();
-    _localServer = widget.locator.provide();
+    _huntEvents = widget.locator.provide();
 
     final ws = widget.locator.provide<WebSocketManager>();
     _state = ws.currentState;
@@ -75,7 +75,7 @@ class _State extends State<LoggedWidget> {
     //  );
     //});
 
-    _killsSubscription = _localServer.kills.listen(_handleKill);
+    _killsSubscription = _huntEvents.kills.listen(_handleKill);
     super.initState();
   }
 
