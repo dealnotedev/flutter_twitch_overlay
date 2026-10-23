@@ -5,7 +5,6 @@ import 'dart:ui';
 abstract final class TurntableGeometry {
   static const deckSize = Size(440, 281);
   static const chassisOrigin = Offset(14, 22);
-  static const footSize = Size(39, 16);
   static const platterCenter = Offset(158, 147);
   static const recordRadius = 110.0;
   static const labelRadius = 64.0;

@@ -12,6 +12,7 @@ import 'package:obssource/music/music_queue_overlay.dart';
 import 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_motion.dart';
+import 'package:obssource/music/turntable_track_line.dart';
 
 class TurntableMusicPlayer extends StatefulWidget {
   final MusicRequests requests;
@@ -24,6 +25,7 @@ class TurntableMusicPlayer extends StatefulWidget {
 
 class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
     with SingleTickerProviderStateMixin {
+  static const _infoVerticalPadding = 10.0;
   late final TurntableMotion _motion;
   late final Ticker _ticker;
   late MusicQueueSnapshot _snapshot;
@@ -178,80 +180,159 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
                 translation: Offset(0, 1 - _motion.visibility),
                 child: Opacity(
                   opacity: _motion.visibility,
-                  child: Padding(
-                    padding: EdgeInsets.only(
-                      bottom: TurntableGeometry.footSize.height / 2,
-                    ),
-                    child: SizedBox(
-                      key: const ValueKey('music_turntable'),
-                      width: TurntableGeometry.deckSize.width,
-                      child: CustomPaint(
-                        painter: const _TurntableChassisPainter(),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            SizedBox(
-                              height: TurntableGeometry.deckSize.height,
-                              child: Stack(
-                                clipBehavior: Clip.none,
-                                children: [
-                                  Positioned.fill(
-                                    child: RepaintBoundary(
-                                      child: CustomPaint(
-                                        painter: _TurntableDeckPainter(
-                                          fontFamily:
-                                              Theme.of(context)
-                                                  .textTheme
-                                                  .bodyMedium
-                                                  ?.fontFamily,
-                                        ),
+                  child: SizedBox(
+                    key: const ValueKey('music_turntable'),
+                    width: TurntableGeometry.deckSize.width,
+                    child: CustomPaint(
+                      painter: const _TurntableChassisPainter(),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(
+                            key: const ValueKey('turntable_deck'),
+                            height: TurntableGeometry.deckSize.height,
+                            child: Stack(
+                              clipBehavior: Clip.none,
+                              children: [
+                                Positioned.fill(
+                                  child: RepaintBoundary(
+                                    child: CustomPaint(
+                                      painter: _TurntableDeckPainter(
+                                        fontFamily:
+                                            Theme.of(
+                                              context,
+                                            ).textTheme.bodyMedium?.fontFamily,
                                       ),
                                     ),
                                   ),
-                                  if (_motion.recordVisible && item != null)
-                                    Positioned(
-                                      left:
-                                          TurntableGeometry.platterCenter.dx -
-                                          TurntableGeometry.recordRadius +
-                                          (1 - _motion.recordPlacement) *
-                                              TurntableGeometry.deckSize.width,
-                                      top:
-                                          TurntableGeometry.platterCenter.dy -
-                                          TurntableGeometry.recordRadius,
-                                      child: Transform.rotate(
-                                        angle: _motion.rotation,
-                                        child: VinylRecord(
-                                          artwork:
-                                              item.thumbnail == null
-                                                  ? null
-                                                  : CachedNetworkImageProvider(
-                                                    item.thumbnail.toString(),
-                                                    maxWidth: 256,
-                                                    maxHeight: 256,
+                                ),
+                                if (_motion.recordVisible && item != null)
+                                  Positioned(
+                                    left:
+                                        TurntableGeometry.platterCenter.dx -
+                                        TurntableGeometry.recordRadius +
+                                        (1 - _motion.recordPlacement) *
+                                            TurntableGeometry.deckSize.width,
+                                    top:
+                                        TurntableGeometry.platterCenter.dy -
+                                        TurntableGeometry.recordRadius,
+                                    child: Transform.rotate(
+                                      angle: _motion.rotation,
+                                      child: VinylRecord(
+                                        artwork:
+                                            item.thumbnail == null
+                                                ? null
+                                                : CachedNetworkImageProvider(
+                                                  item.thumbnail.toString(),
+                                                  maxWidth: 256,
+                                                  maxHeight: 256,
+                                                ),
+                                      ),
+                                    ),
+                                  ),
+                                Positioned.fill(
+                                  child: IgnorePointer(
+                                    child: CustomPaint(
+                                      painter: _TonearmPainter(
+                                        angle: _motion.armAngle,
+                                        lift: _motion.needleLift,
+                                        spindle:
+                                            _motion.recordVisible &&
+                                            _motion.recordPlacement > 0.999,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                                Positioned(
+                                  left: 286,
+                                  top: 236,
+                                  child: Row(
+                                    spacing: 8,
+                                    children: [
+                                      _TurntableDeckButton(
+                                        key: const ValueKey('turntable_pause'),
+                                        icon:
+                                            playing?.paused == true
+                                                ? Icons.play_arrow_rounded
+                                                : Icons.pause_rounded,
+                                        semanticLabel:
+                                            playing?.paused == true
+                                                ? context
+                                                    .localizations
+                                                    .music_action_resume
+                                                : context
+                                                    .localizations
+                                                    .music_action_pause,
+                                        selected: active && !playing.paused,
+                                        onPressed:
+                                            active
+                                                ? () => unawaited(
+                                                  widget.requests.setPaused(
+                                                    !playing.paused,
                                                   ),
+                                                )
+                                                : null,
+                                      ),
+                                      _TurntableDeckButton(
+                                        key: const ValueKey('turntable_skip'),
+                                        icon: Icons.skip_next_rounded,
+                                        semanticLabel:
+                                            context
+                                                .localizations
+                                                .music_action_next,
+                                        onPressed:
+                                            active
+                                                ? () => unawaited(
+                                                  widget.requests.skip(),
+                                                )
+                                                : null,
+                                      ),
+                                      Badge(
+                                        key: const ValueKey('turntable_queue'),
+                                        isLabelVisible:
+                                            _snapshot.queue.isNotEmpty,
+                                        backgroundColor: const Color(
+                                          0xFFB88F68,
+                                        ),
+                                        textColor: const Color(0xFF211B22),
+                                        label: Text(
+                                          '${_snapshot.queue.length}',
+                                          key: const ValueKey(
+                                            'turntable_queue_count',
+                                          ),
+                                          textScaler: TextScaler.noScaling,
+                                          style: const TextStyle(
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w700,
+                                          ),
+                                        ),
+                                        child: _TurntableDeckButton(
+                                          icon: Icons.queue_music_rounded,
+                                          semanticLabel:
+                                              context
+                                                  .localizations
+                                                  .music_queue_next,
+                                          selected: _queueExpanded,
+                                          onPressed:
+                                              _snapshot.queue.isEmpty
+                                                  ? null
+                                                  : _toggleQueue,
                                         ),
                                       ),
-                                    ),
-                                  Positioned.fill(
-                                    child: IgnorePointer(
-                                      child: CustomPaint(
-                                        painter: _TonearmPainter(
-                                          angle: _motion.armAngle,
-                                          lift: _motion.needleLift,
-                                          spindle:
-                                              _motion.recordVisible &&
-                                              _motion.recordPlacement > 0.999,
-                                        ),
-                                      ),
-                                    ),
+                                    ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                            Padding(
-                              padding: EdgeInsets.symmetric(
-                                horizontal: TurntableGeometry.chassisOrigin.dx,
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: TurntableGeometry.chassisOrigin.dx,
+                            ),
+                            child: ClipRRect(
+                              borderRadius: const BorderRadius.vertical(
+                                bottom: Radius.circular(19),
                               ),
                               child: ConstrainedBox(
                                 key: const ValueKey('turntable_info_panel'),
@@ -262,135 +343,74 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
                                   key: const ValueKey('turntable_info_scroll'),
                                   primary: false,
                                   physics: const ClampingScrollPhysics(),
-                                  padding: const EdgeInsets.all(16),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: _infoVerticalPadding,
+                                  ),
                                   child: Column(
                                     mainAxisSize: MainAxisSize.min,
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: MusicTrackInfo(
-                                              status: status,
-                                              title:
-                                                  item?.title ??
-                                                  context
-                                                      .localizations
-                                                      .music_turntable_preparing,
-                                              subtitle:
-                                                  item == null
-                                                      ? ''
-                                                      : '${item.author ?? context.localizations.music_source_youtube} · ${item.requestedBy}',
-                                            ),
+                                      Semantics(
+                                        label: status,
+                                        child: TurntableTrackLine(
+                                          leadingInset: 16,
+                                          textKey: const ValueKey(
+                                            'turntable_track_text',
                                           ),
-                                          const Gap(8),
-                                          if (active) ...[
-                                            NeonMusicIconButton(
-                                              key: const ValueKey(
-                                                'turntable_pause',
-                                              ),
-                                              icon:
-                                                  playing.paused
-                                                      ? Icons.play_arrow_rounded
-                                                      : Icons.pause_rounded,
-                                              onPressed:
-                                                  () => unawaited(
-                                                    widget.requests.setPaused(
-                                                      !playing.paused,
-                                                    ),
-                                                  ),
-                                            ),
-                                            const Gap(6),
-                                            NeonMusicIconButton(
-                                              key: const ValueKey(
-                                                'turntable_skip',
-                                              ),
-                                              icon: Icons.skip_next_rounded,
-                                              onPressed:
-                                                  () => unawaited(
-                                                    widget.requests.skip(),
-                                                  ),
-                                            ),
-                                            const Gap(6),
-                                          ],
-                                          Badge(
-                                            key: const ValueKey(
-                                              'turntable_queue',
-                                            ),
-                                            padding: EdgeInsets.zero,
-                                            isLabelVisible:
-                                                _snapshot.queue.isNotEmpty,
-                                            backgroundColor: Colors.transparent,
-                                            textColor: Colors.white,
-                                            textStyle: Theme.of(
-                                              context,
-                                            ).textTheme.labelSmall?.copyWith(
-                                              fontSize: 9,
-                                              fontWeight: FontWeight.w700,
-                                            ),
-                                            label: Container(
-                                              width: 20,
-                                              height: 20,
-                                              padding: const EdgeInsets.all(3),
-                                              decoration:
-                                                  neonMusicControlDecoration(
-                                                    backdrop: const Color(
-                                                      0xFF704E49,
-                                                    ),
-                                                    enabled:
-                                                        _snapshot
-                                                            .queue
-                                                            .isNotEmpty,
-                                                  ),
-                                              child: Center(
-                                                child: FittedBox(
-                                                  fit: BoxFit.scaleDown,
-                                                  child: Text(
-                                                    '${_snapshot.queue.length}',
-                                                    key: const ValueKey(
-                                                      'turntable_queue_count',
-                                                    ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                            child: NeonMusicIconButton(
-                                              icon:
-                                                  _queueExpanded
-                                                      ? Icons
-                                                          .expand_less_rounded
-                                                      : Icons
-                                                          .queue_music_rounded,
-                                              onPressed:
-                                                  _snapshot.queue.isEmpty
-                                                      ? null
-                                                      : _toggleQueue,
-                                            ),
+                                          viewportKey: const ValueKey(
+                                            'turntable_track_marquee',
                                           ),
-                                        ],
-                                      ),
-                                      if (inlineQueue != null) ...[
-                                        const Gap(16),
-                                        Divider(
-                                          key: const ValueKey(
-                                            'turntable_queue_divider',
-                                          ),
-                                          height: 1,
-                                          thickness: 1,
-                                          color: MusicPlayerPalette.textPrimary
-                                              .withValues(alpha: 0.12),
+                                          title:
+                                              item == null
+                                                  ? status
+                                                  : item.title ??
+                                                      context
+                                                          .localizations
+                                                          .music_turntable_preparing,
+                                          author:
+                                              item == null
+                                                  ? null
+                                                  : item.author ??
+                                                      context
+                                                          .localizations
+                                                          .music_source_youtube,
+                                          requestedBy: item?.requestedBy,
                                         ),
-                                        const Gap(16),
-                                        inlineQueue,
-                                      ],
+                                      ),
+                                      if (inlineQueue != null)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                          ),
+                                          child: Column(
+                                            mainAxisSize: MainAxisSize.min,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.stretch,
+                                            children: [
+                                              const Gap(_infoVerticalPadding),
+                                              Divider(
+                                                key: const ValueKey(
+                                                  'turntable_queue_divider',
+                                                ),
+                                                height: 1,
+                                                thickness: 1,
+                                                color: MusicPlayerPalette
+                                                    .textPrimary
+                                                    .withValues(alpha: 0.12),
+                                              ),
+                                              const Gap(_infoVerticalPadding),
+                                              inlineQueue,
+                                            ],
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
                     ),
                   ),
@@ -398,6 +418,131 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
               ),
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _TurntableDeckButton extends StatefulWidget {
+  final IconData icon;
+  final String semanticLabel;
+  final VoidCallback? onPressed;
+  final bool selected;
+
+  const _TurntableDeckButton({
+    super.key,
+    required this.icon,
+    required this.semanticLabel,
+    required this.onPressed,
+    this.selected = false,
+  });
+
+  @override
+  State<_TurntableDeckButton> createState() => _TurntableDeckButtonState();
+}
+
+class _TurntableDeckButtonState extends State<_TurntableDeckButton> {
+  bool _hovered = false;
+  bool _pressed = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final enabled = widget.onPressed != null;
+    final depressed = enabled && _pressed;
+    return MouseRegion(
+      onEnter: (_) => setState(() => _hovered = true),
+      onExit: (_) => setState(() => _hovered = false),
+      child: Listener(
+        onPointerDown: enabled ? (_) => setState(() => _pressed = true) : null,
+        onPointerUp: (_) => setState(() => _pressed = false),
+        onPointerCancel: (_) => setState(() => _pressed = false),
+        child: Container(
+          width: 32,
+          height: 32,
+          padding: const EdgeInsets.all(2),
+          decoration: BoxDecoration(
+            color: const Color(0xFF101018),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(color: const Color(0xFF090A10)),
+          ),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 80),
+            transform: Matrix4.translationValues(0, depressed ? 1.5 : 0, 0),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(3),
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                colors:
+                    depressed
+                        ? const [Color(0xFF36343F), Color(0xFF484550)]
+                        : enabled && _hovered
+                        ? const [Color(0xFF8C8490), Color(0xFF514B58)]
+                        : const [Color(0xFF6A6572), Color(0xFF3E3B47)],
+              ),
+              border: Border.all(
+                color:
+                    depressed
+                        ? const Color(0xFF292631)
+                        : const Color(0xFF928895),
+                width: 0.6,
+              ),
+              boxShadow:
+                  depressed
+                      ? null
+                      : const [
+                        BoxShadow(
+                          color: Color(0xCC000000),
+                          offset: Offset(0, 2),
+                          blurRadius: 1,
+                        ),
+                      ],
+            ),
+            child: Stack(
+              children: [
+                Positioned.fill(
+                  child: IconButton(
+                    padding: EdgeInsets.zero,
+                    iconSize: 18,
+                    color: const Color(0xFFF3E6DD),
+                    disabledColor: const Color(0xFF918A96),
+                    onPressed: widget.onPressed,
+                    icon: Icon(
+                      widget.icon,
+                      semanticLabel: widget.semanticLabel,
+                    ),
+                  ),
+                ),
+                Positioned(
+                  top: 3,
+                  right: 3,
+                  child: IgnorePointer(
+                    child: Container(
+                      width: 3,
+                      height: 3,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color:
+                            widget.selected
+                                ? MusicPlayerPalette.neonPink
+                                : const Color(0xFF282530),
+                        boxShadow:
+                            widget.selected
+                                ? const [
+                                  BoxShadow(
+                                    color: MusicPlayerPalette.neonPink,
+                                    blurRadius: 4,
+                                  ),
+                                ]
+                                : null,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
       ),
     );
@@ -667,20 +812,6 @@ class _TurntableChassisPainter extends CustomPainter {
       18,
       true,
     );
-    for (final x in [40.0, 360.0]) {
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(
-          Rect.fromLTWH(
-            x,
-            size.height - TurntableGeometry.footSize.height / 2,
-            TurntableGeometry.footSize.width,
-            TurntableGeometry.footSize.height,
-          ),
-          const Radius.circular(6),
-        ),
-        Paint()..color = const Color(0xFF0A0910),
-      );
-    }
     canvas.drawRRect(
       body,
       Paint()
@@ -695,6 +826,12 @@ class _TurntableChassisPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _TurntableChassisPainter oldDelegate) => false;
+}
+
+void _paintTurntableSpindle(Canvas canvas) {
+  const center = TurntableGeometry.platterCenter;
+  canvas.drawCircle(center, 3.5, Paint()..color = const Color(0xFF7F7988));
+  canvas.drawCircle(center, 2.7, Paint()..color = const Color(0xFFDAD6E0));
 }
 
 class _TurntableDeckPainter extends CustomPainter {
@@ -756,7 +893,63 @@ class _TurntableDeckPainter extends CustomPainter {
           const [0, 0.25, 0.5, 0.75, 1],
         ),
     );
-    canvas.drawCircle(center, 110, Paint()..color = const Color(0xFF15151F));
+    canvas.drawCircle(
+      center,
+      110,
+      Paint()
+        ..shader = ui.Gradient.radial(
+          center - const Offset(18, 22),
+          145,
+          const [Color(0xFF24242D), Color(0xFF11121A), Color(0xFF1C1C26)],
+          const [0, 0.7, 1],
+        ),
+    );
+    // Raised rubber rings and the metal spindle seat show on the empty platter.
+    for (var radius = 25.0; radius <= 100; radius += 15) {
+      canvas.drawCircle(
+        center,
+        radius,
+        Paint()
+          ..color = const Color(0xFF070810)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 2,
+      );
+      canvas.drawCircle(
+        center,
+        radius - 1.2,
+        Paint()
+          ..color = const Color(0xFF36343F)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 0.8,
+      );
+    }
+    canvas.drawCircle(center, 18, Paint()..color = const Color(0xFF090A11));
+    canvas.drawCircle(
+      center,
+      14,
+      Paint()
+        ..shader = ui.Gradient.sweep(
+          center,
+          const [
+            Color(0xFFB8B4C1),
+            Color(0xFF595664),
+            Color(0xFFE0DCE4),
+            Color(0xFF64616E),
+            Color(0xFFB8B4C1),
+          ],
+          const [0, 0.25, 0.5, 0.75, 1],
+        ),
+    );
+    canvas.drawCircle(
+      center,
+      10.5,
+      Paint()
+        ..color = const Color(0xFF716C7B)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 0.7,
+    );
+    canvas.drawCircle(center, 6, Paint()..color = const Color(0xFF292732));
+    _paintTurntableSpindle(canvas);
     for (var i = 0; i < 96; i++) {
       final angle = i * math.pi * 2 / 96;
       final p = center + Offset(math.cos(angle), math.sin(angle)) * 112;
@@ -793,22 +986,6 @@ class _TurntableDeckPainter extends CustomPainter {
         ..strokeWidth = 3
         ..strokeCap = StrokeCap.round,
     );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        const Rect.fromLTWH(295, 248, 91, 17),
-        const Radius.circular(4),
-      ),
-      Paint()..color = const Color(0xFF0B0C16),
-    );
-    _text(
-      canvas,
-      '33 ⅓',
-      const Offset(305, 250),
-      10,
-      const Color(0xFFF8BBDD),
-      spacing: 1,
-    );
-    _text(canvas, 'RPM', const Offset(354, 252), 7, const Color(0xFF8D8798));
     _text(
       canvas,
       'NEON / 01',
@@ -902,18 +1079,7 @@ class _TonearmPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    if (spindle) {
-      canvas.drawCircle(
-        TurntableGeometry.platterCenter,
-        3.5,
-        Paint()
-          ..shader = ui.Gradient.linear(
-            const Offset(155, 144),
-            const Offset(161, 150),
-            const [Color(0xFFFFFFFF), Color(0xFF777483)],
-          ),
-      );
-    }
+    if (spindle) _paintTurntableSpindle(canvas);
     canvas.save();
     canvas.translate(
       TurntableGeometry.armPivot.dx,

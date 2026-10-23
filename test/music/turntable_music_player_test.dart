@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -40,8 +41,11 @@ void main() {
     final capture = GlobalKey();
     await _loadFonts(tester);
     await tester.pumpWidget(_surface(requests, capture));
-    await _animate(tester, 4);
-    expect(find.text('PREPARING THE RECORD'), findsOneWidget);
+    await _animate(tester, 0.74);
+    expect(find.byType(VinylRecord), findsNothing);
+    await _capture(tester, capture, 'turntable-empty');
+    await _animate(tester, 3.26);
+    expect(find.byType(Tooltip), findsNothing);
     expect(find.byType(VinylRecord), findsOneWidget);
     await _capture(tester, capture, 'turntable-waiting');
 
@@ -49,7 +53,7 @@ void main() {
     await tester.pump();
     expect(requests.current.nowPlaying!.starting, isFalse);
     await _animate(tester, 0.65);
-    expect(find.text('PLACING THE NEEDLE'), findsOneWidget);
+    expect(find.byType(Tooltip), findsNothing);
     await _capture(tester, capture, 'turntable-cueing');
     await _animate(tester, 0.7);
     await _capture(tester, capture, 'turntable-playing');
@@ -172,45 +176,126 @@ void main() {
     },
   );
 
-  testWidgets('info panel keeps 16 padding and grows with text scale', (
+  testWidgets(
+    'compact track strip grows with text scale and controls stay on deck',
+    (tester) async {
+      final requests = _Requests()..start();
+      final capture = GlobalKey();
+      await _loadFonts(tester);
+      await tester.pumpWidget(_surface(requests, capture));
+      await _animate(tester, 5);
+      final player = find.byKey(const ValueKey('music_turntable'));
+      final normalHeight = tester.getSize(player).height;
+
+      void expectPanelPadding() {
+        final panel = find.byKey(const ValueKey('turntable_info_panel'));
+        final row = find.byKey(const ValueKey('turntable_track_marquee'));
+        final panelRect = tester.getRect(panel);
+        final rowRect = tester.getRect(row);
+        expect(rowRect.left, closeTo(panelRect.left, 0.001));
+        expect(rowRect.top - panelRect.top, closeTo(10, 0.001));
+        expect(rowRect.right, closeTo(panelRect.right, 0.001));
+        expect(
+          tester
+                  .getTopLeft(
+                    find.byKey(const ValueKey('turntable_track_text')),
+                  )
+                  .dx -
+              panelRect.left,
+          closeTo(16, 0.001),
+        );
+        expect(panelRect.bottom - rowRect.bottom, closeTo(10, 0.001));
+        final deckRect = tester.getRect(
+          find.byKey(const ValueKey('turntable_deck')),
+        );
+        for (final key in [
+          'turntable_pause',
+          'turntable_skip',
+          'turntable_queue',
+        ]) {
+          expect(
+            deckRect.contains(tester.getCenter(find.byKey(ValueKey(key)))),
+            isTrue,
+          );
+        }
+      }
+
+      expectPanelPadding();
+      expect(normalHeight, lessThan(325));
+      await tester.pumpWidget(_surface(requests, capture, textScale: 1.75));
+      await tester.pump();
+      expect(tester.getSize(player).height, greaterThan(normalHeight));
+      expectPanelPadding();
+      expect(tester.takeException(), isNull);
+      await _capture(tester, capture, 'turntable-panel-large-text');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await requests.close();
+    },
+  );
+
+  testWidgets(
+    'long track metadata scrolls on one line without moving the controls',
+    (tester) async {
+      final requests = _Requests(
+        title:
+            'A very long track title that keeps the full song name readable while the record is playing',
+      )..start();
+      final capture = GlobalKey();
+      await _loadFonts(tester);
+      await tester.pumpWidget(_surface(requests, capture));
+      await _animate(tester, 1);
+      final initialStrip = tester.getRect(
+        find.byKey(const ValueKey('turntable_track_marquee')),
+      );
+      final initialTitle = tester.getTopLeft(
+        find.byKey(const ValueKey('turntable_track_text')),
+      );
+      expect(initialTitle.dx - initialStrip.left, closeTo(16, 0.001));
+      await _animate(tester, 4);
+      final title = find.byKey(const ValueKey('turntable_track_text'));
+      final strip = find.byKey(const ValueKey('turntable_track_marquee'));
+      final pause = find.byKey(const ValueKey('turntable_pause'));
+      final titleLeft = tester.getTopLeft(title).dx;
+      final buttonRect = tester.getRect(pause);
+      final stripRect = tester.getRect(strip);
+      await _animate(tester, 0.5);
+      expect(tester.getTopLeft(title).dx, lessThan(titleLeft));
+      expect(tester.getTopLeft(title).dx, lessThan(stripRect.left));
+      expect(tester.getRect(strip), stripRect);
+      expect(tester.getRect(pause), buttonRect);
+      expect(tester.widget<Text>(title).maxLines, 1);
+      expect(
+        tester.widget<Text>(title).textSpan!.toPlainText(),
+        contains(' • M83 • Viewer'),
+      );
+      await _capture(tester, capture, 'turntable-long-track');
+      await tester.pumpWidget(const SizedBox.shrink());
+      await requests.close();
+    },
+  );
+
+  testWidgets('author glyphs match text painted without a vertical clip', (
     tester,
   ) async {
-    final requests = _Requests()..start();
+    final requests = _Requests(
+      title: 'My Only Heart',
+      author: 'Nightjacket - Topic',
+      requestedBy: 'dealnoteDev',
+    )..start();
     final capture = GlobalKey();
     await _loadFonts(tester);
-    await tester.pumpWidget(_surface(requests, capture));
-    await _animate(tester, 5);
-    final player = find.byKey(const ValueKey('music_turntable'));
-    final normalHeight = tester.getSize(player).height;
-
-    void expectPanelPadding() {
-      final panel = find.byKey(const ValueKey('turntable_info_panel'));
-      final row = find.descendant(of: panel, matching: find.byType(Row));
-      final panelRect = tester.getRect(panel);
-      final rowRect = tester.getRect(row);
-      expect(rowRect.left - panelRect.left, closeTo(16, 0.001));
-      expect(rowRect.top - panelRect.top, closeTo(16, 0.001));
-      expect(panelRect.right - rowRect.right, closeTo(16, 0.001));
-      expect(panelRect.bottom - rowRect.bottom, closeTo(16, 0.001));
-      for (final key in [
-        'turntable_pause',
-        'turntable_skip',
-        'turntable_queue',
-      ]) {
-        expect(
-          panelRect.contains(tester.getCenter(find.byKey(ValueKey(key)))),
-          isTrue,
+    for (final scale in [1.0, 1.75]) {
+      await tester.pumpWidget(_surface(requests, capture, textScale: scale));
+      await _animate(tester, 5);
+      for (final ratio in [1.0, 1.25, 1.5, 2.0]) {
+        await _expectUnclippedAuthor(
+          tester,
+          capture,
+          scale: scale,
+          ratio: ratio,
         );
       }
     }
-
-    expectPanelPadding();
-    await tester.pumpWidget(_surface(requests, capture, textScale: 1.75));
-    await tester.pump();
-    expect(tester.getSize(player).height, greaterThan(normalHeight));
-    expectPanelPadding();
-    expect(tester.takeException(), isNull);
-    await _capture(tester, capture, 'turntable-panel-large-text');
     await tester.pumpWidget(const SizedBox.shrink());
     await requests.close();
   });
@@ -267,9 +352,31 @@ void main() {
       final collapsedHeight = tester.getSize(player).height;
       final count = find.byKey(const ValueKey('turntable_queue_count'));
       final divider = find.byKey(const ValueKey('turntable_queue_divider'));
+      final trackTwo = find.byKey(const ValueKey('turntable_queue_text_two'));
+      final trackThree = find.byKey(
+        const ValueKey('turntable_queue_text_three'),
+      );
       expect(queue, findsNothing);
       expect(divider, findsNothing);
       expect(tester.widget<Text>(count).data, '2');
+
+      void expectPanelSpacing() {
+        final panelRect = tester.getRect(
+          find.byKey(const ValueKey('turntable_info_panel')),
+        );
+        final currentRect = tester.getRect(
+          find.byKey(const ValueKey('turntable_track_marquee')),
+        );
+        final dividerRect = tester.getRect(divider);
+        final queueRect = tester.getRect(queue);
+        final topPadding = currentRect.top - panelRect.top;
+        expect(
+          dividerRect.top - currentRect.bottom,
+          closeTo(topPadding, 0.001),
+        );
+        expect(queueRect.top - dividerRect.bottom, closeTo(topPadding, 0.001));
+        expect(panelRect.bottom - queueRect.bottom, closeTo(topPadding, 0.001));
+      }
 
       await tester.tap(queueButton);
       await tester.pump();
@@ -283,15 +390,29 @@ void main() {
         ),
         findsOneWidget,
       );
-      expect(find.text('Song two'), findsOneWidget);
-      expect(find.text('Song three'), findsOneWidget);
-      expect(find.text('Artist · Listener'), findsNWidgets(2));
+      expect(trackTwo, findsOneWidget);
+      expect(trackThree, findsOneWidget);
+      expect(
+        tester.widget<Text>(trackTwo).textSpan!.toPlainText(),
+        'Song two • Artist • Listener',
+      );
+      expect(
+        tester.widget<Text>(trackThree).textSpan!.toPlainText(),
+        'Song three • Artist • Listener',
+      );
+      expect(tester.widget<Text>(trackTwo).maxLines, isNull);
+      expect(tester.widget<Text>(trackTwo).softWrap, isTrue);
+      expect(tester.getSize(queue).height, lessThan(72));
+      expectPanelSpacing();
       expect(find.text('50%'), findsOneWidget);
       expect(find.text('UP NEXT'), findsNothing);
       expect(tester.widget<Text>(count).data, '2');
       expect(
-        tester.getRect(find.text('Song two')).left,
-        tester.getRect(find.text('Midnight City')).left,
+        tester.getRect(trackTwo).left,
+        tester
+                .getRect(find.byKey(const ValueKey('turntable_info_panel')))
+                .left +
+            16,
       );
       for (final id in ['two', 'three']) {
         final remove = find.byKey(ValueKey('remove_music_$id'));
@@ -311,9 +432,12 @@ void main() {
       );
       await _capture(tester, capture, 'turntable-queue-open');
 
+      final shortTrackHeight = tester.getSize(trackTwo).height;
       requests.setQueue([
         _queuedItem(
           'two',
+          title:
+              'A much longer track title that wraps naturally onto another line without scrolling',
           phase: MusicQueueItemPhase.downloading,
           progress: 0.75,
         ),
@@ -321,10 +445,24 @@ void main() {
       ]);
       await tester.pump();
       expect(find.text('75%'), findsOneWidget);
+      final wrappedRect = tester.getRect(trackTwo);
+      expectPanelSpacing();
+      expect(wrappedRect.height, greaterThan(shortTrackHeight));
+      expect(
+        tester.getCenter(find.text('75%')).dy,
+        closeTo(wrappedRect.center.dy, 0.001),
+      );
+      expect(
+        tester.getCenter(find.byKey(const ValueKey('remove_music_two'))).dy,
+        closeTo(wrappedRect.center.dy, 0.001),
+      );
+      await _animate(tester, 0.5);
+      expect(tester.getRect(trackTwo), wrappedRect);
+      await _capture(tester, capture, 'turntable-queue-wrapped');
       await tester.tap(find.byKey(const ValueKey('remove_music_two')));
       await tester.pump();
-      expect(find.text('Song two'), findsNothing);
-      expect(find.text('Song three'), findsOneWidget);
+      expect(trackTwo, findsNothing);
+      expect(trackThree, findsOneWidget);
       expect(queue, findsOneWidget);
       expect(tester.widget<Text>(count).data, '1');
 
@@ -384,17 +522,19 @@ void main() {
       expect(scrollable, findsOneWidget);
       expect(position.maxScrollExtent, greaterThan(0));
       final playerTop = tester.getTopLeft(player).dy;
-      final currentTrackTop = tester.getTopLeft(find.text('Midnight City')).dy;
+      final track = find.byKey(const ValueKey('turntable_track_marquee'));
+      final currentTrackTop = tester.getTopLeft(track).dy;
+      final queueButton = find.byKey(const ValueKey('turntable_queue'));
+      final queueButtonTop = tester.getTopLeft(queueButton).dy;
       await _capture(tester, capture, 'turntable-queue-scroll-top');
 
       await tester.drag(scrollView, const Offset(0, -240));
       await _animate(tester, 0.6);
       expect(position.pixels, greaterThan(0));
-      expect(
-        tester.getTopLeft(find.text('Midnight City')).dy,
-        lessThan(currentTrackTop),
-      );
+      expect(tester.getTopLeft(track).dy, lessThan(currentTrackTop));
       expect(tester.getTopLeft(player).dy, playerTop);
+      expect(tester.getTopLeft(queueButton).dy, queueButtonTop);
+      expect(queueButton.hitTestable(), findsOneWidget);
       position.jumpTo(position.maxScrollExtent);
       await tester.pump();
       final lastRemove = find.byKey(const ValueKey('remove_music_long-19'));
@@ -403,14 +543,17 @@ void main() {
       await tester.tap(lastRemove);
       await tester.pump();
       expect(requests.current.queue.length, 19);
-      expect(find.text('Song long-19'), findsNothing);
+      expect(
+        find.byKey(const ValueKey('turntable_queue_text_long-19')),
+        findsNothing,
+      );
 
       requests.setQueue([_queuedItem('short')]);
       await tester.pump();
       expect(tester.getSize(panel).height, lessThan(480));
       expect(position.maxScrollExtent, 0);
       expect(position.pixels, 0);
-      expect(find.text('Midnight City').hitTestable(), findsOneWidget);
+      expect(track.hitTestable(), findsOneWidget);
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
       await requests.close();
@@ -481,6 +624,7 @@ void main() {
 
 MusicQueueItem _queuedItem(
   String id, {
+  String? title,
   MusicQueueItemPhase phase = MusicQueueItemPhase.ready,
   double? progress,
 }) => MusicQueueItem(
@@ -488,7 +632,7 @@ MusicQueueItem _queuedItem(
   requestedBy: 'Listener',
   sourceUrl: Uri.parse('https://youtu.be/$id'),
   phase: phase,
-  title: 'Song $id',
+  title: title ?? 'Song $id',
   author: 'Artist',
   duration: const Duration(minutes: 3),
   thumbnail: null,
@@ -548,7 +692,7 @@ Widget _surface(
   localizationsDelegates: AppLocalizations.localizationsDelegates,
   supportedLocales: AppLocalizations.supportedLocales,
   locale: const Locale('en'),
-  theme: ThemeData(fontFamily: 'TurntableTestFont'),
+  theme: ThemeData(fontFamily: 'TurntableTestFont', useMaterial3: false),
   home: Scaffold(
     backgroundColor: const Color(0xFF101322),
     body: LayoutBuilder(
@@ -574,6 +718,140 @@ Widget _surface(
   ),
 );
 
+Future<void> _expectUnclippedAuthor(
+  WidgetTester tester,
+  GlobalKey capture, {
+  required double scale,
+  required double ratio,
+}) async {
+  final title = find.byKey(const ValueKey('turntable_track_text'));
+  final richText = find.descendant(of: title, matching: find.byType(RichText));
+  final richWidget = tester.widget<RichText>(richText);
+  final chassis =
+      find
+          .ancestor(
+            of: title,
+            matching: find.byWidgetPredicate(
+              (widget) => widget is CustomPaint && widget.painter != null,
+            ),
+          )
+          .first;
+  final boundary =
+      capture.currentContext!.findRenderObject()! as RenderRepaintBoundary;
+  final boundaryOrigin = tester.getTopLeft(find.byKey(capture));
+  final textOrigin = tester.getTopLeft(richText) - boundaryOrigin;
+  final chassisOrigin = tester.getTopLeft(chassis) - boundaryOrigin;
+  final chassisSize = tester.getSize(chassis);
+  final painter = TextPainter(
+    text: richWidget.text,
+    textDirection: richWidget.textDirection,
+    textScaler: richWidget.textScaler,
+    locale: richWidget.locale,
+    textHeightBehavior: richWidget.textHeightBehavior,
+    maxLines: 1,
+  )..layout();
+  final start = richWidget.text.toPlainText().indexOf('Nightjacket');
+  final authorBox = painter
+      .getBoxesForSelection(
+        TextSelection(
+          baseOffset: start,
+          extentOffset: start + 'Nightjacket - Topic'.length,
+        ),
+      )
+      .first
+      .toRect()
+      .shift(textOrigin);
+  // Compare inside the rounded chassis edge, where only vertical clipping matters.
+  final left = math.max(
+    authorBox.left,
+    chassisOrigin.dx + TurntableGeometry.chassisOrigin.dx + 19,
+  );
+  final right = math.min(
+    authorBox.right,
+    chassisOrigin.dx +
+        chassisSize.width -
+        TurntableGeometry.chassisOrigin.dx -
+        19,
+  );
+  expect(right, greaterThan(left));
+  final differentPixels = await tester.runAsync(() async {
+    final actual = await boundary.toImage(pixelRatio: ratio);
+    final recorder = ui.PictureRecorder();
+    final canvas = Canvas(recorder)..scale(ratio);
+    canvas.save();
+    canvas.translate(chassisOrigin.dx, chassisOrigin.dy);
+    tester.widget<CustomPaint>(chassis).painter!.paint(canvas, chassisSize);
+    canvas.restore();
+    painter.paint(canvas, textOrigin);
+    final picture = recorder.endRecording();
+    final expected = await picture.toImage(actual.width, actual.height);
+    final maskRecorder = ui.PictureRecorder();
+    painter.paint(Canvas(maskRecorder)..scale(ratio), textOrigin);
+    final maskPicture = maskRecorder.endRecording();
+    final mask = await maskPicture.toImage(actual.width, actual.height);
+    final maskBytes =
+        (await mask.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        ))!.buffer.asUint8List();
+    final actualBytes =
+        (await actual.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        ))!.buffer.asUint8List();
+    final expectedBytes =
+        (await expected.toByteData(
+          format: ui.ImageByteFormat.rawRgba,
+        ))!.buffer.asUint8List();
+    var differentPixels = 0;
+    for (
+      var y = ((textOrigin.dy - 2) * ratio).floor();
+      y < ((textOrigin.dy + painter.height + 4) * ratio).ceil();
+      y++
+    ) {
+      for (var x = (left * ratio).ceil(); x < (right * ratio).floor(); x++) {
+        final index = (y * actual.width + x) * 4;
+        if (maskBytes[index + 3] == 0) continue;
+        for (var channel = 0; channel < 4; channel++) {
+          if ((actualBytes[index + channel] - expectedBytes[index + channel])
+                  .abs() >
+              2) {
+            differentPixels++;
+            break;
+          }
+        }
+      }
+    }
+    if (Platform.environment['MUSIC_CAPTURE'] == '1') {
+      for (final (name, image) in [
+        ('actual', actual),
+        ('expected', expected),
+      ]) {
+        final file = File(
+          'build/test-screenshots/turntable-glyphs-$scale-$ratio-$name.png',
+        );
+        await file.parent.create(recursive: true);
+        await file.writeAsBytes(
+          (await image.toByteData(
+            format: ui.ImageByteFormat.png,
+          ))!.buffer.asUint8List(),
+        );
+      }
+    }
+    actual.dispose();
+    expected.dispose();
+    picture.dispose();
+    mask.dispose();
+    maskPicture.dispose();
+    return differentPixels;
+  });
+  painter.dispose();
+  expect(
+    differentPixels,
+    0,
+    reason:
+        'Every author glyph pixel must remain visible at text scale $scale and pixel ratio $ratio.',
+  );
+}
+
 Future<void> _animate(WidgetTester tester, double seconds) async {
   for (var i = 0; i < (seconds * 50).ceil(); i++) {
     await tester.pump(const Duration(milliseconds: 20));
@@ -586,6 +864,9 @@ Future<void> _loadFonts(WidgetTester tester) async {
   await tester.runAsync(() async {
     for (final (family, path) in [
       ('TurntableTestFont', r'C:\Windows\Fonts\segoeui.ttf'),
+      ('TurntableTestFont', r'C:\Windows\Fonts\segoeuib.ttf'),
+      ('TurntableTestFont', r'C:\Windows\Fonts\segoeuii.ttf'),
+      ('TurntableTestFont', r'C:\Windows\Fonts\segoeuiz.ttf'),
       (
         'MaterialIcons',
         r'D:\flutter\bin\cache\artifacts\material_fonts\materialicons-regular.otf',
@@ -616,25 +897,29 @@ class _Requests implements MusicRequests {
   final _states = StreamController<MusicQueueSnapshot>.broadcast();
   MusicQueueSnapshot _current;
 
-  _Requests({Uri? artwork})
-    : _current = MusicQueueSnapshot(
-        revision: 1,
-        nowPlaying: null,
-        queue: [
-          MusicQueueItem(
-            id: 'one',
-            requestedBy: 'Viewer',
-            sourceUrl: Uri.parse('https://youtu.be/one'),
-            phase: MusicQueueItemPhase.downloading,
-            title: 'Midnight City',
-            author: 'M83',
-            duration: const Duration(minutes: 4),
-            thumbnail: artwork,
-            downloadProgress: 0.4,
-          ),
-        ],
-        lastError: null,
-      );
+  _Requests({
+    Uri? artwork,
+    String title = 'Midnight City',
+    String author = 'M83',
+    String requestedBy = 'Viewer',
+  }) : _current = MusicQueueSnapshot(
+         revision: 1,
+         nowPlaying: null,
+         queue: [
+           MusicQueueItem(
+             id: 'one',
+             requestedBy: requestedBy,
+             sourceUrl: Uri.parse('https://youtu.be/one'),
+             phase: MusicQueueItemPhase.downloading,
+             title: title,
+             author: author,
+             duration: const Duration(minutes: 4),
+             thumbnail: artwork,
+             downloadProgress: 0.4,
+           ),
+         ],
+         lastError: null,
+       );
 
   void emit(MusicQueueSnapshot snapshot) {
     _current = snapshot;
