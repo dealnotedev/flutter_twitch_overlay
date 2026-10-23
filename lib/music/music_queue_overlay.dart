@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:gap/gap.dart';
 import 'package:obssource/extensions.dart';
 import 'package:obssource/music/music_player_visuals.dart';
+import 'package:obssource/music/turntable_track_line.dart';
 import 'package:dart_music_player_protocol/dart_music_player_protocol.dart';
 
 enum MusicQueuePresentation { floatingOverlay, controllerCanvas }
@@ -1054,7 +1055,7 @@ class MusicQueueList extends StatelessWidget {
           const Gap(7),
         ],
         for (final (index, item) in visible.indexed) ...[
-          if (style == MusicQueueStyle.turntable && index > 0) const Gap(16),
+          if (style == MusicQueueStyle.turntable && index > 0) const Gap(4),
           _QueueRow(
             item: item,
             held: held,
@@ -1112,13 +1113,35 @@ class _QueueRow extends StatelessWidget {
 
     if (style == MusicQueueStyle.turntable) {
       return Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           Expanded(
-            child: MusicTrackInfo(
-              status: status,
+            child: TurntableTrackLine(
+              key: ValueKey('turntable_queue_track_${item.id}'),
+              textKey: ValueKey('turntable_queue_text_${item.id}'),
               title: item.title ?? item.sourceUrl.toString(),
-              subtitle:
-                  '${item.author ?? context.localizations.music_source_youtube} · ${item.requestedBy}',
+              author: item.author ?? context.localizations.music_source_youtube,
+              requestedBy: item.requestedBy,
+              fontSize: 12,
+              wrap: true,
+            ),
+          ),
+          const Gap(8),
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 72),
+            child: Text(
+              status.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color:
+                    item.phase == MusicQueueItemPhase.ready
+                        ? MusicPlayerPalette.textSecondary
+                        : MusicPlayerPalette.neonPink,
+                fontSize: 9,
+                fontWeight: FontWeight.w600,
+                letterSpacing: 0.6,
+              ),
             ),
           ),
           const Gap(8),
