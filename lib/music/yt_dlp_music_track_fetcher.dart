@@ -56,6 +56,7 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
   final Duration downloadTimeout;
   final MusicProcessStarter _processStarter;
   final YtDlpCookieSource? cookies;
+  final void Function(String audioPath)? onFileObtained;
 
   Process? _activeProcess;
 
@@ -73,6 +74,7 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
     this.downloadTimeout = const Duration(minutes: 15),
     MusicProcessStarter? processStarter,
     this.cookies,
+    this.onFileObtained,
   }) : _processStarter = processStarter ?? _startProcess;
 
   @override
@@ -144,15 +146,19 @@ class YtDlpMusicTrackFetcher implements MusicTrackFetcher {
   Future<String> obtain({
     required MusicTrackMetadata metadata,
     required void Function(MusicDownloadProgress progress) onProgress,
-  }) => cache.obtain(
-    videoId: metadata.videoId,
-    produce:
-        (stagingDirectory) => _download(
-          metadata: metadata,
-          stagingDirectory: stagingDirectory,
-          onProgress: onProgress,
-        ),
-  );
+  }) async {
+    final path = await cache.obtain(
+      videoId: metadata.videoId,
+      produce:
+          (stagingDirectory) => _download(
+            metadata: metadata,
+            stagingDirectory: stagingDirectory,
+            onProgress: onProgress,
+          ),
+    );
+    onFileObtained?.call(path);
+    return path;
+  }
 
   Future<File> _download({
     required MusicTrackMetadata metadata,

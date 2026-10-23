@@ -8,6 +8,7 @@ import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/music_reward_controller.dart';
 import 'package:obssource/music/music_settings.dart';
 import 'package:obssource/music/music_tool_paths.dart';
+import 'package:obssource/music/music_vu_profiles.dart';
 import 'package:obssource/music/obs_audio_music_track_player.dart';
 import 'package:obssource/music/yt_dlp_music_track_fetcher.dart';
 import 'package:obssource/music/youtube_browser_session.dart';
@@ -23,6 +24,7 @@ class LocalMusicRuntime {
   late final MusicRequestManager requests;
   late final ObsAudioMusicTrackPlayer player;
   late final MusicFileCache cache;
+  late final MusicVuProfiles vuProfiles;
   late final MusicControlServerController server;
   late final MusicRewardController reward;
   late final YoutubeConnectionController youtubeConnection;
@@ -38,6 +40,10 @@ class LocalMusicRuntime {
       rootDirectory: defaultMusicCacheDirectory(),
       maxBytes: music.cacheMaxMb * 1024 * 1024,
     );
+    vuProfiles = MusicVuProfiles(
+      cache: cache,
+      ffmpegExecutable: tools.ffmpegExecutable,
+    );
 
     final sessionDirectory = Directory(
       '${cache.rootDirectory.parent.path}${Platform.pathSeparator}youtube-session',
@@ -49,6 +55,7 @@ class LocalMusicRuntime {
       denoPath: tools.denoPath,
       cache: cache,
       cookies: () => youtubeConnection.leaseCookies(),
+      onFileObtained: (path) => unawaited(vuProfiles.prepare(path)),
     );
 
     YtDlpMusicTrackFetcher? youtubeProbe;
@@ -191,6 +198,7 @@ class LocalMusicRuntime {
   Future<void> close() async {
     // Cancel incoming requests immediately, while Twitch pauses the reward.
     await Future.wait([reward.close(), server.close(), requests.close()]);
+    await vuProfiles.close();
     await _updates;
     await youtubeConnection.close();
   }

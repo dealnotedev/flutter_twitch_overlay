@@ -20,12 +20,12 @@ cd "$build_dir"
   --disable-avdevice --disable-swscale \
   --enable-libmp3lame \
   --enable-decoder=aac,opus,vorbis,mp3float \
-  --enable-encoder=libmp3lame \
+  --enable-encoder=libmp3lame,pcm_s16le \
   --enable-demuxer=aac,mov,matroska,mpegts,ogg,mp3 \
-  --enable-muxer=mp3,mp4,ipod,matroska,webm,ogg \
+  --enable-muxer=mp3,mp4,ipod,matroska,webm,ogg,null \
   --enable-parser=aac,aac_latm,opus,vorbis,mpegaudio,h264,vp9,av1 \
   --enable-bsf=aac_adtstoasc,setts,extract_extradata \
-  --enable-filter=aresample,aformat,anull,atrim,asetpts \
+  --enable-filter=aresample,aformat,anull,atrim,asetpts,asetnsamples,astats,ametadata \
   --enable-protocol=file,pipe \
   --pkg-config-flags=--static \
   --extra-cflags='-ffunction-sections -fdata-sections' \

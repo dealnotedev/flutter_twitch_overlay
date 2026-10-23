@@ -14,11 +14,18 @@ import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_motion.dart';
 import 'package:obssource/music/turntable_track_line.dart';
 import 'package:obssource/music/vinyl_record.dart';
+import 'package:obssource/music/music_vu_meters.dart';
+import 'package:obssource/music/music_vu_profile.dart';
 
 class TurntableMusicPlayer extends StatefulWidget {
   final MusicRequests requests;
+  final MusicVuProfileLoader? loadVuProfile;
 
-  const TurntableMusicPlayer({super.key, required this.requests});
+  const TurntableMusicPlayer({
+    super.key,
+    required this.requests,
+    this.loadVuProfile,
+  });
 
   @override
   State<TurntableMusicPlayer> createState() => _TurntableMusicPlayerState();
@@ -34,6 +41,10 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
   final _items = <String, MusicQueueItem>{};
   Duration _previousElapsed = Duration.zero;
   bool _queueExpanded = false;
+  final _vu = MusicVuBallistics();
+  MusicVuProfile? _vuProfile;
+  String? _vuItemId;
+  int _vuGeneration = 0;
 
   @override
   void initState() {
@@ -44,6 +55,10 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
   }
 
   void _connect() {
+    _vuGeneration++;
+    _vuItemId = null;
+    _vuProfile = null;
+    _vu.reset();
     _snapshot = widget.requests.current;
     _queueExpanded = false;
     _subscription = widget.requests.states.listen((snapshot) {
@@ -63,10 +78,14 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
     if (oldWidget.requests != widget.requests) {
       unawaited(_subscription?.cancel());
       _connect();
+    } else if (oldWidget.loadVuProfile != widget.loadVuProfile) {
+      _vuItemId = null;
+      _syncVu();
     }
   }
 
   void _syncMotion() {
+    _syncVu();
     final playing = _snapshot.nowPlaying;
     final item = playing?.item ?? _snapshot.queue.firstOrNull;
     if (item != null) _items[item.id] = item;
@@ -86,6 +105,26 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
     }
   }
 
+  void _syncVu() {
+    final item = _snapshot.nowPlaying?.item;
+    if (_vuItemId == item?.id) return;
+    _vuItemId = item?.id;
+    _vuProfile = null;
+    _vu.reset();
+    final generation = ++_vuGeneration;
+    final load = widget.loadVuProfile;
+    if (item == null || load == null) return;
+    unawaited(() async {
+      try {
+        final profile = await load(item);
+        if (!mounted || generation != _vuGeneration) return;
+        setState(() => _vuProfile = profile);
+      } catch (_) {
+        // Optional metering never interrupts playback or its animation.
+      }
+    }());
+  }
+
   void _toggleQueue() {
     if (_snapshot.queue.isEmpty) return;
     setState(() => _queueExpanded = !_queueExpanded);
@@ -96,24 +135,31 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
     _previousElapsed = elapsed;
     final playing = _snapshot.nowPlaying;
     final duration = playing?.item.duration?.inMilliseconds ?? 0;
+    final sinceUpdate =
+        playing == null || playing.paused || playing.starting
+            ? Duration.zero
+            : DateTime.now().difference(playing.positionUpdatedAt);
+    final position =
+        (playing?.position ?? Duration.zero) +
+        (sinceUpdate.isNegative ? Duration.zero : sinceUpdate);
+    final step =
+        delta > const Duration(milliseconds: 100)
+            ? const Duration(milliseconds: 100)
+            : delta;
+    _vu.advance(
+      step,
+      playing != null && !playing.paused && !playing.starting
+          ? _vuProfile?.sampleAt(position, volume: _snapshot.volume) ??
+              MusicVuSample.silence
+          : MusicVuSample.silence,
+    );
     if (playing != null && playing.item.id == _motion.itemId && duration > 0) {
-      final elapsed =
-          playing.paused || playing.starting
-              ? Duration.zero
-              : DateTime.now().difference(playing.positionUpdatedAt);
       _motion.setTrackProgress(
-        ((playing.position + elapsed).inMilliseconds / duration).clamp(
-          0.0,
-          1.0,
-        ),
+        (position.inMilliseconds / duration).clamp(0.0, 1.0),
       );
     }
     // Resume a suspended OBS source without jumping through the choreography.
-    _motion.advance(
-      delta > const Duration(milliseconds: 100)
-          ? const Duration(milliseconds: 100)
-          : delta,
-    );
+    _motion.advance(step);
     if (_motion.phase == TurntablePhase.hidden) _ticker.stop();
   }
 
@@ -328,6 +374,15 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
                                   ),
                                 ),
                               ],
+                            ),
+                          ),
+                          Padding(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: TurntableGeometry.chassisOrigin.dx,
+                            ),
+                            child: MusicVuMeters(
+                              left: _vu.left,
+                              right: _vu.right,
                             ),
                           ),
                           Padding(

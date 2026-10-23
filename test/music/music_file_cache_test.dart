@@ -14,6 +14,36 @@ void main() {
     if (await root.exists()) await root.delete(recursive: true);
   });
 
+  test('evicts VU profiles with their audio and counts their size', () async {
+    final seed = MusicFileCache(rootDirectory: root, maxBytes: 0);
+    final older = await seed.obtain(
+      videoId: 'older',
+      produce: (dir) => _writeFile(dir, [1, 2, 3]),
+    );
+    final current = await seed.obtain(
+      videoId: 'current',
+      produce: (dir) => _writeFile(dir, [4, 5, 6]),
+    );
+    final profile = File('$older${MusicFileCache.vuProfileSuffix}');
+    await profile.writeAsString('a cached stereo VU profile');
+    await File(older).setLastModified(DateTime(2026));
+    final limited = MusicFileCache(rootDirectory: root, maxBytes: 0);
+    await limited.obtain(
+      videoId: 'current',
+      produce: (_) => throw StateError('cache miss'),
+    );
+    await limited.updateLimit(6);
+    expect(await File(older).exists(), isFalse);
+    expect(await profile.exists(), isFalse);
+    expect(await File(current).exists(), isTrue);
+  });
+
+  test('cache lookup does not download or create missing entries', () async {
+    final cache = MusicFileCache(rootDirectory: root, maxBytes: 0);
+    expect(await cache.findExisting('missing'), isNull);
+    expect(await root.list().toList(), isEmpty);
+  });
+
   test(
     'changing the limit prunes old files but keeps tracks used this session',
     () async {

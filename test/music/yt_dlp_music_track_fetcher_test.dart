@@ -16,6 +16,44 @@ const _loginHint =
     'for tips on effectively exporting YouTube cookies';
 
 void main() {
+  test(
+    'notifies optional analysis on a cache hit without waiting for it',
+    () async {
+      final root = await Directory.systemTemp.createTemp('music-vu-fetcher-');
+      addTearDown(() => root.delete(recursive: true));
+      final cache = MusicFileCache(rootDirectory: root, maxBytes: 0);
+      final path = await cache.obtain(
+        videoId: 'video',
+        produce:
+            (dir) async =>
+                File('${dir.path}/audio.mp3')..writeAsBytesSync([1, 2, 3]),
+      );
+      String? prepared;
+      final fetcher = YtDlpMusicTrackFetcher(
+        executable: 'unused',
+        ffmpegLocation: null,
+        denoPath: null,
+        cache: cache,
+        onFileObtained: (file) {
+          prepared = file;
+        },
+      );
+      final metadata = MusicTrackMetadata(
+        videoId: 'video',
+        title: 'Track',
+        author: 'Artist',
+        duration: const Duration(minutes: 1),
+        thumbnail: null,
+        sourceUrl: Uri.parse('https://youtu.be/video'),
+      );
+      expect(
+        await fetcher.obtain(metadata: metadata, onProgress: (_) {}),
+        path,
+      );
+      expect(prepared, path);
+    },
+  );
+
   group('classifies yt-dlp failures', () {
     for (final (name, stderr, expected) in [
       (

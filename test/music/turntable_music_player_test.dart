@@ -13,8 +13,112 @@ import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_music_player.dart';
 import 'package:obssource/music/vinyl_record.dart';
+import 'package:obssource/music/music_vu_meters.dart';
+import 'package:obssource/music/music_vu_profile.dart';
 
 void main() {
+  testWidgets('VU needles follow the track position, pause and volume', (
+    tester,
+  ) async {
+    final requests = _Requests()..start();
+    final capture = GlobalKey();
+    final profile = MusicVuProfile([
+      for (var i = 0; i < 600; i++)
+        i < 200 ? const MusicVuSample(-9, -28) : const MusicVuSample(-28, -9),
+    ]);
+    final pending = Completer<MusicVuProfile?>();
+    await _loadFonts(tester);
+    await tester.pumpWidget(
+      _surface(requests, capture, loadVuProfile: (_) => pending.future),
+    );
+    double level(String channel) =>
+        tester
+            .widget<AnalogVuMeter>(
+              find.byKey(ValueKey('turntable_vu_$channel')),
+            )
+            .level;
+    await _animate(tester, 1);
+    expect(level('left'), 0);
+    expect(level('right'), 0);
+    expect(requests.current.nowPlaying!.starting, isFalse);
+    pending.complete(profile);
+    await tester.pump();
+    await _animate(tester, 4);
+    expect(level('left'), greaterThan(0.9));
+    expect(level('right'), lessThan(0.3));
+    await _capture(tester, capture, 'turntable-vu');
+
+    await requests.seek(const Duration(seconds: 12));
+    await tester.pump();
+    await _animate(tester, 1);
+    expect(level('right'), greaterThan(0.9));
+    expect(level('left'), lessThan(0.3));
+    await requests.setPaused(true);
+    await tester.pump();
+    await _animate(tester, 1.2);
+    expect(level('left'), lessThan(0.002));
+    expect(level('right'), lessThan(0.002));
+    await requests.setPaused(false);
+    await tester.pump();
+    await _animate(tester, 0.5);
+    expect(level('right'), greaterThan(0.9));
+    requests.emit(
+      MusicQueueSnapshot(
+        revision: 20,
+        nowPlaying: requests.current.nowPlaying,
+        queue: [],
+        lastError: null,
+        volume: 0,
+      ),
+    );
+    await tester.pump();
+    await _animate(tester, 1.2);
+    expect(level('right'), lessThan(0.002));
+    await tester.pumpWidget(const SizedBox.shrink());
+    await requests.close();
+  });
+
+  testWidgets(
+    'late profiles cannot drive the next track or an unmounted player',
+    (tester) async {
+      final requests = _Requests()..start();
+      final first = Completer<MusicVuProfile?>();
+      final second = Completer<MusicVuProfile?>();
+      await tester.pumpWidget(
+        _surface(
+          requests,
+          GlobalKey(),
+          loadVuProfile:
+              (item) => item.id == 'one' ? first.future : second.future,
+        ),
+      );
+      await _animate(tester, 1);
+      requests.setQueue([_queuedItem('two')]);
+      requests.start();
+      await tester.pump();
+      first.complete(
+        MusicVuProfile(List.filled(600, const MusicVuSample(-9, -9))),
+      );
+      await tester.pump();
+      await _animate(tester, 1);
+      expect(
+        tester
+            .widget<AnalogVuMeter>(
+              find.byKey(const ValueKey('turntable_vu_left')),
+            )
+            .level,
+        0,
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      second.complete(
+        MusicVuProfile(List.filled(600, const MusicVuSample(-9, -9))),
+      );
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      await requests.close();
+    },
+  );
+
   for (final edition in VinylEdition.values) {
     testWidgets(
       '${edition.name} vinyl stays the same through playback updates',
@@ -334,7 +438,7 @@ void main() {
       }
 
       expectPanelPadding();
-      expect(normalHeight, lessThan(325));
+      expect(normalHeight, lessThan(405));
       await tester.pumpWidget(_surface(requests, capture, textScale: 1.75));
       await tester.pump();
       expect(tester.getSize(player).height, greaterThan(normalHeight));
@@ -885,6 +989,7 @@ Widget _surface(
   _Requests requests,
   GlobalKey capture, {
   double textScale = 1,
+  MusicVuProfileLoader? loadVuProfile,
 }) => MaterialApp(
   builder:
       (context, child) => MediaQuery(
@@ -912,7 +1017,10 @@ Widget _surface(
                   ),
                   child: RepaintBoundary(
                     key: capture,
-                    child: TurntableMusicPlayer(requests: requests),
+                    child: TurntableMusicPlayer(
+                      requests: requests,
+                      loadVuProfile: loadVuProfile,
+                    ),
                   ),
                 ),
               ),

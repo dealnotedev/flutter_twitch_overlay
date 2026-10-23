@@ -28,6 +28,7 @@ void main() {
 
     expect(paths.ytDlpExecutable, '$pluginDirectory${separator}yt-dlp.exe');
     expect(paths.ffmpegLocation, pluginDirectory);
+    expect(paths.ffmpegExecutable, '$pluginDirectory${separator}ffmpeg.exe');
     expect(paths.denoPath, '$pluginDirectory${separator}deno.exe');
   });
 
@@ -56,6 +57,7 @@ void main() {
     );
 
     expect(paths.ffmpegLocation, isNull);
+    expect(paths.ffmpegExecutable, 'ffmpeg.exe');
   });
 
   test('falls back to PATH when bundled tools are absent', () {

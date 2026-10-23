@@ -128,7 +128,15 @@ class _MusicOverlayState extends State<MusicOverlay> {
                     ),
                     child:
                         turntable
-                            ? TurntableMusicPlayer(requests: _requests)
+                            ? TurntableMusicPlayer(
+                              requests: _requests,
+                              loadVuProfile:
+                                  widget.locator is AppServiceLocator
+                                      ? (widget.locator as AppServiceLocator)
+                                          .musicSource
+                                          .vuProfileFor
+                                      : null,
+                            )
                             : MusicQueueOverlay(
                               requests: _requests,
                               controller: _controller,

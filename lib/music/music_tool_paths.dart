@@ -5,6 +5,11 @@ class MusicToolPaths {
   final String? ffmpegLocation;
   final String? denoPath;
 
+  String get ffmpegExecutable =>
+      ffmpegLocation == null
+          ? 'ffmpeg.exe'
+          : _join(ffmpegLocation!, 'ffmpeg.exe');
+
   const MusicToolPaths({
     required this.ytDlpExecutable,
     required this.ffmpegLocation,

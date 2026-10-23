@@ -4,6 +4,7 @@ typedef MusicFileProducer = Future<File> Function(Directory stagingDirectory);
 
 class MusicFileCache {
   static const profileName = 'youtube-mp3-q0-v1';
+  static const vuProfileSuffix = '.vu-v1.json';
   static const _stagingDirectoryName = '.staging';
   static const _stagingMaxAge = Duration(days: 1);
 
@@ -25,6 +26,13 @@ class MusicFileCache {
     await _prune();
   }
 
+  /// Finds an already downloaded file without starting a download or pruning.
+  Future<String?> findExisting(String videoId) async {
+    _validateVideoId(videoId);
+    final file = _fileFor(videoId);
+    return await _isValid(file) ? file.path : null;
+  }
+
   Future<String> obtain({
     required String videoId,
     required MusicFileProducer produce,
@@ -43,6 +51,7 @@ class MusicFileCache {
     }
 
     await _deleteIfPresent(target);
+    await _deleteIfPresent(File('${target.path}$vuProfileSuffix'));
 
     final stagingRoot = _stagingDirectory;
     await stagingRoot.create(recursive: true);
@@ -126,7 +135,16 @@ class MusicFileCache {
     final entries = <_CacheFile>[];
     var totalBytes = 0;
     await for (final entity in _profileDirectory.list(followLinks: false)) {
-      if (entity is! File || !entity.path.toLowerCase().endsWith('.mp3')) {
+      if (entity is! File) continue;
+      if (entity.path.endsWith(vuProfileSuffix)) {
+        final audioPath = entity.path.substring(
+          0,
+          entity.path.length - vuProfileSuffix.length,
+        );
+        if (!await File(audioPath).exists()) await _deleteIfPresent(entity);
+        continue;
+      }
+      if (!entity.path.toLowerCase().endsWith('.mp3')) {
         continue;
       }
 
@@ -134,11 +152,15 @@ class MusicFileCache {
         final stat = await entity.stat();
         if (stat.size <= 0) {
           await entity.delete();
+          await _deleteIfPresent(File('${entity.path}$vuProfileSuffix'));
           continue;
         }
-        totalBytes += stat.size;
+        final profile = File('${entity.path}$vuProfileSuffix');
+        final profileSize = await profile.exists() ? await profile.length() : 0;
+        final size = stat.size + profileSize;
+        totalBytes += size;
         entries.add(
-          _CacheFile(file: entity, size: stat.size, modified: stat.modified),
+          _CacheFile(file: entity, size: size, modified: stat.modified),
         );
       } on FileSystemException {
         // Cache maintenance must not prevent playback.
@@ -154,6 +176,7 @@ class MusicFileCache {
 
       try {
         await entry.file.delete();
+        await _deleteIfPresent(File('${entry.file.path}$vuProfileSuffix'));
         totalBytes -= entry.size;
       } on FileSystemException {
         // Cache maintenance is best effort.

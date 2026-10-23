@@ -5,6 +5,8 @@ import 'package:dart_music_player_protocol/dart_music_player_protocol_io.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/music/local_music_runtime.dart';
 import 'package:obssource/music/music_settings.dart';
+import 'package:obssource/music/music_vu_profile.dart';
+import 'package:obssource/music/music_vu_profiles.dart';
 
 /// One stable interface for views while the owned local/remote player changes.
 class MusicSourceController extends ChangeNotifier implements MusicRequests {
@@ -12,6 +14,7 @@ class MusicSourceController extends ChangeNotifier implements MusicRequests {
   final LocalMusicRuntime Function(MusicSettings) createLocal;
   LocalMusicRuntime? local;
   RemoteMusicRequests? _remote;
+  MusicVuProfiles? _externalVuProfiles;
   late MusicRequests _active;
   late MusicSettings _options;
   late final StreamSubscription<MusicSettings> _settingsSubscription;
@@ -33,6 +36,14 @@ class MusicSourceController extends ChangeNotifier implements MusicRequests {
   }
 
   MusicControlConnectionState? get connection => _remote?.currentConnection;
+
+  Future<MusicVuProfile?> vuProfileFor(MusicQueueItem item) {
+    if (_closed) return Future.value(null);
+    final profiles =
+        local?.vuProfiles ??
+        (_externalVuProfiles ??= MusicVuProfiles.defaultCache());
+    return profiles.loadFor(item);
+  }
 
   void _open(MusicSettings value) {
     _options = value;
@@ -125,6 +136,7 @@ class MusicSourceController extends ChangeNotifier implements MusicRequests {
         await _settingsSubscription.cancel();
         await _pending;
         await _disconnect();
+        await _externalVuProfiles?.close();
         await _states.close();
         dispose();
       }();

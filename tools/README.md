@@ -56,6 +56,11 @@ The minimal build enables:
 - MP3 output and container remuxing needed by yt-dlp's DASH/HLS/timestamp fixups;
 - audio format conversion/resampling, local file and pipe protocols.
 
+VU analysis additionally uses `asetnsamples`, `astats`, `ametadata`, PCM S16
+encoding and the null muxer. It measures stereo RMS in 50 ms windows from the
+final MP3 without playing or re-encoding the music cache. Rebuild older minimal
+FFmpeg runtimes with `build_ffmpeg.ps1` to enable these components.
+
 Video decoders/encoders, GPU acceleration, capture devices, network protocols,
 ffplay and ffprobe are omitted. Audio can still be extracted from a combined
 video/audio file. This is not a general-purpose FFmpeg distribution and does not

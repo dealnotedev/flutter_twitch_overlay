@@ -9,6 +9,16 @@ The turntable occasionally receives rare vinyl: clear (8%), marble (5%), or
 gold (2%); the remaining 85% are classic black. The edition follows the request
 ID and stays the same through metadata updates, pause, seek, and reconnection.
 
+Two analog VU meters show the track's left/right RMS levels. FFmpeg measures
+50 ms windows in the completed MP3, with a SHA-256-validated profile cached next
+to the audio. Analysis runs in the background; music starts normally while the
+needles rest until its profile is ready. The meters follow position, seeking,
+pause and player volume, with mechanical needle smoothing. Profiles count toward
+the audio cache limit and are evicted with their MP3. External playback can use
+an existing matching MP3 in this overlay's cache; it does not download a second
+copy of Listener audio. Missing profiles or unsupported FFmpeg builds leave the
+meters at rest and do not affect music. OBS filters and mixer gain are not metered.
+
 ## Player settings
 
 Hover over the connection indicator in the upper right and press the settings
