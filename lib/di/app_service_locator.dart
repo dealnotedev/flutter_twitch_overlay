@@ -2,7 +2,7 @@ import 'package:obssource/config/obs_config.dart';
 import 'package:obssource/config/settings.dart';
 import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/di/service_locator.dart';
-import 'package:obssource/local_server.dart';
+import 'package:obssource/hunt_events_client.dart';
 import 'package:obssource/music/control/music_control_server_controller.dart';
 import 'package:obssource/music/local_music_runtime.dart';
 import 'package:obssource/music/music_requests.dart';
@@ -18,16 +18,16 @@ class AppServiceLocator extends ServiceLocator {
   static AppServiceLocator init(
     Settings settings,
     ObsConfig config,
-    LocalServer localServer, {
+    HuntEventsClient huntEvents, {
     required SourceProfile profile,
   }) {
-    instance = AppServiceLocator._(settings, config, localServer, profile);
+    instance = AppServiceLocator._(settings, config, huntEvents, profile);
     return instance;
   }
 
   final Settings settings;
   final ObsConfig config;
-  final LocalServer localServer;
+  final HuntEventsClient huntEvents;
   final Map<Type, Object> map = {};
   late final MusicSourceController musicSource;
   Future<void>? _closing;
@@ -42,7 +42,7 @@ class AppServiceLocator extends ServiceLocator {
   AppServiceLocator._(
     this.settings,
     this.config,
-    this.localServer,
+    this.huntEvents,
     SourceProfile profile,
   ) {
     final wsManager = WebSocketManager(
@@ -58,7 +58,7 @@ class AppServiceLocator extends ServiceLocator {
     );
     map[Settings] = settings;
     map[ObsConfig] = config;
-    map[LocalServer] = localServer;
+    map[HuntEventsClient] = huntEvents;
     map[ServiceLocator] = this;
     map[WebSocketManager] = wsManager;
     map[MusicRequests] = musicSource;
@@ -75,5 +75,6 @@ class AppServiceLocator extends ServiceLocator {
       _closing ??= () async {
         await musicSource.close();
         await provide<WebSocketManager>().close();
+        await huntEvents.close();
       }();
 }

@@ -9,7 +9,7 @@ import 'package:obssource/config/settings.dart';
 import 'package:obssource/config/source_profile.dart';
 import 'package:obssource/di/app_service_locator.dart';
 import 'package:obssource/di/service_locator.dart';
-import 'package:obssource/local_server.dart';
+import 'package:obssource/hunt_events_client.dart';
 import 'package:obssource/main.dart';
 import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/music/music_overlay.dart';
@@ -88,7 +88,7 @@ void main() {
       final locator = AppServiceLocator.init(
         settings,
         ObsConfig(),
-        LocalServer(),
+        HuntEventsClient(),
         profile: const SourceProfile.standalone(),
       );
       final source = locator.musicSource;
