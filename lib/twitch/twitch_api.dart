@@ -225,7 +225,7 @@ abstract interface class TwitchRewardCatalog {
 }
 
 class TwitchApiRewardCatalog implements TwitchRewardCatalog {
-  static const _defaultTitle = 'Music Request (Freydis)';
+  static const _defaultTitle = 'Music Request';
   static const _defaultPrompt = 'Paste a YouTube link';
   static const _defaultCost = 1000;
   static const _defaultColor = '#9147FF';
@@ -273,7 +273,7 @@ class TwitchApiRewardCatalog implements TwitchRewardCatalog {
     }
 
     for (var suffix = 2; suffix < 100; suffix++) {
-      final candidate = 'Music Request (Freydis $suffix)';
+      final candidate = 'Music Request ($suffix)';
       if (!normalized.contains(candidate.toLowerCase())) return candidate;
     }
     throw StateError('Unable to choose a unique Twitch reward title');
