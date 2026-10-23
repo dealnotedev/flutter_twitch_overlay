@@ -73,6 +73,8 @@ class _TurntableMusicPlayerState extends State<TurntableMusicPlayer>
     final duration = playing?.item.duration?.inMilliseconds ?? 0;
     _motion.update(
       itemId: item?.id,
+      metadataReady:
+          item != null && item.phase != MusicQueueItemPhase.resolving,
       ready: item != null && (playing != null && !playing.starting),
       paused: playing?.paused ?? false,
       progress: duration > 0 ? playing!.position.inMilliseconds / duration : 0,
