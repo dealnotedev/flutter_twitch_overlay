@@ -12,8 +12,41 @@ import 'package:obssource/l10n/app_localizations.dart';
 import 'package:obssource/music/music_requests.dart';
 import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_music_player.dart';
+import 'package:obssource/music/vinyl_record.dart';
 
 void main() {
+  for (final edition in VinylEdition.values) {
+    testWidgets(
+      '${edition.name} vinyl stays the same through playback updates',
+      (tester) async {
+        final itemId = List.generate(
+          1000,
+          (index) => 'edition-$index',
+        ).firstWhere((id) => VinylEdition.forItem(id) == edition);
+        final requests = _Requests(itemId: itemId)..start();
+        final capture = GlobalKey();
+        await _loadFonts(tester);
+        await tester.pumpWidget(_surface(requests, capture));
+        await _animate(tester, 5);
+        VinylEdition visibleEdition() =>
+            tester.widget<VinylRecord>(find.byType(VinylRecord)).edition;
+        expect(visibleEdition(), edition);
+        await requests.seek(const Duration(seconds: 120));
+        await tester.pump();
+        expect(visibleEdition(), edition);
+        await requests.setPaused(true);
+        await tester.pump();
+        expect(visibleEdition(), edition);
+        await requests.setPaused(false);
+        await tester.pump();
+        expect(visibleEdition(), edition);
+        await _capture(tester, capture, 'turntable-edition-${edition.name}');
+        await tester.pumpWidget(const SizedBox.shrink());
+        await requests.close();
+      },
+    );
+  }
+
   testWidgets('places after metadata without waiting for the artwork image', (
     tester,
   ) async {
@@ -409,6 +442,85 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('all vinyl editions preserve the cover and record dimensions', (
+    tester,
+  ) async {
+    await tester.binding.setSurfaceSize(const Size(1080, 400));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+    final cover = (await tester.runAsync(_sampleCover))!;
+    final capture = GlobalKey();
+    await _loadFonts(tester);
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: ThemeData(fontFamily: 'TurntableTestFont'),
+        home: Scaffold(
+          backgroundColor: const Color(0xFF101322),
+          body: Center(
+            child: RepaintBoundary(
+              key: capture,
+              child: ColoredBox(
+                color: const Color(0xFF101322),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      for (final edition in VinylEdition.values)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 14),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                edition.name.toUpperCase(),
+                                style: const TextStyle(
+                                  color: Color(0xFFEAE4F4),
+                                  fontSize: 14,
+                                  letterSpacing: 2,
+                                ),
+                              ),
+                              const SizedBox(height: 20),
+                              VinylRecord(
+                                edition: edition,
+                                artwork: MemoryImage(cover),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.runAsync(
+      () => precacheImage(
+        MemoryImage(cover),
+        tester.element(find.byType(VinylRecord).first),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(VinylRecord), findsNWidgets(4));
+    expect(find.byType(Image), findsNWidgets(4));
+    for (final record in find.byType(VinylRecord).evaluate()) {
+      expect(
+        tester.getSize(find.byWidget(record.widget)),
+        const Size.square(220),
+      );
+    }
+    for (final artwork in find.byType(Image).evaluate()) {
+      expect(
+        tester.getSize(find.byWidget(artwork.widget)),
+        const Size.square(128),
+      );
+    }
+    expect(tester.takeException(), isNull);
+    await _capture(tester, capture, 'vinyl-editions');
+  });
 
   testWidgets(
     'queue toggles inside the chassis and updates its count, statuses and removals',
@@ -990,6 +1102,7 @@ class _Requests implements MusicRequests {
   MusicQueueSnapshot _current;
 
   _Requests({
+    String itemId = 'one',
     Uri? artwork,
     String title = 'Midnight City',
     String author = 'M83',
@@ -999,9 +1112,9 @@ class _Requests implements MusicRequests {
          nowPlaying: null,
          queue: [
            MusicQueueItem(
-             id: 'one',
+             id: itemId,
              requestedBy: requestedBy,
-             sourceUrl: Uri.parse('https://youtu.be/one'),
+             sourceUrl: Uri.parse('https://youtu.be/$itemId'),
              phase: MusicQueueItemPhase.downloading,
              title: title,
              author: author,

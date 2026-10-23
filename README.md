@@ -55,6 +55,10 @@ an external player or closing its OBS view never stops playback in Listener.
 Its audio continues in Listener and must be captured in OBS separately.
 Turntable animation follows playback and never delays the audio start.
 
+The turntable occasionally receives rare vinyl: clear (8%), marble (5%), or
+gold (2%); the remaining 85% are classic black. The edition follows the request
+ID and stays the same through metadata updates, pause, seek, and reconnection.
+
 The shared state, controls, JSON contract, and native transport are provided by
 [`dart_music_player_protocol`](https://github.com/dealnotedev/dart_music_player_protocol),
 a standalone Dart package pinned to a tested Git commit. `flutter pub get`
