@@ -56,9 +56,9 @@ do not trigger duplicate alerts. Anonymous givers appear as `Анонім`.
 The alerts use l10n translations (Ukrainian and English), the shared avatar animation, a
 20-second lifetime, and a dedicated sound for each subscription event. Subscription alerts play in
 arrival order, one at a time, with audio starting when each alert is shown.
-The bundled sounds in `assets/subscriptions/` are `subscription_purchase.wav`
-for a new subscription, `subscription_renewal.wav` for a shared resubscription
-message, and `subscription_gift.wav` for a single or bulk gift.
+The bundled sounds in `assets/subscriptions/` are `subscription_purchase.mp3`
+for a new subscription, `subscription_renewal.mp3` for a shared resubscription
+message, and `subscription_gift.mp3` for a single or bulk gift.
 Twitch authorization requires
 `channel:read:subscriptions`; older tokens without this scope need a new login.
 

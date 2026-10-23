@@ -162,7 +162,7 @@ void main() {
       final giftLoad = audioCommands.singleWhere(
         (command) => command['cmd'] == 'load',
       );
-      expect(giftLoad['asset'], 'assets/subscriptions/subscription_gift.wav');
+      expect(giftLoad['asset'], 'assets/subscriptions/subscription_gift.mp3');
       expect(
         audioCommands.where((command) => command['cmd'] == 'play').single['id'],
         giftLoad['id'],
@@ -198,9 +198,9 @@ void main() {
         'third': 'channel.subscription.gift',
       };
       const assets = [
-        'assets/subscriptions/subscription_purchase.wav',
-        'assets/subscriptions/subscription_renewal.wav',
-        'assets/subscriptions/subscription_gift.wav',
+        'assets/subscriptions/subscription_purchase.mp3',
+        'assets/subscriptions/subscription_renewal.mp3',
+        'assets/subscriptions/subscription_gift.mp3',
       ];
       WsMessage sub(String id) => WsMessage.fromJson({
         'metadata': {'message_id': id},
@@ -574,8 +574,8 @@ void main() {
         expect(
           load['asset'],
           viewers > 100
-              ? 'assets/raid/raid_over_100.wav'
-              : 'assets/raid/raid_${viewers.toString().padLeft(3, '0')}.wav',
+              ? 'assets/raid/raid_over_100.mp3'
+              : 'assets/raid/raid_${viewers.toString().padLeft(3, '0')}.mp3',
         );
         expect(
           audioCommands
