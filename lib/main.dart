@@ -91,6 +91,8 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void dispose() {
     _lifecycle?.dispose();
+    final locator = widget.locator;
+    if (locator is AppServiceLocator) unawaited(locator.close());
     super.dispose();
   }
 

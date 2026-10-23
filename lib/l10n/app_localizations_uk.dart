@@ -28,6 +28,10 @@ class AppLocalizationsUk extends AppLocalizations {
   String get music_turntable_cueing => 'Опускаємо голку';
 
   @override
+  String get twitch_login_failed =>
+      'Не вдалося завершити вхід у Twitch. Спробуйте ще раз.';
+
+  @override
   String user_redeemed_reward_title(
     String user,
     String reward,
@@ -438,7 +442,7 @@ class AppLocalizationsUk extends AppLocalizations {
 
   @override
   String get music_settings_port_hint =>
-      'Укажіть цей самий порт у контролері. Новий порт застосовується одразу з перезапуском сервера.';
+      'Бажаний порт. Якщо він зайнятий, вільний порт обирається автоматично. У контролері використовуйте адресу прослуховування, наведену нижче.';
 
   @override
   String get music_settings_apply => 'Застосувати';

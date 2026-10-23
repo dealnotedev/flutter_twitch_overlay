@@ -28,6 +28,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get music_turntable_cueing => 'Placing the needle';
 
   @override
+  String get twitch_login_failed =>
+      'Twitch sign-in could not finish. Please try again.';
+
+  @override
   String user_redeemed_reward_title(
     String user,
     String reward,
@@ -431,7 +435,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get music_settings_port_hint =>
-      'Use the same port in the controller. Applying a new port reconnects the server immediately.';
+      'Preferred port. If it is busy, a free port is selected automatically. Use the listening address shown below in the controller.';
 
   @override
   String get music_settings_apply => 'Apply';

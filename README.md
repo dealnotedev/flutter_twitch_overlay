@@ -31,6 +31,10 @@ OBS use the `standalone` subdirectory. The previous shared YouTube session is
 left untouched and is not imported; reconnect YouTube in each new profile.
 The downloaded MP3 cache remains shared under `%LOCALAPPDATA%\obssource\music-cache\`.
 
+Twitch browser sign-ins share the registered callback on `localhost:3000`.
+Sources wait for that listener in turn, and each callback is matched to its
+own sign-in attempt. Closing a source cancels its active or queued sign-in.
+
 ## Avatar settings
 
 Configure avatar resolution and animation rendering in **Overlay settings → Avatar**.
@@ -210,9 +214,11 @@ does not interrupt playback. Its player UI imports the same
 
 The default endpoint is `http://127.0.0.1:47821`. Enable or disable the server
 and change its port in **Overlay settings → Player → Local music controller
-server**. Settings show the running endpoint or a startup error (for example,
-an occupied port) with a retry button. Port changes restart only the control
-server, preserving playback and the queue. Pass the same port to the controller:
+server**. If the configured port is occupied, the server chooses a free port
+automatically. Settings show the actual running endpoint or a startup error
+with a retry button. Changing other music settings keeps the chosen port and
+active connections. Port changes restart only the control server, preserving
+playback and the queue. Pass the actual port shown in settings to the controller:
 
 ```powershell
 cd apps\music_controller

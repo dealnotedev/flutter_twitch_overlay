@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:obssource/music/control/music_control_server.dart';
@@ -10,6 +11,7 @@ enum MusicControlServerStatus { stopped, starting, running, failed }
 class MusicControlServerController extends ChangeNotifier {
   final MusicRequests requests;
   MusicControlServer? _server;
+  int? _requestedPort;
   Future<void> _pending = Future.value();
   bool _closed = false;
   MusicControlServerStatus status = MusicControlServerStatus.stopped;
@@ -23,7 +25,10 @@ class MusicControlServerController extends ChangeNotifier {
     if (_closed) return Future.value();
     return _pending = _pending.then((_) async {
       if (_closed) return;
-      if (enabled && _server?.isRunning == true && _server?.port == port) {
+      if (enabled &&
+          _server?.isRunning == true &&
+          (_requestedPort == port || _server?.port == port)) {
+        _requestedPort = port;
         return;
       }
       error = null;
@@ -35,13 +40,24 @@ class MusicControlServerController extends ChangeNotifier {
       try {
         await _server?.close();
         _server = null;
+        _requestedPort = null;
         if (enabled && !_closed) {
-          final server = MusicControlServer(
+          var server = MusicControlServer(
             requests: requests,
             requestedPort: port,
           );
           _server = server;
-          await server.start();
+          try {
+            await server.start();
+          } on SocketException {
+            // Dart also rejects duplicate binds within one VM without an OS code.
+            if (port == 0) rethrow;
+            await server.close();
+            server = MusicControlServer(requests: requests, requestedPort: 0);
+            _server = server;
+            await server.start();
+          }
+          _requestedPort = port;
           status = MusicControlServerStatus.running;
         }
       } catch (failure) {

@@ -134,6 +134,12 @@ abstract class AppLocalizations {
   /// **'Placing the needle'**
   String get music_turntable_cueing;
 
+  /// No description provided for @twitch_login_failed.
+  ///
+  /// In en, this message translates to:
+  /// **'Twitch sign-in could not finish. Please try again.'**
+  String get twitch_login_failed;
+
   /// No description provided for @user_redeemed_reward_title.
   ///
   /// In en, this message translates to:
@@ -760,7 +766,7 @@ abstract class AppLocalizations {
   /// No description provided for @music_settings_port_hint.
   ///
   /// In en, this message translates to:
-  /// **'Use the same port in the controller. Applying a new port reconnects the server immediately.'**
+  /// **'Preferred port. If it is busy, a free port is selected automatically. Use the listening address shown below in the controller.'**
   String get music_settings_port_hint;
 
   /// No description provided for @music_settings_apply.

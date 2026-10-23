@@ -16,8 +16,9 @@ flutter build windows --release
 ```
 
 The default overlay endpoint is `http://127.0.0.1:47821`. Enable the local server
-and select its port in **Overlay settings → Player** in the overlay. To connect
-the controller to another port, pass the same value:
+in **Overlay settings → Player**. If its preferred port is occupied, the overlay
+selects a free port and shows its actual listening address. To connect the
+controller, pass that actual port:
 
 ```powershell
 flutter run -d windows -- --port=47900
