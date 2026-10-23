@@ -7,6 +7,7 @@ import 'package:obssource/music/turntable_geometry.dart';
 enum TurntablePhase {
   hidden,
   entering,
+  awaitingMetadata,
   placing,
   spinningUp,
   waiting,
@@ -18,6 +19,7 @@ enum TurntablePhase {
 }
 
 /// A time-based choreography used only by the presentation.
+/// Metadata readiness gates placement, without waiting for the artwork image.
 /// Download readiness never advances the needle before the record is seated
 /// and the platter has reached 33 1/3 RPM.
 class TurntableMotion extends ChangeNotifier {
@@ -44,6 +46,7 @@ class TurntableMotion extends ChangeNotifier {
   double _incomingProgress = 0;
 
   String? _targetId;
+  bool _metadataReady = false;
   bool _ready = false;
   bool _paused = false;
   double _phaseTime = 0;
@@ -53,7 +56,10 @@ class TurntableMotion extends ChangeNotifier {
 
   TurntableMotion({this.onNeedlePlaced});
 
-  bool get recordVisible => itemId != null && phase != TurntablePhase.entering;
+  bool get recordVisible =>
+      itemId != null &&
+      phase != TurntablePhase.entering &&
+      phase != TurntablePhase.awaitingMetadata;
   double get trackProgress => _trackProgress;
   double get armAngle => arm * TurntableGeometry.trackingAngle(_trackProgress);
 
@@ -69,16 +75,26 @@ class TurntableMotion extends ChangeNotifier {
 
   void update({
     required String? itemId,
+    required bool metadataReady,
     required bool ready,
     required bool paused,
     double progress = 0,
   }) {
     _targetId = itemId;
+    _metadataReady = metadataReady;
     _ready = ready;
     _paused = paused;
     _incomingProgress = progress.clamp(0.0, 1.0);
     if (this.itemId == itemId) setTrackProgress(_incomingProgress);
-    if (phase == TurntablePhase.hidden && itemId != null) {
+    if (phase == TurntablePhase.awaitingMetadata) {
+      this.itemId = itemId;
+      _trackProgress = _targetProgress = _incomingProgress;
+      if (itemId == null) {
+        _enter(TurntablePhase.exiting);
+      } else if (_metadataReady) {
+        _enter(TurntablePhase.placing);
+      }
+    } else if (phase == TurntablePhase.hidden && itemId != null) {
       this.itemId = itemId;
       _trackProgress = _targetProgress = _incomingProgress;
       _enter(TurntablePhase.entering);
@@ -120,7 +136,15 @@ class TurntableMotion extends ChangeNotifier {
         visibility =
             _entranceFrom +
             (1 - _entranceFrom) * _ease(_phaseTime / entranceSeconds);
-        if (_phaseTime >= entranceSeconds) _enter(TurntablePhase.placing);
+        if (_phaseTime >= entranceSeconds) {
+          _enter(
+            _metadataReady
+                ? TurntablePhase.placing
+                : TurntablePhase.awaitingMetadata,
+          );
+        }
+        break;
+      case TurntablePhase.awaitingMetadata:
         break;
       case TurntablePhase.placing:
         recordPlacement = _ease(_phaseTime / placementSeconds);
@@ -183,7 +207,11 @@ class TurntableMotion extends ChangeNotifier {
           recordPlacement = 0;
           _trackProgress = _targetProgress = _incomingProgress;
           _enter(
-            target == null ? TurntablePhase.exiting : TurntablePhase.placing,
+            target == null
+                ? TurntablePhase.exiting
+                : _metadataReady
+                ? TurntablePhase.placing
+                : TurntablePhase.awaitingMetadata,
           );
         }
         break;

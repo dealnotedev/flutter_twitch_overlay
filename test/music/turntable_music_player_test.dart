@@ -14,6 +14,86 @@ import 'package:obssource/music/turntable_geometry.dart';
 import 'package:obssource/music/turntable_music_player.dart';
 
 void main() {
+  testWidgets('places after metadata without waiting for the artwork image', (
+    tester,
+  ) async {
+    final coverUrl = Uri.parse('https://example.invalid/pending-cover.png');
+    final provider = CachedNetworkImageProvider(
+      coverUrl.toString(),
+      maxWidth: 256,
+      maxHeight: 256,
+    );
+    final artwork = Completer<ImageInfo>();
+    PaintingBinding.instance.imageCache.putIfAbsent(
+      provider,
+      () => OneFrameImageStreamCompleter(artwork.future),
+    );
+    addTearDown(() => PaintingBinding.instance.imageCache.evict(provider));
+    final requests = _Requests()..setQueue([_resolvingItem('one')]);
+    await tester.pumpWidget(_surface(requests, GlobalKey()));
+    await _animate(tester, 5);
+    expect(find.byKey(const ValueKey('turntable_deck')), findsOneWidget);
+    expect(find.byType(VinylRecord), findsNothing);
+
+    requests.setQueue([
+      _queuedItem(
+        'one',
+        phase: MusicQueueItemPhase.downloading,
+        artwork: coverUrl,
+      ),
+    ]);
+    await tester.pump();
+    final record = find.byType(VinylRecord);
+    expect(record, findsOneWidget);
+    final startingLeft = tester.getTopLeft(record).dx;
+    await _animate(tester, 0.5);
+    expect(tester.getTopLeft(record).dx, lessThan(startingLeft));
+    expect(artwork.isCompleted, isFalse);
+    expect(requests.current.nowPlaying, isNull);
+    expect(tester.widget<VinylRecord>(record).artwork, provider);
+    expect(find.textContaining('Song one', findRichText: true), findsOneWidget);
+    await tester.pumpWidget(const SizedBox.shrink());
+    await requests.close();
+  });
+
+  testWidgets(
+    'waits for metadata of the next track after removing the old one',
+    (tester) async {
+      final requests = _Requests()..start();
+      requests.setQueue([_resolvingItem('two')]);
+      await tester.pumpWidget(_surface(requests, GlobalKey()));
+      await _animate(tester, 5);
+      expect(find.byType(VinylRecord), findsOneWidget);
+
+      requests.emit(
+        MusicQueueSnapshot(
+          revision: requests.current.revision + 1,
+          nowPlaying: null,
+          queue: requests.current.queue,
+          lastError: null,
+        ),
+      );
+      await tester.pump();
+      await _animate(tester, 5);
+      expect(find.byType(VinylRecord), findsNothing);
+      expect(find.byKey(const ValueKey('turntable_deck')), findsOneWidget);
+
+      requests.setQueue([
+        _queuedItem('two', phase: MusicQueueItemPhase.downloading),
+      ]);
+      await tester.pump();
+      await _animate(tester, 0.5);
+      expect(find.byType(VinylRecord), findsOneWidget);
+      expect(
+        find.textContaining('Song two', findRichText: true),
+        findsOneWidget,
+      );
+      expect(requests.current.nowPlaying, isNull);
+      await tester.pumpWidget(const SizedBox.shrink());
+      await requests.close();
+    },
+  );
+
   testWidgets('animates playback snapshots without delaying the player', (
     tester,
   ) async {
@@ -627,6 +707,7 @@ MusicQueueItem _queuedItem(
   String? title,
   MusicQueueItemPhase phase = MusicQueueItemPhase.ready,
   double? progress,
+  Uri? artwork,
 }) => MusicQueueItem(
   id: id,
   requestedBy: 'Listener',
@@ -635,8 +716,19 @@ MusicQueueItem _queuedItem(
   title: title ?? 'Song $id',
   author: 'Artist',
   duration: const Duration(minutes: 3),
-  thumbnail: null,
+  thumbnail: artwork,
   downloadProgress: progress,
+);
+
+MusicQueueItem _resolvingItem(String id) => MusicQueueItem(
+  id: id,
+  requestedBy: 'Listener',
+  sourceUrl: Uri.parse('https://youtu.be/$id'),
+  phase: MusicQueueItemPhase.resolving,
+  title: null,
+  author: null,
+  duration: null,
+  thumbnail: null,
 );
 
 Future<Uint8List> _sampleCover() async {
